@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.bg-status-waiting {
+  background-color: #fbbf24; /* Желтый для "Ожидание" */
+  color: #1f2937; /* Темный цвет текста */
+}
+
+.bg-status-in-progress {
+  background-color: #34d399; /* Зеленый для "В работе" */
+  color: #1f2937; /* Темный цвет текста */
+}
+
+.bg-status-completed {
+  background-color: #ef4444; /* Красный для "Выполнено" */
+  color: #ffffff; /* Цвет текста */
+}
