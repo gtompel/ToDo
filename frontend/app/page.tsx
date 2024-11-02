@@ -1,18 +1,28 @@
 'use client'
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import ComputerForm from './components/ComputerForm';
+import ComputerTable from './components/ComputerTable';
 
-interface Computer {
+export interface Computer {
   id: number;
   name: string;
   status: string;
+  comment?: string;
+  department?: string;
+  assignedTo?: string;
 }
-
-const statuses = ['Не назначен', 'ОЖИДАНИЕ', 'В РАБОТЕ', 'ВЫПОЛНЕНО'];
-
-export default function Home() {
+// Новый интерфейс для данных компьютера без поля id
+export interface ComputerInput {
+  name: string;
+  status: string;
+  comment?: string;
+  department?: string;
+  assignedTo?: string;
+}
+const Home = () => {
   const [computers, setComputers] = useState<Computer[]>([]);
-  const [name, setName] = useState('');
+  const [editId, setEditId] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchComputers = async () => {
@@ -26,69 +36,65 @@ export default function Home() {
     fetchComputers();
   }, []);
 
-  const handleAddComputer = async () => {
+  const handleAddOrUpdateComputer = async (computerData: ComputerInput) => {
+    console.log("Данные для отправки:", computerData);
+    if (editId) {
+      // Update existing computer
+      try {
+        const response = await axios.patch<Computer>(`http://172.16.10.245:4200/computers/${editId}`, computerData);
+        setComputers((prev) => prev.map(comp => (comp.id === editId ? response.data : comp)));
+        setEditId(null);
+      } catch (error) {
+        console.error("Ошибка при обновлении компьютера:", error);
+      }
+    } else {
+      // Add new computer
+      try {
+        const response = await axios.post<Computer>('http://172.16.10.245:4200/computers', computerData);
+        setComputers((prev) => [...prev, response.data]);
+      } catch (error) {
+        console.error("Ошибка при добавлении компьютера:", error);
+      }
+    }
+  };
+
+  const handleEdit = (computer: Computer) => {
+    setEditId(computer.id);
+  };
+
+  const handleDelete = async (id: number) => {
     try {
-      const response = await axios.post<Computer>('http://172.16.10.245:4200/computers', { name, status: 'Не назначен' });
-      setComputers((prev) => [...prev, response.data]);
-      setName('');
+      await axios.delete(`http://172.16.10.245:4200/computers/${id}`);
+      setComputers((prev) => prev.filter(comp => comp.id !== id));
     } catch (error) {
-      console.error("Ошибка при добавлении компьютера:", error);
+      console.error("Ошибка при удалении компьютера:", error);
     }
   };
 
   const handleUpdateStatus = async (id: number, newStatus: string) => {
     try {
       await axios.patch(`http://172.16.10.245:4200/computers/${id}`, { status: newStatus });
-      setComputers((prev) => prev.map(comp => comp.id === id ? { ...comp, status: newStatus } : comp));
+      setComputers((prev) => prev.map(comp => (comp.id === id ? { ...comp, status: newStatus } : comp)));
     } catch (error) {
       console.error("Ошибка при обновлении статуса:", error);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-8 bg-gray-100">
+    <div className="flex flex-col items-center justify-center p-8 bg-gray-100">
       <h1 className="text-3xl font-bold mb-6 text-center text-black">Управление компьютерами</h1>
-      <div className="bg-white shadow-md rounded-lg p-6 w-full max-w-md">
-        <input 
-          type="text" 
-          value={name} 
-          onChange={(e) => setName(e.target.value)} 
-          placeholder="Имя компьютера" 
-          className="border-2 border-gray-300 rounded-lg px-4 py-2 w-full mb-4 text-black"
-        />
-        <button 
-          onClick={handleAddComputer}
-          className="w-full bg-blue-500 text-white rounded-lg py-2 hover:bg-blue-600 transition duration-200"
-        >
-          Добавить компьютер
-        </button>
-      </div>
-      <ul className="mt-6 w-full max-w-md">
-        {computers.map((computer) => (
-          <li key={computer.id} className="bg-white shadow-md rounded-lg p-4 mb-4 flex justify-between items-center">
-            <div>
-              <h2 className="text-xl font-semibold text-black">{computer.name}</h2>
-              <p className="text-gray-600">{computer.status}</p> {/* Здесь изменил на text-black */}
-            </div>
-            <div>
-              {statuses.map((status) => (
-                <button
-                  key={status} 
-                  onClick={() => handleUpdateStatus(computer.id, status)}
-                  className={`ml-2 rounded-lg px-3 py-1 text-sm transition duration-200 ${
-                    status === 'ОЖИДАНИЕ' ? 'bg-status-waiting hover:bg-yellow-500' :
-                    status === 'В РАБОТЕ' ? 'bg-status-in-progress hover:bg-green-600' :
-                    status === 'ВЫПОЛНЕНО' ? 'bg-status-completed hover:bg-red-600' :
-                    'bg-gray-200 hover:bg-gray-300'
-                  }`}
-                >
-                  {status}
-                </button>
-              ))}
-            </div>
-          </li>
-        ))}
-      </ul>
+      <ComputerForm 
+        onSubmit={handleAddOrUpdateComputer} 
+        buttonText={editId ? "Обновить компьютер" : "Добавить компьютер"} 
+      />
+      <ComputerTable
+        computers={computers}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        onUpdateStatus={handleUpdateStatus}
+      />
     </div>
   );
 }
+
+export default Home;
