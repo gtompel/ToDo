@@ -1,6 +1,7 @@
 'use client'
 import { Computer } from '../page';
 
+
 interface ComputerTableProps {
   computers: Computer[];
   onEdit: (computer: Computer) => void;

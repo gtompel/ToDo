@@ -12,7 +12,7 @@ export interface Computer {
   department?: string;
   assignedTo?: string;
 }
-// Новый интерфейс для данных компьютера без поля id
+
 export interface ComputerInput {
   name: string;
   status: string;
@@ -20,9 +20,11 @@ export interface ComputerInput {
   department?: string;
   assignedTo?: string;
 }
+
 const Home = () => {
   const [computers, setComputers] = useState<Computer[]>([]);
   const [editId, setEditId] = useState<number | null>(null);
+  const [editComputer, setEditComputer] = useState<ComputerInput | null>(null);
 
   useEffect(() => {
     const fetchComputers = async () => {
@@ -37,18 +39,16 @@ const Home = () => {
   }, []);
 
   const handleAddOrUpdateComputer = async (computerData: ComputerInput) => {
-    console.log("Данные для отправки:", computerData);
     if (editId) {
-      // Update existing computer
       try {
         const response = await axios.patch<Computer>(`http://172.16.10.245:4200/computers/${editId}`, computerData);
         setComputers((prev) => prev.map(comp => (comp.id === editId ? response.data : comp)));
         setEditId(null);
+        setEditComputer(null); // Очистите данные редактирования
       } catch (error) {
         console.error("Ошибка при обновлении компьютера:", error);
       }
     } else {
-      // Add new computer
       try {
         const response = await axios.post<Computer>('http://172.16.10.245:4200/computers', computerData);
         setComputers((prev) => [...prev, response.data]);
@@ -60,6 +60,14 @@ const Home = () => {
 
   const handleEdit = (computer: Computer) => {
     setEditId(computer.id);
+    // Подготовьте данные для редактирования
+    setEditComputer({
+      name: computer.name,
+      status: computer.status,
+      comment: computer.comment || '',
+      department: computer.department || '',
+      assignedTo: computer.assignedTo || '',
+    });
   };
 
   const handleDelete = async (id: number) => {
@@ -85,6 +93,7 @@ const Home = () => {
       <h1 className="text-3xl font-bold mb-6 text-center text-black">Управление компьютерами</h1>
       <ComputerForm 
         onSubmit={handleAddOrUpdateComputer} 
+        initialData={editComputer ?? undefined}  // Передаем данные для редактирования
         buttonText={editId ? "Обновить компьютер" : "Добавить компьютер"} 
       />
       <ComputerTable
