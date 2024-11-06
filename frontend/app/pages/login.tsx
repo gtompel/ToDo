@@ -12,9 +12,7 @@ const Login = () => {
 
     try {
       const response = await axios.post('http://172.16.10.245:4200/auth/login', { email, password });
-      // Сохраните токен в localStorage
       localStorage.setItem('token', response.data.token);
-      // Перенаправляем на домашнюю страницу после успешного входа
       router.push('/');
     } catch (error) {
       console.error("Ошибка авторизации:", error);
@@ -27,9 +25,7 @@ const Login = () => {
       <h1 className="text-3xl font-bold mb-6">Вход</h1>
       <form onSubmit={handleLogin} className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
         <div>
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
-            Email
-          </label>
+          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">Email</label>
           <input
             type="email"
             id="email"
@@ -39,9 +35,7 @@ const Login = () => {
           />
         </div>
         <div>
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
-            Пароль
-          </label>
+          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">Пароль</label>
           <input
             type="password"
             id="password"
