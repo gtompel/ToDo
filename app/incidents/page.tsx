@@ -49,7 +49,12 @@ function getPriorityBadge(priority: string) {
 
 async function IncidentsList({ isAdmin }: { isAdmin: boolean }) {
   const incidents = await getIncidents()
-  const assignableUsers = isAdmin ? await getAssignableUsers() : []
+  const assignableUsersRaw = isAdmin ? await getAssignableUsers() : []
+  // Преобразуем assignableUsers к нужному формату { id, name }
+  const assignableUsers = assignableUsersRaw.map((user: { id: string; firstName: string; lastName: string }) => ({
+    id: user.id,
+    name: `${user.firstName} ${user.lastName}`,
+  }))
   return <IncidentsListClient incidents={incidents} isAdmin={isAdmin} assignableUsers={assignableUsers} />
 }
 

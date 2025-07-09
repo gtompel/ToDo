@@ -21,6 +21,8 @@ model User {
   status            String     @default("active")
   isActive          Boolean    @default(true)
   lastLogin         DateTime?
+  lastActivity        DateTime?
+  passwordLastChanged DateTime?
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
   articles          Article[]  @relation("UserArticles")

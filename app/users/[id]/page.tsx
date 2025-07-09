@@ -20,34 +20,78 @@ import {
   Settings,
 } from "lucide-react"
 import Link from "next/link"
+import React, { useState, useEffect } from "react"
+import { useParams } from "next/navigation"
+import { useState as useReactState } from "react"
 
-export default function UserProfilePage({ params }: { params: { id: string } }) {
-  // В реальном приложении данные будут загружаться по ID
-  const user = {
-    id: params.id,
-    name: "Иванов Иван Иванович",
-    email: "i.ivanov@company.com",
-    phone: "+7 (999) 123-45-67",
-    position: "Системный администратор",
-    department: "IT отдел",
-    manager: "Петров П.П.",
-    role: "Системный администратор",
-    status: "Активен",
-    created: "2023-06-15",
-    lastLogin: "2024-01-15 14:30",
-    lastActivity: "2024-01-15 16:45",
-    avatar: "/placeholder-user.jpg",
-    permissions: [
-      "incidents.manage",
-      "requests.view",
-      "knowledge.contribute",
-      "reports.view",
-      "changes.approve",
-      "assets.manage",
-    ],
-    twoFactorEnabled: true,
-    passwordLastChanged: "2023-12-01",
+export default function UserProfilePage() {
+  const params = useParams<{ id: string }>()
+  const id = params.id
+  const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+  const [actionLoading, setActionLoading] = useReactState(false)
+  const [actionError, setActionError] = useReactState("")
+  const [actionSuccess, setActionSuccess] = useReactState("")
+
+  useEffect(() => {
+    async function loadUser() {
+      setLoading(true)
+      setError("")
+      try {
+        const res = await fetch(`/api/users/${id}`)
+        if (!res.ok) throw new Error("Ошибка загрузки пользователя")
+        const data = await res.json()
+        setUser(data)
+      } catch (e: any) {
+        setError(e.message || "Ошибка")
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadUser()
+  }, [id])
+
+  const handleUserAction = async (action: string) => {
+    setActionLoading(true)
+    setActionError("")
+    setActionSuccess("")
+    let body: any = { id, action }
+    if (action === "reset-password") {
+      const newPassword = prompt("Введите новый пароль для пользователя:")
+      if (!newPassword) {
+        setActionLoading(false)
+        return
+      }
+      body.newPassword = newPassword
+    }
+    try {
+      const res = await fetch("/api/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
+      const data = await res.json()
+      if (!res.ok || data.error) throw new Error(data.error || "Ошибка операции")
+      setActionSuccess("Операция выполнена успешно")
+      // обновить пользователя после действия
+      const userRes = await fetch(`/api/users/${id}`)
+      if (userRes.ok) setUser(await userRes.json())
+    } catch (e: any) {
+      setActionError(e.message || "Ошибка операции")
+    } finally {
+      setActionLoading(false)
+      setTimeout(() => setActionSuccess("") , 2000)
+    }
   }
+
+  if (loading) return <div className="p-8 text-center text-muted-foreground">Загрузка...</div>
+  if (error) return <div className="p-8 text-center text-red-500">{error}</div>
+  if (!user) return <div className="p-8 text-center text-muted-foreground">Пользователь не найден</div>
+
+  // Формируем ФИО и инициалы
+  const fullName = [user.lastName, user.firstName, user.middleName].filter(Boolean).join(" ")
+  const initials = [user.lastName, user.firstName, user.middleName].filter(Boolean).map((n: string) => n[0]).join("")
 
   const activityLog = [
     {
@@ -112,10 +156,6 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
     }
   }
 
-  const handleUserAction = (action: string) => {
-    console.log(`Действие ${action} для пользователя ${user.id}`)
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -129,18 +169,18 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
           <p className="text-muted-foreground">Детальная информация о пользователе</p>
         </div>
         <div className="flex gap-2">
-          {user.status === "Активен" ? (
-            <Button variant="outline" onClick={() => handleUserAction("block")}>
+          {user.status === "active" ? (
+            <Button variant="outline" disabled={actionLoading} onClick={() => handleUserAction("block")}> 
               <UserX className="w-4 h-4 mr-2" />
               Заблокировать
             </Button>
           ) : (
-            <Button variant="outline" onClick={() => handleUserAction("activate")}>
+            <Button variant="outline" disabled={actionLoading} onClick={() => handleUserAction("activate")}> 
               <UserCheck className="w-4 h-4 mr-2" />
               Активировать
             </Button>
           )}
-          <Button variant="outline" onClick={() => handleUserAction("reset-password")}>
+          <Button variant="outline" disabled={actionLoading} onClick={() => handleUserAction("reset-password")}> 
             <Settings className="w-4 h-4 mr-2" />
             Сбросить пароль
           </Button>
@@ -153,6 +193,10 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
         </div>
       </div>
 
+      {(actionError || actionSuccess) && (
+        <div className={"text-sm " + (actionError ? "text-red-500" : "text-green-600")}>{actionError || actionSuccess}</div>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-1 space-y-6">
           {/* Основная информация */}
@@ -160,16 +204,11 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
             <CardContent className="p-6">
               <div className="flex flex-col items-center text-center space-y-4">
                 <Avatar className="h-20 w-20">
-                  <AvatarImage src={user.avatar || "/placeholder.svg"} alt={user.name} />
-                  <AvatarFallback className="text-lg">
-                    {user.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")}
-                  </AvatarFallback>
+                  <AvatarImage src={user.avatar || "/placeholder.svg"} alt={fullName} />
+                  <AvatarFallback className="text-lg">{initials}</AvatarFallback>
                 </Avatar>
                 <div>
-                  <h2 className="text-xl font-semibold">{user.name}</h2>
+                  <h2 className="text-xl font-semibold">{fullName}</h2>
                   <p className="text-muted-foreground">{user.position}</p>
                 </div>
                 <Badge className={getStatusColor(user.status)}>{user.status}</Badge>
@@ -231,12 +270,6 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
                 <span className="text-sm text-muted-foreground">Смена пароля:</span>
                 <span className="text-sm font-medium">{user.passwordLastChanged}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">2FA:</span>
-                <Badge variant={user.twoFactorEnabled ? "default" : "secondary"}>
-                  {user.twoFactorEnabled ? "Включена" : "Отключена"}
-                </Badge>
-              </div>
             </CardContent>
           </Card>
         </div>
@@ -269,12 +302,16 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
                   <div>
                     <h4 className="font-medium mb-3">Разрешения</h4>
                     <div className="grid gap-2 md:grid-cols-2">
-                      {user.permissions.map((permission, index) => (
-                        <div key={index} className="flex items-center gap-2 p-2 border rounded">
-                          <div className="w-2 h-2 bg-green-500 rounded-full" />
-                          <span className="text-sm">{permission}</span>
-                        </div>
-                      ))}
+                      {Array.isArray(user.permissions) && user.permissions.length > 0 ? (
+                        user.permissions.map((permission: string, index: number) => (
+                          <div key={index} className="flex items-center gap-2 p-2 border rounded">
+                            <div className="w-2 h-2 bg-green-500 rounded-full" />
+                            <span className="text-sm">{permission}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <span className="text-muted-foreground text-sm">Нет данных</span>
+                      )}
                     </div>
                   </div>
 
