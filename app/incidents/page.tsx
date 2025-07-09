@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge"
 import { Plus, AlertTriangle } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/auth"
+import { getAssignableUsers } from "@/lib/actions/users"
+import IncidentsListClient from "./IncidentsListClient"
 
 async function getIncidents() {
   return prisma.incident.findMany({
@@ -45,62 +47,15 @@ function getPriorityBadge(priority: string) {
   }
 }
 
-async function IncidentsList() {
+async function IncidentsList({ isAdmin }: { isAdmin: boolean }) {
   const incidents = await getIncidents()
-
-  if (incidents.length === 0) {
-    return (
-      <Card>
-        <CardContent className="flex flex-col items-center justify-center py-12">
-          <AlertTriangle className="h-12 w-12 text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Нет инцидентов</h3>
-          <p className="text-gray-500 text-center mb-4">Инциденты еще не созданы. Создайте первый инцидент.</p>
-          <Button asChild>
-            <Link href="/incidents/new">
-              <Plus className="mr-2 h-4 w-4" />
-              Создать инцидент
-            </Link>
-          </Button>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  return (
-    <div className="space-y-4">
-      {incidents.map((incident: any) => (
-        <Card key={incident.id}>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">{incident.title}</CardTitle>
-              <div className="flex gap-2">
-                {getStatusBadge(incident.status)}
-                {getPriorityBadge(incident.priority)}
-              </div>
-            </div>
-            <CardDescription>
-              ID: {incident.id} • Создан: {new Date(incident.createdAt).toLocaleDateString("ru-RU")}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-700 mb-4">{incident.description}</p>
-            <div className="flex items-center justify-between text-sm text-gray-600">
-              <div>
-                <span className="font-medium">Создал:</span> {incident.createdBy.name}
-              </div>
-              <div>
-                <span className="font-medium">Назначен:</span> {incident.assignedTo?.name || "Не назначен"}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  )
+  const assignableUsers = isAdmin ? await getAssignableUsers() : []
+  return <IncidentsListClient incidents={incidents} isAdmin={isAdmin} assignableUsers={assignableUsers} />
 }
 
 export default async function IncidentsPage() {
   const user = await getCurrentUser()
+  const isAdmin = user && user.role === "ADMIN"
 
   return (
     <div className="space-y-6">
@@ -116,9 +71,8 @@ export default async function IncidentsPage() {
           </Link>
         </Button>
       </div>
-
       <Suspense fallback={<div>Загрузка...</div>}>
-        <IncidentsList />
+        <IncidentsList isAdmin={isAdmin} />
       </Suspense>
     </div>
   )

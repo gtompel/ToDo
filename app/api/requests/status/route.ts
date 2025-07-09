@@ -3,8 +3,7 @@ import { updateRequestStatus } from "@/lib/actions/requests"
 
 export async function POST(req: Request) {
   const { id, status } = await req.json()
-  if (!id || !status) return NextResponse.json({ error: "Нет id или статуса" }, { status: 400 })
   const result = await updateRequestStatus(id, status)
-  if (result?.error) return NextResponse.json({ error: result.error }, { status: 400 })
-  return NextResponse.json({ success: true })
+  if (result?.success) return Response.json({ success: true })
+  return Response.json({ error: result?.error || "Ошибка" }, { status: 400 })
 } 

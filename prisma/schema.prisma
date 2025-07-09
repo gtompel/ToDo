@@ -8,30 +8,28 @@ datasource db {
 }
 
 model User {
-  id          String   @id @default(cuid())
-  email       String   @unique
-  password    String
-  firstName   String
-  lastName    String
-  middleName  String?
-  phone       String?
-  position    String?
-  department  String?
-  role        Role     @default(USER)
-  status      String   @default("active")
-  isActive    Boolean  @default(true)
-  lastLogin   DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
+  id                String     @id @default(cuid())
+  email             String     @unique
+  password          String
+  firstName         String
+  lastName          String
+  middleName        String?
+  phone             String?
+  position          String?
+  department        String?
+  role              Role       @default(USER)
+  status            String     @default("active")
+  isActive          Boolean    @default(true)
+  lastLogin         DateTime?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  articles          Article[]  @relation("UserArticles")
+  assignedChanges   Change[]   @relation("AssignedTo")
+  changes           Change[]   @relation("CreatedBy")
   assignedIncidents Incident[] @relation("AssignedTo")
   createdIncidents  Incident[] @relation("CreatedBy")
-  requests          Request[]  @relation("CreatedBy")
   assignedRequests  Request[]  @relation("AssignedTo")
-  changes           Change[]   @relation("CreatedBy")
-  assignedChanges   Change[]   @relation("AssignedTo")
-  articles          Article[]  @relation("CreatedBy")
+  requests          Request[]  @relation("CreatedBy")
   sessions          Session[]
 
   @@map("users")
@@ -43,66 +41,65 @@ model Session {
   userId    String
   expiresAt DateTime
   createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("sessions")
 }
 
 model Incident {
-  id          String        @id @default(cuid())
-  title       String
-  description String
-  priority    Priority      @default(MEDIUM)
-  status      IncidentStatus @default(OPEN)
-  category    String?
-  assignedToId String?
-  createdById String
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  resolvedAt  DateTime?
-
-  assignedTo User? @relation("AssignedTo", fields: [assignedToId], references: [id])
-  createdBy  User @relation("CreatedBy", fields: [createdById], references: [id])
+  id             String         @id @default(cuid())
+  title          String
+  description    String
+  priority       Priority       @default(MEDIUM)
+  status         IncidentStatus @default(OPEN)
+  category       String?
+  assignedToId   String?
+  createdById    String
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  resolvedAt     DateTime?
+  attachments    String[]
+  expectedResult String?
+  preActions     String?
+  assignedTo     User?          @relation("AssignedTo", fields: [assignedToId], references: [id])
+  createdBy      User           @relation("CreatedBy", fields: [createdById], references: [id])
 
   @@map("incidents")
 }
 
 model Request {
-  id          String        @id @default(cuid())
-  title       String
-  description String
-  priority    Priority      @default(MEDIUM)
-  status      RequestStatus @default(OPEN)
-  category    String?
+  id           String        @id @default(cuid())
+  title        String
+  description  String
+  priority     Priority      @default(MEDIUM)
+  status       RequestStatus @default(OPEN)
+  category     String?
   assignedToId String?
-  createdById String
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  resolvedAt  DateTime?
-
-  assignedTo User? @relation("AssignedTo", fields: [assignedToId], references: [id])
-  createdBy  User @relation("CreatedBy", fields: [createdById], references: [id])
+  createdById  String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  resolvedAt   DateTime?
+  assignedTo   User?         @relation("AssignedTo", fields: [assignedToId], references: [id])
+  createdBy    User          @relation("CreatedBy", fields: [createdById], references: [id])
 
   @@map("requests")
 }
 
 model Change {
-  id          String       @id @default(cuid())
-  title       String
-  description String
-  priority    Priority     @default(MEDIUM)
-  status      ChangeStatus @default(DRAFT)
-  category    String?
-  assignedToId String?
-  createdById String
-  scheduledAt DateTime?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id            String       @id @default(cuid())
+  title         String
+  description   String
+  priority      Priority     @default(MEDIUM)
+  status        ChangeStatus @default(DRAFT)
+  category      String?
+  assignedToId  String?
+  createdById   String
+  scheduledAt   DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
   implementedAt DateTime?
-
-  assignedTo User? @relation("AssignedTo", fields: [assignedToId], references: [id])
-  createdBy  User @relation("CreatedBy", fields: [createdById], references: [id])
+  assignedTo    User?        @relation("AssignedTo", fields: [assignedToId], references: [id])
+  createdBy     User         @relation("CreatedBy", fields: [createdById], references: [id])
 
   @@map("changes")
 }
@@ -117,10 +114,8 @@ model Article {
   createdById String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
-  createdBy User @relation("CreatedBy", fields: [createdById], references: [id])
-
-  @@map("articles")
+  authorId    String
+  author      User     @relation("UserArticles", fields: [authorId], references: [id])
 }
 
 enum Role {

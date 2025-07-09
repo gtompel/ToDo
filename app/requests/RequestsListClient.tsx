@@ -8,6 +8,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getStatusBadge, getPriorityBadge, renderRequestDetails, formatRequestId, STATUS_OPTIONS, PRIORITY_OPTIONS } from "./RequestsListHelpers"
 import { updateRequestStatus, updateRequestPriority, deleteRequestById, assignRequestToUser } from "@/lib/actions/requests"
 
+function getCardClassByStatus(status: string) {
+  switch (status) {
+    case "OPEN":
+      return "border-red-400 bg-red-50"
+    case "IN_PROGRESS":
+      return "border-yellow-400 bg-yellow-50"
+    case "RESOLVED":
+      return "border-green-400 bg-green-50"
+    case "CLOSED":
+      return "border-gray-300 bg-gray-50"
+    default:
+      return "border-gray-200 bg-white"
+  }
+}
+
 export default function RequestsListClient({ requests, isAdmin, assignableUsers }: any) {
   const [open, setOpen] = useState<string[]>([])
   const [filter, setFilter] = useState({ department: "", lastName: "" })
@@ -105,8 +120,11 @@ export default function RequestsListClient({ requests, isAdmin, assignableUsers 
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     })
-    if (res.ok) window.location.reload()
-    else alert("Ошибка: " + (await res.json()).error)
+    if (res.ok) {
+      window.location.reload()
+    } else {
+      alert("Ошибка: " + (await res.json()).error)
+    }
   }
 
   return (
@@ -116,7 +134,7 @@ export default function RequestsListClient({ requests, isAdmin, assignableUsers 
         {filtered.map((request: any) => {
           const isOpen = open.includes(request.id)
           return (
-            <Card key={request.id}>
+            <Card key={request.id} className={getCardClassByStatus(request.status) + " transition-colors duration-200"}>
               <CardHeader className="cursor-pointer select-none" onClick={() => toggle(request.id)}>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg flex items-center gap-2">

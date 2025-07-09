@@ -14,31 +14,22 @@ export async function loginAction(formData: FormData) {
   }
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { email },
-    })
-
-    if (!user) {
-      return { error: "Неверный email или пароль" }
-    }
+    const user = await prisma.user.findUnique({ where: { email } })
+    if (!user) return { error: "Неверный email или пароль" }
 
     const isValidPassword = await verifyPassword(password, user.password)
-    if (!isValidPassword) {
-      return { error: "Неверный email или пароль" }
-    }
+    if (!isValidPassword) return { error: "Неверный email или пароль" }
 
-    if (!user.isActive) {
-      return { error: "Аккаунт заблокирован" }
-    }
+    if (!user.isActive) return { error: "Аккаунт заблокирован" }
 
     const token = await createToken(user.id)
-    cookies().set("auth-token", token, {
+    ;(await cookies()).set("auth-token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 7, // 7 days
     })
-    redirect("/") // <-- редирект на сервере
+    redirect("/") // только при успехе!
   } catch (error) {
     console.error("Login error:", error)
     return { error: "Произошла ошибка при входе" }
@@ -87,5 +78,5 @@ export async function logoutAction() {
   }
 
   cookieStore.delete("auth-token")
-  // Можно вернуть { success: true }
+  redirect("/login") // редирект на страницу входа
 }

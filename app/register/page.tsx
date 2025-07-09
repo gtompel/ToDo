@@ -6,10 +6,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { registerUser } from "@/lib/actions/auth"
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 
 export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<boolean>(false)
+  const router = useRouter()
 
   async function handleRegister(formData: FormData) {
     setError(null)
@@ -22,7 +24,10 @@ export default function RegisterPage() {
     }
     const res = await registerUser(formData)
     if (res?.error) setError(res.error)
-    else setSuccess(true)
+    else {
+      setSuccess(true)
+      router.push("/login")
+    }
   }
 
   return (
