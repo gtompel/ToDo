@@ -8,7 +8,7 @@ export async function getRequests() {
   try {
     const requests = await prisma.request.findMany({
       include: {
-        creator: {
+        createdBy: {
           select: {
             id: true,
             firstName: true,
@@ -16,7 +16,7 @@ export async function getRequests() {
             email: true,
           },
         },
-        assignee: {
+        assignedTo: {
           select: {
             id: true,
             firstName: true,
@@ -42,7 +42,7 @@ export async function getRequest(id: string) {
     const request = await prisma.request.findUnique({
       where: { id },
       include: {
-        creator: {
+        createdBy: {
           select: {
             id: true,
             firstName: true,
@@ -50,7 +50,7 @@ export async function getRequest(id: string) {
             email: true,
           },
         },
-        assignee: {
+        assignedTo: {
           select: {
             id: true,
             firstName: true,
@@ -68,16 +68,13 @@ export async function getRequest(id: string) {
   }
 }
 
-export async function createRequest(formData: FormData) {
+export async function createRequest(formData: FormData, userId?: string) {
   const title = formData.get("title") as string
   const description = formData.get("description") as string
-  const type = formData.get("type") as string
   const priority = formData.get("priority") as string
-  const creatorId = formData.get("creatorId") as string
-  const assigneeId = formData.get("assigneeId") as string
-  const dueDate = formData.get("dueDate") as string
+  const assignedToId = formData.get("assigneeId") as string
 
-  if (!title || !description || !creatorId) {
+  if (!title || !description || !userId) {
     return { error: "Заполните все обязательные поля" }
   }
 
@@ -86,16 +83,14 @@ export async function createRequest(formData: FormData) {
       data: {
         title,
         description,
-        type,
         priority: priority as any,
-        creatorId,
-        assigneeId: assigneeId || null,
-        dueDate: dueDate ? new Date(dueDate) : null,
+        createdById: userId,
+        assignedToId: assignedToId || null,
       },
     })
 
     revalidatePath("/requests")
-    redirect("/requests")
+    // redirect("/requests") — удалено, редирект делать на клиенте
   } catch (error) {
     console.error("Error creating request:", error)
     return { error: "Ошибка при создании запроса" }
@@ -106,10 +101,8 @@ export async function updateRequest(id: string, formData: FormData) {
   const title = formData.get("title") as string
   const description = formData.get("description") as string
   const status = formData.get("status") as string
-  const type = formData.get("type") as string
   const priority = formData.get("priority") as string
-  const assigneeId = formData.get("assigneeId") as string
-  const dueDate = formData.get("dueDate") as string
+  const assignedToId = formData.get("assigneeId") as string
 
   try {
     await prisma.request.update({
@@ -118,11 +111,8 @@ export async function updateRequest(id: string, formData: FormData) {
         title,
         description,
         status: status as any,
-        type,
         priority: priority as any,
-        assigneeId: assigneeId || null,
-        dueDate: dueDate ? new Date(dueDate) : null,
-        completedAt: status === "COMPLETED" ? new Date() : null,
+        assignedToId: assignedToId || null,
       },
     })
 
@@ -134,15 +124,55 @@ export async function updateRequest(id: string, formData: FormData) {
   }
 }
 
-export async function deleteRequest(id: string) {
+export async function updateRequestStatus(id: string, status: string) {
   try {
-    await prisma.request.delete({
+    await prisma.request.update({
       where: { id },
+      data: { status: status as any },
     })
-
     revalidatePath("/requests")
+    return { success: true }
+  } catch (error) {
+    console.error("Error updating request status:", error)
+    return { error: "Ошибка при смене статуса" }
+  }
+}
+
+export async function updateRequestPriority(id: string, priority: string) {
+  try {
+    await prisma.request.update({
+      where: { id },
+      data: { priority: priority as any },
+    })
+    revalidatePath("/requests")
+    return { success: true }
+  } catch (error) {
+    console.error("Error updating request priority:", error)
+    return { error: "Ошибка при смене приоритета" }
+  }
+}
+
+export async function deleteRequestById(id: string) {
+  try {
+    await prisma.request.delete({ where: { id } })
+    revalidatePath("/requests")
+    return { success: true }
   } catch (error) {
     console.error("Error deleting request:", error)
     return { error: "Ошибка при удалении запроса" }
+  }
+}
+
+export async function assignRequestToUser(id: string, userId: string) {
+  try {
+    await prisma.request.update({
+      where: { id },
+      data: { assignedToId: userId },
+    })
+    revalidatePath("/requests")
+    return { success: true }
+  } catch (error) {
+    console.error("Error assigning request:", error)
+    return { error: "Ошибка при назначении сотрудника" }
   }
 }

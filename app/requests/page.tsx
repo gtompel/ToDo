@@ -1,3 +1,4 @@
+
 import { Suspense } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -6,6 +7,14 @@ import { Badge } from "@/components/ui/badge"
 import { Plus, HelpCircle } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/auth"
+import { updateRequestStatus, updateRequestPriority, deleteRequestById, assignRequestToUser } from "@/lib/actions/requests"
+import { useTransition } from "react"
+import { getAssignableUsers } from "@/lib/actions/users"
+import { ChevronDown, ChevronRight } from "lucide-react"
+
+import { getStatusBadge, getPriorityBadge, renderRequestDetails, formatRequestId, STATUS_OPTIONS, PRIORITY_OPTIONS } from "./RequestsListHelpers"
+import RequestsListClient from "./RequestsListClient"
+export { updateRequestStatus, updateRequestPriority, deleteRequestById, assignRequestToUser } from "@/lib/actions/requests"
 
 async function getRequests() {
   return prisma.request.findMany({
@@ -17,90 +26,45 @@ async function getRequests() {
   })
 }
 
-function getStatusBadge(status: string) {
-  switch (status) {
-    case "OPEN":
-      return <Badge variant="destructive">Открыт</Badge>
-    case "IN_PROGRESS":
-      return <Badge variant="secondary">В работе</Badge>
-    case "RESOLVED":
-      return <Badge variant="default">Решен</Badge>
-    case "CLOSED":
-      return <Badge variant="outline">Закрыт</Badge>
-    default:
-      return <Badge>{status}</Badge>
-  }
-}
-
-function getPriorityBadge(priority: string) {
-  switch (priority) {
-    case "HIGH":
-      return <Badge variant="destructive">Высокий</Badge>
-    case "MEDIUM":
-      return <Badge variant="secondary">Средний</Badge>
-    case "LOW":
-      return <Badge variant="outline">Низкий</Badge>
-    default:
-      return <Badge>{priority}</Badge>
-  }
-}
-
-async function RequestsList() {
-  const requests = await getRequests()
-
-  if (requests.length === 0) {
-    return (
-      <Card>
-        <CardContent className="flex flex-col items-center justify-center py-12">
-          <HelpCircle className="h-12 w-12 text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Нет запросов</h3>
-          <p className="text-gray-500 text-center mb-4">Запросы еще не созданы. Создайте первый запрос.</p>
-          <Button asChild>
-            <Link href="/requests/new">
-              <Plus className="mr-2 h-4 w-4" />
-              Создать запрос
-            </Link>
-          </Button>
-        </CardContent>
-      </Card>
-    )
-  }
-
+function RequestsFilterPanel({ departments, filter, setFilter }: any) {
   return (
-    <div className="space-y-4">
-      {requests.map((request: any) => (
-        <Card key={request.id}>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">{request.title}</CardTitle>
-              <div className="flex gap-2">
-                {getStatusBadge(request.status)}
-                {getPriorityBadge(request.priority)}
-              </div>
-            </div>
-            <CardDescription>
-              ID: {request.id} • Создан: {new Date(request.createdAt).toLocaleDateString("ru-RU")}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-700 mb-4">{request.description}</p>
-            <div className="flex items-center justify-between text-sm text-gray-600">
-              <div>
-                <span className="font-medium">Создал:</span> {request.createdBy?.firstName} {request.createdBy?.lastName}
-              </div>
-              <div>
-                <span className="font-medium">Назначен:</span> {request.assignedTo ? `${request.assignedTo.firstName} ${request.assignedTo.lastName}` : "Не назначен"}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+    <div className="flex flex-wrap gap-4 mb-4 items-end">
+      <div>
+        <label className="block text-xs mb-1">Отдел</label>
+        <select
+          className="border rounded px-2 py-1"
+          value={filter.department}
+          onChange={e => setFilter((f: any) => ({ ...f, department: e.target.value }))}
+        >
+          <option value="">Все</option>
+          {departments.map((d: string) => (
+            <option key={d} value={d}>{d}</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className="block text-xs mb-1">Поиск по фамилии</label>
+        <input
+          className="border rounded px-2 py-1"
+          type="text"
+          placeholder="Фамилия..."
+          value={filter.lastName}
+          onChange={e => setFilter((f: any) => ({ ...f, lastName: e.target.value }))}
+        />
+      </div>
     </div>
   )
 }
 
+async function RequestsList({ isAdmin }: { isAdmin: boolean }) {
+  const requests = await getRequests()
+  const assignableUsers = isAdmin ? await getAssignableUsers() : []
+  return <RequestsListClient requests={requests} isAdmin={isAdmin} assignableUsers={assignableUsers} />
+}
+
 export default async function RequestsPage() {
   const user = await getCurrentUser()
+  const isAdmin = user && (user.role === "ADMIN" || user.role === "MANAGER")
 
   return (
     <div className="space-y-6">
@@ -118,7 +82,7 @@ export default async function RequestsPage() {
       </div>
 
       <Suspense fallback={<div>Загрузка...</div>}>
-        <RequestsList />
+        <RequestsList isAdmin={isAdmin} />
       </Suspense>
     </div>
   )

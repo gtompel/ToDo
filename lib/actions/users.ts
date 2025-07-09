@@ -189,3 +189,25 @@ export async function getTechnicians() {
     return []
   }
 }
+
+export async function getAssignableUsers() {
+  try {
+    const users = await prisma.user.findMany({
+      where: {
+        role: { in: ["USER", "TECHNICIAN"] },
+        isActive: true,
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+      },
+      orderBy: { lastName: "asc" },
+    })
+    return users
+  } catch (error) {
+    console.error("Error fetching assignable users:", error)
+    return []
+  }
+}
