@@ -84,6 +84,64 @@ body {
   }
 }
 
+body.rosatom {
+  --background: 220 33% 97%;         /* светлый фон */
+  --foreground: 221 100% 20%;        /* фирменный синий */
+  --primary: 221 100% 20%;           /* фирменный синий */
+  --primary-foreground: 0 0% 100%;   /* белый */
+  --accent: 191 100% 47%;            /* голубой Rosatom */
+  --accent-foreground: 0 0% 100%;    
+  --card: 0 0% 100%;                 /* белый */
+  --card-foreground: 221 100% 20%;   
+  --sidebar-background: 221 100% 20%; /* фирменный синий */
+  --sidebar-foreground: 0 0% 100%;   /* белый */
+  --sidebar-accent: 191 100% 47%;    /* голубой */
+  --sidebar-accent-foreground: 0 0% 100%;
+  --border: 221 100% 20%;
+  --muted: 210 16% 93%;
+  --muted-foreground: 221 100% 20%;
+}
+body.rosatom .bg-primary,
+body.rosatom .bg-sidebar {
+  background-color: #003399 !important;
+  color: #fff !important;
+}
+body.rosatom .text-primary-foreground {
+  color: #fff !important;
+}
+body.rosatom .bg-card {
+  background-color: #fff !important;
+  color: #003399 !important;
+}
+body.rosatom .text-card-foreground {
+  color: #003399 !important;
+}
+body.rosatom .border-primary,
+body.rosatom .border-card {
+  border-color: #003399 !important;
+}
+body.rosatom .hover\:bg-primary:hover {
+  background-color: #002266 !important;
+}
+
+html.rosatom body {
+  --background: 220 33% 97%;
+  --foreground: 221 100% 20%;
+  --primary: 221 100% 20%;
+  --primary-foreground: 0 0% 100%;
+  --accent: 191 100% 47%;
+  --accent-foreground: 0 0% 100%;
+  --card: 0 0% 100%;
+  --card-foreground: 221 100% 20%;
+  --sidebar-background: 221 100% 20%;
+  --sidebar-foreground: 0 0% 100%;
+  --sidebar-accent: 191 100% 47%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --border: 221 100% 20%;
+  --muted: 210 16% 93%;
+  --muted-foreground: 221 100% 20%;
+}
+
 @layer base {
   * {
     @apply border-border;

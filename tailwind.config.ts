@@ -1,15 +1,16 @@
-import type { Config } from "tailwindcss";
+ import type { Config } from "tailwindcss";
 
 // all in fixtures is set to tailwind v3 as interims solutions
 
 const config: Config = {
-    darkMode: ["class"],
+    darkMode: 'class',
     content: [
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "*.{js,ts,jsx,tsx,mdx}"
   ],
+  // safelist удалён
   theme: {
   	extend: {
   		colors: {
@@ -62,7 +63,12 @@ const config: Config = {
   				'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
   				border: 'hsl(var(--sidebar-border))',
   				ring: 'hsl(var(--sidebar-ring))'
-  			}
+  			},
+  			brand: {
+  				DEFAULT: '#003399',
+  				dark: '#222B45',
+  				light: '#F5F7FA',
+  			},
   		},
   		borderRadius: {
   			lg: 'var(--radius)',

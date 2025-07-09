@@ -11,6 +11,8 @@ import {
 import { Bell, Settings, LogOut, User } from "lucide-react"
 import { getCurrentUser } from "@/lib/auth"
 import { logoutAction } from "@/lib/actions/auth"
+import Image from "next/image"
+import ThemeToggle from "@/components/ui/theme-toggle"
 
 export default async function Header() {
   const user = await getCurrentUser()
@@ -22,13 +24,15 @@ export default async function Header() {
   const userInitials = `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
 
   return (
-    <header className="border-b bg-white">
+    <header className="border-b bg-primary text-primary-foreground">
       <div className="flex h-16 items-center px-4 gap-4">
-        <div className="flex-1">
-          <h1 className="text-xl font-semibold">ITSM Система</h1>
+        <div className="flex-1 flex items-center gap-3">
+          <Image src="/logo.png" alt="Логотип" width={36} height={36} className="h-9 w-9" />
+          <h1 className="text-xl font-semibold text-primary-foreground">Система управления IT-услугами</h1>
         </div>
 
         <div className="flex items-center gap-4">
+          <ThemeToggle />
           <Button variant="ghost" size="icon">
             <Bell className="h-4 w-4" />
           </Button>
