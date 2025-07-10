@@ -16,15 +16,15 @@ export const PRIORITY_OPTIONS = [
 export function getStatusBadge(status: string) {
   switch (status) {
     case "OPEN":
-      return <Badge variant="destructive">Открыт</Badge>
+      return <span className="px-2 py-1 rounded bg-red-100 text-red-700 text-xs">Открыт</span>
     case "IN_PROGRESS":
-      return <Badge variant="secondary">В работе</Badge>
+      return <span className="px-2 py-1 rounded bg-yellow-100 text-yellow-700 text-xs">В работе</span>
     case "RESOLVED":
-      return <Badge variant="default">Решен</Badge>
+      return <span className="px-2 py-1 rounded bg-green-100 text-green-700 text-xs">Решен</span>
     case "CLOSED":
-      return <Badge variant="outline">Закрыт</Badge>
+      return <span className="px-2 py-1 rounded bg-gray-200 text-gray-700 text-xs">Закрыт</span>
     default:
-      return <Badge>{status}</Badge>
+      return <span className="px-2 py-1 rounded bg-gray-100 text-gray-700 text-xs">{status}</span>
   }
 }
 

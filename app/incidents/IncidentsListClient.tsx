@@ -165,7 +165,18 @@ export default function IncidentsListClient({ incidents, isAdmin, assignableUser
                     </div>
                   </div>
                   {isAdmin && (
-                    <IncidentsAdminActions incident={incident} assignees={assignableUsers} />
+                    <IncidentsAdminActions
+                      incident={incident}
+                      assignees={assignableUsers.map(user => {
+                        const [firstName = "", lastName = ""] = user.name.split(" ");
+                        return {
+                          id: user.id,
+                          firstName,
+                          lastName,
+                          email: ""
+                        };
+                      })}
+                    />
                   )}
                 </CardContent>
               )}

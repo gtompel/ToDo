@@ -12,11 +12,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Некорректный статус" }, { status: 400 });
   }
   try {
-    const updated = await prisma.request.update({
+    const updated = await prisma.incident.update({
       where: { id },
       data: { status },
     });
-    return NextResponse.json({ success: true, request: updated });
+    return NextResponse.json({ success: true, incident: updated });
   } catch (e) {
     return NextResponse.json({ error: "Ошибка при смене статуса", details: String(e) }, { status: 500 });
   }

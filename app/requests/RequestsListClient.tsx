@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useRef } from "react"
 import { ChevronDown, ChevronRight, HelpCircle, Plus } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { getStatusBadge, getPriorityBadge, renderRequestDetails, formatRequestId, STATUS_OPTIONS, PRIORITY_OPTIONS } from "./RequestsListHelpers"
-import { updateRequestStatus, updateRequestPriority, deleteRequestById, assignRequestToUser } from "@/lib/actions/requests"
+import { fetchWithTimeout } from "@/lib/utils"
+import { toast } from "@/components/ui/use-toast"
 
 function getCardClassByStatus(status: string) {
   switch (status) {
@@ -26,6 +27,7 @@ function getCardClassByStatus(status: string) {
 export default function RequestsListClient({ requests, isAdmin, assignableUsers }: any) {
   const [open, setOpen] = useState<string[]>([])
   const [filter, setFilter] = useState({ department: "", lastName: "" })
+  const [loadingId, setLoadingId] = useState<string | null>(null)
 
   // Получаем уникальные отделы
   const departments = useMemo(() => {
@@ -100,6 +102,7 @@ export default function RequestsListClient({ requests, isAdmin, assignableUsers 
   }
 
   const handleAdminAction = async (action: string, id: string, value?: string) => {
+    setLoadingId(id + action)
     let url = ""
     let body: any = { id }
     if (action === "status") {
@@ -115,15 +118,20 @@ export default function RequestsListClient({ requests, isAdmin, assignableUsers 
       url = "/api/requests/delete"
     }
     if (!url) return
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    })
-    if (res.ok) {
+    try {
+      const res = await fetchWithTimeout(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
+      const data = await res.json()
+      if (!res.ok || data.error) throw new Error(data.error || "Ошибка операции")
+      toast({ title: "Успех", description: "Изменения сохранены" })
       window.location.reload()
-    } else {
-      alert("Ошибка: " + (await res.json()).error)
+    } catch (e: any) {
+      toast({ title: "Ошибка", description: e.message, variant: "destructive" })
+    } finally {
+      setLoadingId(null)
     }
   }
 
@@ -133,6 +141,7 @@ export default function RequestsListClient({ requests, isAdmin, assignableUsers 
       <div className="space-y-4">
         {filtered.map((request: any) => {
           const isOpen = open.includes(request.id)
+          const actionRef = useRef<HTMLInputElement>(null)
           return (
             <Card key={request.id} className={getCardClassByStatus(request.status) + " transition-colors duration-200"}>
               <CardHeader className="cursor-pointer select-none" onClick={() => toggle(request.id)}>
@@ -182,25 +191,42 @@ export default function RequestsListClient({ requests, isAdmin, assignableUsers 
                           {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                         </select>
                       </label>
-                      <button type="submit" name="action" value="status" className="px-2 py-1 border rounded bg-blue-100 hover:bg-blue-200">Сменить</button>
+                      <input ref={actionRef} type="hidden" name="action" value="status" />
+                      <button type="submit" className="px-2 py-1 border rounded bg-blue-100 hover:bg-blue-200"
+                        onClick={() => { if (actionRef.current) actionRef.current.value = "status" }}>
+                        Сменить
+                      </button>
                       <label>
                         Приоритет:
                         <select name="priority" defaultValue={request.priority} className="ml-1 border rounded px-2 py-1">
                           {PRIORITY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                         </select>
                       </label>
-                      <button type="submit" name="action" value="priority" className="px-2 py-1 border rounded bg-blue-100 hover:bg-blue-200">Сменить</button>
+                      <button type="submit" className="px-2 py-1 border rounded bg-blue-100 hover:bg-blue-200"
+                        onClick={() => { if (actionRef.current) actionRef.current.value = "priority" }}>
+                        Сменить
+                      </button>
                       <label>
                         Назначить:
-                        <select name="userId" defaultValue="" className="ml-1 border rounded px-2 py-1">
+                        <select name="userId" defaultValue={request.assignedToId || ""} className="ml-1 border rounded px-2 py-1">
                           <option value="">Выбрать...</option>
-                          {assignableUsers.map((u: any) => (
-                            <option key={u.id} value={u.id}>{u.lastName} {u.firstName} ({u.email})</option>
-                          ))}
+                          {assignableUsers && assignableUsers.length > 0 ? (
+                            assignableUsers.map((user: any) => (
+                              <option key={user.id} value={user.id}>{user.lastName} {user.firstName} ({user.email})</option>
+                            ))
+                          ) : (
+                            <option value="" disabled>Нет доступных исполнителей</option>
+                          )}
                         </select>
                       </label>
-                      <button type="submit" name="action" value="assign" className="px-2 py-1 border rounded bg-green-100 hover:bg-green-200">Назначить</button>
-                      <button type="submit" name="action" value="delete" className="px-2 py-1 border rounded bg-red-100 hover:bg-red-200 ml-2">Удалить</button>
+                      <button type="submit" className="px-2 py-1 border rounded bg-green-100 hover:bg-green-200"
+                        onClick={() => { if (actionRef.current) actionRef.current.value = "assign" }}>
+                        Назначить
+                      </button>
+                      <button type="submit" className="px-2 py-1 border rounded bg-red-100 hover:bg-red-200 ml-2"
+                        onClick={() => { if (actionRef.current) actionRef.current.value = "delete" }}>
+                        Удалить
+                      </button>
                     </form>
                   )}
                 </CardContent>
