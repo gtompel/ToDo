@@ -13,6 +13,7 @@ import { getCurrentUser } from "@/lib/auth"
 import { logoutAction } from "@/lib/actions/auth"
 import Image from "next/image"
 import ThemeToggle from "@/components/ui/theme-toggle"
+import Link from "next/link"
 
 export default async function Header() {
   const user = await getCurrentUser()
@@ -56,13 +57,17 @@ export default async function Header() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <User className="mr-2 h-4 w-4" />
-                <span>Профиль</span>
+              <DropdownMenuItem asChild>
+                <Link href={`/users/${user.id}`} prefetch={false}>
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Профиль</span>
+                </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Настройки</span>
+              <DropdownMenuItem asChild>
+                <Link href="/profile/settings" prefetch={false}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Настройки</span>
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>

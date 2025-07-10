@@ -1,10 +1,11 @@
-import { NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
   try {
     const user = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: {
         id: true,
         email: true,
@@ -20,12 +21,11 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
         lastLogin: true,
         createdAt: true,
         updatedAt: true,
-        // Добавь другие нужные поля
       },
-    })
-    if (!user) return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 })
-    return NextResponse.json(user)
+    });
+    if (!user) return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
+    return NextResponse.json(user);
   } catch (e) {
-    return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 })
+    return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
   }
 } 
