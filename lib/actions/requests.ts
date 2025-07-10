@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
+import { createNotification } from "./notifications";
 
 export async function getRequests() {
   try {
@@ -126,15 +127,23 @@ export async function updateRequest(id: string, formData: FormData) {
 
 export async function updateRequestStatus(id: string, status: string) {
   try {
-    await prisma.request.update({
+    const request = await prisma.request.update({
       where: { id },
       data: { status: status as any },
-    })
-    revalidatePath("/requests")
-    return { success: true }
+      include: { assignedTo: true },
+    });
+    if (request.assignedTo) {
+      await createNotification(
+        request.assignedTo.id,
+        `Статус запроса изменён: ${request.title}`,
+        `Новый статус: ${status}`
+      );
+    }
+    revalidatePath("/requests");
+    return { success: true };
   } catch (error) {
-    console.error("Error updating request status:", error)
-    return { error: "Ошибка при смене статуса" }
+    console.error("Error updating request status:", error);
+    return { error: "Ошибка при смене статуса" };
   }
 }
 

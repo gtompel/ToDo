@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
+import { createNotification } from "./notifications";
 
 // Получение всех инцидентов
 export async function getIncidents() {
@@ -138,16 +139,24 @@ export async function updateIncident(id: string, formData: FormData) {
 // Изменение статуса инцидента (только для администратора)
 export async function updateIncidentStatus(id: string, status: string) {
   try {
-    await prisma.incident.update({
+    const incident = await prisma.incident.update({
       where: { id },
       data: { status: status as any },
-    })
-    revalidatePath("/incidents")
-    revalidatePath(`/incidents/${id}`)
-    return { success: true }
+      include: { assignedTo: true },
+    });
+    if (incident.assignedTo) {
+      await createNotification(
+        incident.assignedTo.id,
+        `Статус инцидента изменён: ${incident.title}`,
+        `Новый статус: ${status}`
+      );
+    }
+    revalidatePath("/incidents");
+    revalidatePath(`/incidents/${id}`);
+    return { success: true };
   } catch (error) {
-    console.error("Error updating incident status:", error)
-    return { error: "Ошибка при смене статуса инцидента" }
+    console.error("Error updating incident status:", error);
+    return { error: "Ошибка при смене статуса инцидента" };
   }
 }
 
@@ -158,6 +167,12 @@ export async function assignIncidentToUser(id: string, userId: string) {
       where: { id },
       data: { assignedToId: userId },
     })
+    // Создаём уведомление назначенному пользователю
+    await createNotification(
+      userId,
+      "Вам назначен инцидент",
+      `Вы назначены ответственным за инцидент с ID: ${id}`
+    )
     revalidatePath("/incidents")
     revalidatePath(`/incidents/${id}`)
     return { success: true }

@@ -8,31 +8,32 @@ datasource db {
 }
 
 model User {
-  id                String     @id @default(cuid())
-  email             String     @unique
-  password          String
-  firstName         String
-  lastName          String
-  middleName        String?
-  phone             String?
-  position          String?
-  department        String?
-  role              Role       @default(USER)
-  status            String     @default("active")
-  isActive          Boolean    @default(true)
-  lastLogin         DateTime?
+  id                  String         @id @default(cuid())
+  email               String         @unique
+  password            String
+  firstName           String
+  lastName            String
+  middleName          String?
+  phone               String?
+  position            String?
+  department          String?
+  role                Role           @default(USER)
+  status              String         @default("active")
+  isActive            Boolean        @default(true)
+  lastLogin           DateTime?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
   lastActivity        DateTime?
   passwordLastChanged DateTime?
-  createdAt         DateTime   @default(now())
-  updatedAt         DateTime   @updatedAt
-  articles          Article[]  @relation("UserArticles")
-  assignedChanges   Change[]   @relation("AssignedTo")
-  changes           Change[]   @relation("CreatedBy")
-  assignedIncidents Incident[] @relation("AssignedTo")
-  createdIncidents  Incident[] @relation("CreatedBy")
-  assignedRequests  Request[]  @relation("AssignedTo")
-  requests          Request[]  @relation("CreatedBy")
-  sessions          Session[]
+  articles            Article[]      @relation("UserArticles")
+  notifications       Notification[]
+  assignedChanges     Change[]       @relation("AssignedTo")
+  changes             Change[]       @relation("CreatedBy")
+  assignedIncidents   Incident[]     @relation("AssignedTo")
+  createdIncidents    Incident[]     @relation("CreatedBy")
+  assignedRequests    Request[]      @relation("AssignedTo")
+  requests            Request[]      @relation("CreatedBy")
+  sessions            Session[]
 
   @@map("users")
 }
@@ -88,31 +89,29 @@ model Request {
 }
 
 model Change {
-  id            String       @id @default(cuid())
-  title         String
-  description   String
-  priority      Priority     @default(MEDIUM)
-  status        ChangeStatus @default(DRAFT)
-  category      String?
-  assignedToId  String?
-  createdById   String
-  scheduledAt   DateTime?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  implementedAt DateTime?
-  assignedTo    User?        @relation("AssignedTo", fields: [assignedToId], references: [id])
-  createdBy     User         @relation("CreatedBy", fields: [createdById], references: [id])
-
-  // Новые поля для поддержки всех полей формы
-  businessJustification String?
-  implementationPlan    String?
-  backoutPlan           String?
-  testPlan              String?
-  risk                  String?
-  impact                String?
-  urgency               String?
+  id                    String       @id @default(cuid())
+  title                 String
+  description           String
+  priority              Priority     @default(MEDIUM)
+  status                ChangeStatus @default(DRAFT)
+  category              String?
+  assignedToId          String?
+  createdById           String
+  scheduledAt           DateTime?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  implementedAt         DateTime?
   affectedSystems       String[]
   approvers             String[]
+  backoutPlan           String?
+  businessJustification String?
+  impact                String?
+  implementationPlan    String?
+  risk                  String?
+  testPlan              String?
+  urgency               String?
+  assignedTo            User?        @relation("AssignedTo", fields: [assignedToId], references: [id])
+  createdBy             User         @relation("CreatedBy", fields: [createdById], references: [id])
 
   @@map("changes")
 }
@@ -129,6 +128,18 @@ model Article {
   updatedAt   DateTime @updatedAt
   authorId    String
   author      User     @relation("UserArticles", fields: [authorId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }
 
 enum Role {

@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
+import { createNotification } from "./notifications";
 
 export async function getChanges() {
   try {
@@ -71,39 +72,45 @@ export async function getChange(id: string) {
 export async function createChange(formData: FormData) {
   const title = formData.get("title") as string
   const description = formData.get("description") as string
-  const type = formData.get("type") as string
   const priority = formData.get("priority") as string
-  const risk = formData.get("risk") as string
   const category = formData.get("category") as string
-  const creatorId = formData.get("creatorId") as string
-  const assigneeId = formData.get("assigneeId") as string
+  const createdById = formData.get("creatorId") as string
+  const assignedToId = formData.get("assigneeId") as string
   const scheduledDate = formData.get("scheduledDate") as string
   const implementationPlan = formData.get("implementationPlan") as string
   const backoutPlan = formData.get("backoutPlan") as string
 
-  if (!title || !description || !creatorId) {
+  if (!title || !description || !createdById) {
     return { error: "Заполните все обязательные поля" }
   }
 
   try {
-    await prisma.change.create({
+    const change = await prisma.change.create({
       data: {
         title,
         description,
-        type: type as any,
         priority: priority as any,
-        risk: risk as any,
         category,
-        creatorId,
-        assigneeId: assigneeId || null,
-        scheduledDate: scheduledDate ? new Date(scheduledDate) : null,
-        implementationPlan,
-        backoutPlan,
+        createdById,
+        assignedToId: assignedToId || null,
+        scheduledAt: scheduledDate ? new Date(scheduledDate) : null,
+        ...(implementationPlan ? { implementationPlan } : {}),
+        ...(backoutPlan ? { backoutPlan } : {}),
       },
-    })
-
-    revalidatePath("/changes")
-    redirect("/changes")
+    });
+    // Рассылка уведомлений всем пользователям
+    const users = await prisma.user.findMany({ select: { id: true } });
+    await Promise.all(
+      users.map((u) =>
+        createNotification(
+          u.id,
+          `Новое изменение: ${title}`,
+          description
+        )
+      )
+    );
+    revalidatePath("/changes");
+    redirect("/changes");
   } catch (error) {
     console.error("Error creating change:", error)
     return { error: "Ошибка при создании изменения" }
@@ -114,11 +121,9 @@ export async function updateChange(id: string, formData: FormData) {
   const title = formData.get("title") as string
   const description = formData.get("description") as string
   const status = formData.get("status") as string
-  const type = formData.get("type") as string
   const priority = formData.get("priority") as string
-  const risk = formData.get("risk") as string
   const category = formData.get("category") as string
-  const assigneeId = formData.get("assigneeId") as string
+  const assignedToId = formData.get("assigneeId") as string
   const scheduledDate = formData.get("scheduledDate") as string
   const implementationPlan = formData.get("implementationPlan") as string
   const backoutPlan = formData.get("backoutPlan") as string
@@ -130,15 +135,12 @@ export async function updateChange(id: string, formData: FormData) {
         title,
         description,
         status: status as any,
-        type: type as any,
         priority: priority as any,
-        risk: risk as any,
         category,
-        assigneeId: assigneeId || null,
-        scheduledDate: scheduledDate ? new Date(scheduledDate) : null,
-        implementationPlan,
-        backoutPlan,
-        completedAt: status === "COMPLETED" ? new Date() : null,
+        assignedToId: assignedToId || null,
+        scheduledAt: scheduledDate ? new Date(scheduledDate) : null,
+        ...(implementationPlan ? { implementationPlan } : {}),
+        ...(backoutPlan ? { backoutPlan } : {}),
       },
     })
 

@@ -14,6 +14,7 @@ import { logoutAction } from "@/lib/actions/auth"
 import Image from "next/image"
 import ThemeToggle from "@/components/ui/theme-toggle"
 import Link from "next/link"
+import NotificationBell from './notification-bell';
 
 export default async function Header() {
   const user = await getCurrentUser()
@@ -34,9 +35,7 @@ export default async function Header() {
 
         <div className="flex items-center gap-4">
           <ThemeToggle />
-          <Button variant="ghost" size="icon">
-            <Bell className="h-4 w-4" />
-          </Button>
+          <NotificationBell />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
