@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getCurrentUser, hashPassword } from "@/lib/auth"
+import { userPatchSchema } from "@/lib/validation/user";
 
 const userSelect = {
   id: true,
@@ -31,20 +32,26 @@ export async function PATCH(req: Request) {
   if (!user) return NextResponse.json({ error: "Не авторизован" }, { status: 401 })
   try {
     const body = await req.json()
+    const parsed = userPatchSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 })
+    }
     const data: any = {}
-    if (body.email) data.email = body.email
-    if (body.firstName) data.firstName = body.firstName
-    if (body.lastName) data.lastName = body.lastName
-    if (body.middleName !== undefined) data.middleName = body.middleName
-    if (body.phone !== undefined) data.phone = body.phone
-    if (body.position !== undefined) data.position = body.position
-    if (body.department !== undefined) data.department = body.department
-    if (body.status !== undefined) data.status = body.status
-    if (body.isActive !== undefined) data.isActive = body.isActive
-    if (body.lastActivity !== undefined) data.lastActivity = new Date(body.lastActivity)
-    if (body.password) {
-      data.password = await hashPassword(body.password)
-      data.passwordLastChanged = new Date()
+    const fields = parsed.data
+    // Только админ может менять статус, isActive
+    if (fields.email) data.email = fields.email
+    if (fields.firstName) data.firstName = fields.firstName
+    if (fields.lastName) data.lastName = fields.lastName
+    if (fields.middleName !== undefined) data.middleName = fields.middleName
+    if (fields.phone !== undefined) data.phone = fields.phone
+    if (fields.position !== undefined) data.position = fields.position
+    if (fields.department !== undefined) data.department = fields.department
+    if (fields.password) {
+      data.password = await hashPassword(fields.password)
+    }
+    if (user.role === "ADMIN") {
+      if (fields.status !== undefined) data.status = fields.status
+      if (fields.isActive !== undefined) data.isActive = fields.isActive
     }
     if (Object.keys(data).length === 0) return NextResponse.json({ error: "Нет данных для обновления" }, { status: 400 })
     const updated = await prisma.user.update({

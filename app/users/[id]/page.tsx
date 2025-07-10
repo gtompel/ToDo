@@ -23,6 +23,8 @@ import Link from "next/link"
 import React, { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
 import { useState as useReactState } from "react"
+import { UserProfileCard } from "@/components/user-profile-card";
+import { UserActivityCard } from "@/components/user-activity-card";
 
 export default function UserProfilePage() {
   const params = useParams<{ id: string }>()
@@ -158,6 +160,7 @@ export default function UserProfilePage() {
 
   return (
     <div className="space-y-6">
+      {/* Верхняя панель управления профилем */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
           <Link href="/users">
@@ -169,6 +172,7 @@ export default function UserProfilePage() {
           <p className="text-muted-foreground">Детальная информация о пользователе</p>
         </div>
         <div className="flex gap-2">
+          {/* Кнопки управления пользователем */}
           {user.status === "active" ? (
             <Button variant="outline" disabled={actionLoading} onClick={() => handleUserAction("block")}> 
               <UserX className="w-4 h-4 mr-2" />
@@ -198,83 +202,14 @@ export default function UserProfilePage() {
       )}
 
       <div className="grid gap-6 lg:grid-cols-3">
+        {/* Основная информация о пользователе */}
         <div className="lg:col-span-1 space-y-6">
-          {/* Основная информация */}
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex flex-col items-center text-center space-y-4">
-                <Avatar className="h-20 w-20">
-                  <AvatarImage src={user.avatar || "/placeholder.svg"} alt={fullName} />
-                  <AvatarFallback className="text-lg">{initials}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <h2 className="text-xl font-semibold">{fullName}</h2>
-                  <p className="text-muted-foreground">{user.position}</p>
-                </div>
-                <Badge className={getStatusColor(user.status)}>{user.status}</Badge>
-              </div>
-
-              <Separator className="my-6" />
-
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <Mail className="w-4 h-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium">Email</p>
-                    <p className="text-sm text-muted-foreground">{user.email}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Phone className="w-4 h-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium">Телефон</p>
-                    <p className="text-sm text-muted-foreground">{user.phone}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Building className="w-4 h-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium">Подразделение</p>
-                    <p className="text-sm text-muted-foreground">{user.department}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Calendar className="w-4 h-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium">Дата создания</p>
-                    <p className="text-sm text-muted-foreground">{user.created}</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Статистика активности */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="w-5 h-5" />
-                Активность
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Последний вход:</span>
-                <span className="text-sm font-medium">{user.lastLogin}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Последняя активность:</span>
-                <span className="text-sm font-medium">{user.lastActivity}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Смена пароля:</span>
-                <span className="text-sm font-medium">{user.passwordLastChanged}</span>
-              </div>
-            </CardContent>
-          </Card>
+          <UserProfileCard user={user} />
+          {/* Активность пользователя */}
+          <UserActivityCard user={user} />
         </div>
-
-        <div className="lg:col-span-2 space-y-6">
+        {/* Остальные секции профиля (активности, назначенные задачи и т.д.) */}
+        <div className="lg:col-span-2">
           <Tabs defaultValue="permissions" className="space-y-4">
             <TabsList>
               <TabsTrigger value="permissions">Права доступа</TabsTrigger>

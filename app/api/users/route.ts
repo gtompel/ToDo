@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { userPatchSchema } from "@/lib/validation/user";
+import { getCurrentUser } from "@/lib/auth";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
@@ -55,17 +57,53 @@ export async function PATCH(req: Request) {
     if (action === 'update') {
       // Логируем body для отладки
       console.log('PATCH /api/users body:', body)
+      // Валидация через zod
+      const parsed = userPatchSchema.safeParse(body)
+      if (!parsed.success) {
+        return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 })
+      }
       // Обновляем основные поля пользователя
       const updateData: any = {}
-      for (const key of [
-        'email', 'firstName', 'lastName', 'middleName', 'phone', 'position', 'department', 'role', 'status', 'isActive']) {
-        if (body[key] !== undefined) updateData[key] = body[key]
+      const fields = parsed.data
+      if (fields.email !== undefined) updateData.email = fields.email
+      if (fields.firstName !== undefined) updateData.firstName = fields.firstName
+      if (fields.lastName !== undefined) updateData.lastName = fields.lastName
+      if (fields.middleName !== undefined) updateData.middleName = fields.middleName
+      if (fields.phone !== undefined) updateData.phone = fields.phone
+      if (fields.position !== undefined) updateData.position = fields.position
+      if (fields.department !== undefined) updateData.department = fields.department
+      if (fields.password !== undefined) updateData.password = fields.password
+      // Проверяем роль пользователя
+      const currentUser = await getCurrentUser();
+      if (currentUser?.role === "ADMIN") {
+        if (fields.status !== undefined) updateData.status = fields.status
+        if (fields.isActive !== undefined) updateData.isActive = fields.isActive
+        // role менять только админ
       }
       if (Object.keys(updateData).length === 0) {
         return NextResponse.json({ error: 'Нет данных для обновления' }, { status: 400 })
       }
-      await prisma.user.update({ where: { id }, data: updateData })
-      return NextResponse.json({ success: true })
+      const updated = await prisma.user.update({
+        where: { id },
+        data: updateData,
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          middleName: true,
+          phone: true,
+          position: true,
+          department: true,
+          role: true,
+          status: true,
+          isActive: true,
+          lastLogin: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      })
+      return NextResponse.json(updated)
     }
     return NextResponse.json({ error: 'Неизвестное действие' }, { status: 400 })
   } catch (e) {
