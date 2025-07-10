@@ -3,11 +3,14 @@ import { redirect } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import LoginForm from "./LoginForm"
 
-export default async function LoginPage({ searchParams }: { searchParams?: Record<string, string> }) {
+export default async function LoginPage({ searchParams }: { searchParams?: URLSearchParams }) {
   const user = await getCurrentUser()
   if (user) redirect("/")
-  // searchParams всегда обычный объект, если не используешь динамические маршруты
-  const error = searchParams?.error || ""
+
+  let error = ""
+  if (searchParams && typeof searchParams.get === "function") {
+    error = searchParams.get("error") || ""
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
