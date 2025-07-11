@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge"
 import { Plus, GitBranch } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/auth"
+import ChangesAdminActions from "./ChangesAdminActions"
+import { getAssignableUsers } from "@/lib/actions/users"
 
 async function getChanges() {
   return prisma.change.findMany({
@@ -45,7 +47,7 @@ function getRiskBadge(risk: string) {
   }
 }
 
-async function ChangesList() {
+async function ChangesList({ isAdmin, assignees }: { isAdmin: boolean, assignees: any[] }) {
   const changes = await getChanges()
 
   if (changes.length === 0) {
@@ -99,6 +101,7 @@ async function ChangesList() {
                 <span className="font-medium">Тип:</span> {change.category || "-"}
               </div>
             </div>
+            {isAdmin && <ChangesAdminActions change={change} assignees={assignees} />}
           </CardContent>
         </Card>
       ))}
@@ -108,6 +111,8 @@ async function ChangesList() {
 
 export default async function ChangesPage() {
   const user = await getCurrentUser()
+  const isAdmin = user?.role === "ADMIN"
+  const assignees = await getAssignableUsers()
 
   return (
     <div className="space-y-6">
@@ -125,7 +130,7 @@ export default async function ChangesPage() {
       </div>
 
       <Suspense fallback={<div>Загрузка...</div>}>
-        <ChangesList />
+        <ChangesList isAdmin={isAdmin} assignees={assignees} />
       </Suspense>
     </div>
   )

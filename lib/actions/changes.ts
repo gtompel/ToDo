@@ -164,3 +164,46 @@ export async function deleteChange(id: string) {
     return { error: "Ошибка при удалении изменения" }
   }
 }
+
+export async function assignChangeToUser(id: string, userId: string) {
+  try {
+    await prisma.change.update({
+      where: { id },
+      data: { assignedToId: userId },
+    });
+    revalidatePath("/changes");
+    return { success: true };
+  } catch (error) {
+    console.error("Error assigning change:", error);
+    return { error: "Ошибка при назначении сотрудника" };
+  }
+}
+
+export async function updateChangeStatus(id: string, status: string) {
+  try {
+    const change = await prisma.change.update({
+      where: { id },
+      data: { status: status as any },
+      include: { assignedTo: true },
+    });
+    revalidatePath("/changes");
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating change status:", error);
+    return { error: "Ошибка при смене статуса" };
+  }
+}
+
+export async function updateChangePriority(id: string, priority: string) {
+  try {
+    const change = await prisma.change.update({
+      where: { id },
+      data: { priority: priority as any },
+    });
+    revalidatePath("/changes");
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating change priority:", error);
+    return { error: "Ошибка при смене приоритета" };
+  }
+}
