@@ -14,8 +14,10 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 
+// Страница создания нового инцидента
 export default function NewIncidentPage() {
   const router = useRouter()
+  // Состояния формы, загрузки и списка исполнителей
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -31,16 +33,19 @@ export default function NewIncidentPage() {
   const [assignees, setAssignees] = useState<{id: string, name: string, position: string, email: string}[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // Загрузка списка исполнителей при монтировании
   useEffect(() => {
     fetch("/api/users?role=TECHNICIAN,ADMIN")
       .then(res => res.json())
       .then(data => setAssignees(data.users || []))
   }, [])
 
+  // Обработчик изменения поля формы
   const handleInputChange = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
+  // Обработчик выбора файлов
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (files && files.length > 0) {

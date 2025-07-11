@@ -74,17 +74,19 @@ export async function getRequest(id: string) {
 
 // Создать новый запрос
 export async function createRequest(formData: FormData, userId?: string) {
+  // Получение данных из формы
   const title = formData.get("title") as string
   const description = formData.get("description") as string
   const priority = formData.get("priority") as string
   const assignedToId = formData.get("assigneeId") as string
 
+  // Проверка обязательных полей
   if (!title || !description || !userId) {
-    // Проверка обязательных полей
     return { error: "Заполните все обязательные поля" }
   }
 
   try {
+    // Создание запроса в базе данных
     await prisma.request.create({
       data: {
         title,

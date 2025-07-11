@@ -12,7 +12,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Settings, Bell, Mail, Shield, Database, Clock, Save, RefreshCw, AlertTriangle } from "lucide-react"
 
+// Страница общих настроек системы
 export default function SettingsPage() {
+  // Состояния для всех настроек системы
   const [settings, setSettings] = useState({
     // Общие настройки
     systemName: "ITSM System",
@@ -49,15 +51,18 @@ export default function SettingsPage() {
     escalationTime: "2",
   })
 
+  // Обработчик изменения значения настройки
   const handleSettingChange = (key: string, value: string | boolean) => {
     setSettings((prev) => ({ ...prev, [key]: value }))
   }
 
+  // Сохранить настройки
   const handleSave = () => {
     // Здесь будет логика сохранения настроек
     console.log("Saving settings:", settings)
   }
 
+  // Сбросить настройки к значениям по умолчанию
   const handleReset = () => {
     // Здесь будет логика сброса к значениям по умолчанию
     console.log("Resetting settings")

@@ -7,9 +7,9 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// Функция для выполнения fetch с таймаутом
+// Функция для fetch с таймаутом
 // Используется для предотвращения "зависания" запросов к серверу
-export async function fetchWithTimeout(resource: RequestInfo, options: RequestInit & { timeout?: number } = {}) {
+export async function fetchWithTimeout(resource: RequestInfo, options: any = {}) {
   // Таймаут по умолчанию — 10 секунд
   const { timeout = 10000 } = options
   // Создаём AbortController для отмены запроса

@@ -4,11 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserForm } from "@/components/user-form";
 import { fetchWithTimeout } from "@/lib/utils";
 
+// Страница настроек профиля пользователя
 export default function ProfileSettingsPage() {
+  // Состояния пользователя, загрузки и ошибки
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Загрузка данных текущего пользователя при монтировании
   useEffect(() => {
     async function loadUser() {
       setLoading(true);
@@ -28,7 +31,7 @@ export default function ProfileSettingsPage() {
     loadUser();
   }, []);
 
-  // Обновление профиля
+  // Обновление профиля пользователя
   const updateUser = async (fields: any) => {
     setLoading(true);
     setError("");

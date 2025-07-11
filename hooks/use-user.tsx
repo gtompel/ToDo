@@ -4,11 +4,9 @@ import { fetchWithTimeout } from "@/lib/utils";
 
 // Кастомный хук для получения и управления пользователем по id
 export function useUser(userId?: string) {
-  // Состояние пользователя
+  // Состояния пользователя, загрузки и ошибки
   const [user, setUser] = useState<any>(null);
-  // Состояние загрузки
   const [loading, setLoading] = useState(false);
-  // Состояние ошибки
   const [error, setError] = useState("");
 
   // Загрузка пользователя по id

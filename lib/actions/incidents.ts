@@ -71,6 +71,7 @@ export async function getIncident(id: string) {
 
 // Создать новый инцидент
 export async function createIncident(formData: FormData, userId: string) {
+  // Получение данных из формы
   const title = formData.get("title") as string
   const description = formData.get("description") as string
   const priority = formData.get("priority") as string
@@ -81,12 +82,13 @@ export async function createIncident(formData: FormData, userId: string) {
   const attachmentsRaw = formData.getAll("attachments")
   const attachments = attachmentsRaw.map((a) => a.toString())
 
+  // Проверка обязательных полей
   if (!title || !description || !userId) {
-    // Проверка обязательных полей
     return { error: "Заполните все обязательные поля" }
   }
 
   try {
+    // Создание инцидента в базе данных
     await prisma.incident.create({
       data: {
         title,

@@ -8,11 +8,14 @@ import { registerUser } from "@/lib/actions/auth"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 
+// Страница регистрации пользователя
 export default function RegisterPage() {
+  // Состояния для ошибок и успеха
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<boolean>(false)
   const router = useRouter()
 
+  // Обработчик регистрации
   async function handleRegister(formData: FormData) {
     setError(null)
     setSuccess(false)

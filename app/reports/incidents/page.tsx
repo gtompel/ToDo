@@ -10,12 +10,15 @@ import { DatePickerWithRange } from "@/components/ui/date-range-picker"
 import { ArrowLeft, Download, Filter, TrendingUp, Clock, AlertTriangle, Target } from "lucide-react"
 import Link from "next/link"
 
+// Страница отчетов по инцидентам
 export default function IncidentReportsPage() {
+  // Состояния для фильтров
   const [dateRange, setDateRange] = useState<any>(null)
   const [category, setCategory] = useState("all")
   const [priority, setPriority] = useState("all")
   const [assignee, setAssignee] = useState("all")
 
+  // Детализированные метрики (заглушка)
   const detailedMetrics = {
     totalIncidents: 156,
     resolvedIncidents: 134,
@@ -27,6 +30,7 @@ export default function IncidentReportsPage() {
     customerSatisfaction: 4.6,
   }
 
+  // Данные для трендов (заглушка)
   const trendData = [
     { period: "Неделя 1", created: 38, resolved: 35, pending: 3 },
     { period: "Неделя 2", created: 42, resolved: 40, pending: 5 },
@@ -34,6 +38,7 @@ export default function IncidentReportsPage() {
     { period: "Неделя 4", created: 41, resolved: 39, pending: 4 },
   ]
 
+  // Данные по категориям (заглушка)
   const categoryBreakdown = [
     { category: "Инфраструктура", count: 45, avgTime: "5.2ч", sla: 92 },
     { category: "Приложения", count: 38, avgTime: "3.8ч", sla: 96 },
@@ -42,6 +47,7 @@ export default function IncidentReportsPage() {
     { category: "Безопасность", count: 16, avgTime: "6.1ч", sla: 89 },
   ]
 
+  // Анализ по приоритетам (заглушка)
   const priorityAnalysis = [
     { priority: "Критический", count: 2, avgTime: "1.2ч", sla: 100, target: "1ч" },
     { priority: "Высокий", count: 8, avgTime: "2.8ч", sla: 95, target: "4ч" },

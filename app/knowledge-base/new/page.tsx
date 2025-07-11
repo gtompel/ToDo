@@ -14,8 +14,10 @@ import { ArrowLeft, Save, Eye, Plus, X, Upload, Bold, Italic, List, Link2 } from
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 
+// Страница создания новой статьи базы знаний
 export default function NewArticlePage() {
   const router = useRouter()
+  // Состояния формы, тегов и режима предпросмотра
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -24,10 +26,10 @@ export default function NewArticlePage() {
     tags: [] as string[],
     status: "draft",
   })
-
   const [newTag, setNewTag] = useState("")
   const [previewMode, setPreviewMode] = useState(false)
 
+  // Категории для выбора
   const categories = [
     "Почта",
     "Сеть",
@@ -41,16 +43,19 @@ export default function NewArticlePage() {
     "Другое",
   ]
 
+  // Обработчик отправки формы
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     console.log("Создание статьи:", formData)
     router.push("/knowledge-base")
   }
 
+  // Обработчик изменения поля формы
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
+  // Добавить тег
   const addTag = () => {
     if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
       setFormData((prev) => ({
@@ -61,6 +66,7 @@ export default function NewArticlePage() {
     }
   }
 
+  // Удалить тег
   const removeTag = (tagToRemove: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -68,6 +74,7 @@ export default function NewArticlePage() {
     }))
   }
 
+  // Вставить форматирование
   const insertFormatting = (format: string) => {
     const textarea = document.getElementById("content") as HTMLTextAreaElement
     if (!textarea) return
@@ -231,18 +238,17 @@ export default function NewArticlePage() {
                 <div className="space-y-2">
                   <Label htmlFor="category">Категория *</Label>
                   <Select
-                    id="category"
                     value={formData.category}
                     onValueChange={(value) => handleInputChange("category", value)}
-                    defaultValue={formData.category}
+                    defaultValue=""
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Выберите категорию" />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.map((category, index) => (
-                        <SelectItem key={index} value={category}>
-                          {category}
+                      {categories.map((cat) => (
+                        <SelectItem key={cat} value={cat}>
+                          {cat}
                         </SelectItem>
                       ))}
                     </SelectContent>

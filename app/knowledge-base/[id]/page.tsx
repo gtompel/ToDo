@@ -21,12 +21,14 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 
+// Компонент страницы статьи базы знаний
 export default function ArticlePage({ params }: { params: { id: string } }) {
+  // Состояния для рейтинга, комментария и полезности
   const [rating, setRating] = useState(0)
   const [comment, setComment] = useState("")
   const [isHelpful, setIsHelpful] = useState<boolean | null>(null)
 
-  // В реальном приложении данные будут загружаться по ID
+  // Пример данных статьи (в реальном приложении будет загрузка по ID)
   const article = {
     id: params.id,
     title: "Решение проблем с подключением к Exchange Server",
@@ -111,6 +113,7 @@ export default function ArticlePage({ params }: { params: { id: string } }) {
 - KB-018: Мониторинг производительности Exchange`,
   }
 
+  // Пример комментариев
   const comments = [
     {
       id: 1,
@@ -129,22 +132,26 @@ export default function ArticlePage({ params }: { params: { id: string } }) {
     },
   ]
 
+  // Пример связанных статей
   const relatedArticles = [
     { id: "KB-005", title: "Настройка автообнаружения Exchange", views: 156 },
     { id: "KB-012", title: "Резервное копирование почтовых ящиков", views: 89 },
     { id: "KB-018", title: "Мониторинг производительности Exchange", views: 134 },
   ]
 
+  // Обработчик выставления рейтинга
   const handleRating = (value: number) => {
     setRating(value)
     // Здесь будет отправка рейтинга на сервер
   }
 
+  // Обработчик отметки полезности
   const handleHelpful = (helpful: boolean) => {
     setIsHelpful(helpful)
     // Здесь будет отправка оценки полезности
   }
 
+  // Обработчик отправки комментария
   const submitComment = () => {
     if (comment.trim()) {
       // Здесь будет отправка комментария

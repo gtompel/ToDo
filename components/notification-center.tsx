@@ -11,11 +11,13 @@ type Notification = {
   createdAt: string;
 };
 
+// Центр уведомлений
 export default function NotificationCenter({ onRead, onUnreadCount }: { onRead?: () => void, onUnreadCount?: (count: number) => void }) {
+  // Состояния для уведомлений и загрузки
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // SSE подписка
+  // SSE подписка на поток уведомлений
   useEffect(() => {
     let active = true;
     const eventSource = new EventSource('/api/notifications/stream');
@@ -45,6 +47,7 @@ export default function NotificationCenter({ onRead, onUnreadCount }: { onRead?:
     }
   }, [notifications, onUnreadCount]);
 
+  // Пометить уведомление как прочитанное
   const markAsRead = async (id: string) => {
     await fetch('/api/notifications/read', {
       method: 'PATCH',

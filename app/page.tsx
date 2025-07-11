@@ -3,8 +3,10 @@ import { Badge } from "@/components/ui/badge"
 import { AlertTriangle, HelpCircle, GitBranch } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 
+// Главная страница (дашборд)
 // Получение статистики для дашборда
 async function getDashboardStats() {
+  // Получаем статистику по инцидентам, запросам и изменениям
   const [totalIncidents, openIncidents, totalRequests, openRequests, totalChanges, pendingChanges] = await Promise.all([
     prisma.incident.count(),
     prisma.incident.count({ where: { status: "OPEN" } }),

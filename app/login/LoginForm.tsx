@@ -7,10 +7,13 @@ import { Label } from "@/components/ui/label"
 import { loginAction } from "@/lib/actions/auth"
 import { useRouter, useSearchParams } from "next/navigation"
 
+// Форма входа пользователя
 export default function LoginForm({ initialError }: { initialError?: string }) {
+  // Состояние ошибки
   const [error, setError] = useState(initialError || "")
   const router = useRouter()
 
+  // Обработчик отправки формы входа
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError("")

@@ -16,14 +16,18 @@ const userSchema = z.object({
   password: z.string().min(6, "Минимум 6 символов").optional(),
 });
 
+// Форма пользователя (создание/редактирование)
 export function UserForm({ initial, loading, onSubmit }: { initial: any, loading: boolean, onSubmit: (data: any) => Promise<any> }) {
+  // Состояния формы и ошибок
   const [form, setForm] = useState(initial || {});
   const [error, setError] = useState("");
 
+  // Обработчик изменения поля
   const handleChange = (field: string, value: any) => {
     setForm((prev: any) => ({ ...prev, [field]: value }));
   };
 
+  // Обработчик отправки формы
   const handleSubmit = async (e: any) => {
     e.preventDefault();
     setError("");

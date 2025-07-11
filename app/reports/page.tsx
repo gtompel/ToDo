@@ -19,11 +19,13 @@ import {
   RefreshCw,
 } from "lucide-react"
 
+// Страница отчетов
 export default function ReportsPage() {
+  // Состояния для диапазона времени и загрузки
   const [timeRange, setTimeRange] = useState("30d")
   const [refreshing, setRefreshing] = useState(false)
 
-  // Данные для метрик (в реальном приложении будут загружаться с сервера)
+  // Данные для метрик (заглушка)
   const kpiMetrics = [
     {
       title: "Среднее время решения",
@@ -59,6 +61,7 @@ export default function ReportsPage() {
     },
   ]
 
+  // Данные по инцидентам (заглушка)
   const incidentStats = {
     total: 156,
     resolved: 134,
@@ -79,6 +82,7 @@ export default function ReportsPage() {
     ],
   }
 
+  // Данные по запросам (заглушка)
   const requestStats = {
     total: 89,
     completed: 67,
@@ -88,6 +92,7 @@ export default function ReportsPage() {
     slaCompliance: 92,
   }
 
+  // Данные по эффективности команды (заглушка)
   const teamPerformance = [
     { name: "Иванов И.И.", resolved: 23, avgTime: "3.2ч", satisfaction: 4.8 },
     { name: "Петров П.П.", resolved: 19, avgTime: "4.1ч", satisfaction: 4.6 },
@@ -95,6 +100,7 @@ export default function ReportsPage() {
     { name: "Волков В.В.", resolved: 15, avgTime: "5.2ч", satisfaction: 4.4 },
   ]
 
+  // Обновить данные отчета
   const handleRefresh = async () => {
     setRefreshing(true)
     // Имитация загрузки данных
@@ -102,6 +108,7 @@ export default function ReportsPage() {
     setRefreshing(false)
   }
 
+  // Экспортировать отчет
   const exportReport = () => {
     // Логика экспорта отчета
     console.log("Экспорт отчета за период:", timeRange)
