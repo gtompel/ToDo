@@ -1,20 +1,28 @@
+// Утилиты для проекта
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
+// Универсальная функция для объединения классов tailwind и условных классов
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export async function fetchWithTimeout(url: string, options: any = {}, timeout = 8000) {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeout);
+// Функция для выполнения fetch с таймаутом
+// Используется для предотвращения "зависания" запросов к серверу
+export async function fetchWithTimeout(resource: RequestInfo, options: RequestInit & { timeout?: number } = {}) {
+  // Таймаут по умолчанию — 10 секунд
+  const { timeout = 10000 } = options
+  // Создаём AbortController для отмены запроса
+  const controller = new AbortController()
+  const id = setTimeout(() => controller.abort(), timeout)
   try {
-    const res = await fetch(url, { ...options, signal: controller.signal });
-    clearTimeout(id);
-    if (!res.ok) throw new Error(`Ошибка: ${res.status}`);
-    return res;
-  } catch (e) {
-    clearTimeout(id);
-    throw e;
+    // Выполняем fetch с поддержкой отмены
+    const response = await fetch(resource, {
+      ...options,
+      signal: controller.signal,
+    })
+    return response
+  } finally {
+    clearTimeout(id)
   }
 }

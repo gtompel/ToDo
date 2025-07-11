@@ -1,10 +1,11 @@
+// Серверные экшены для работы с инцидентами (Incident)
 "use server"
 
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { createNotification } from "./notifications";
 
-// Получение всех инцидентов
+// Получить все инциденты
 export async function getIncidents() {
   try {
     const incidents = await prisma.incident.findMany({
@@ -37,7 +38,7 @@ export async function getIncidents() {
   }
 }
 
-// Получение одного инцидента по ID
+// Получить один инцидент по id
 export async function getIncident(id: string) {
   try {
     const incident = await prisma.incident.findUnique({
@@ -68,7 +69,7 @@ export async function getIncident(id: string) {
   }
 }
 
-// Создание нового инцидента
+// Создать новый инцидент
 export async function createIncident(formData: FormData, userId: string) {
   const title = formData.get("title") as string
   const description = formData.get("description") as string
@@ -81,6 +82,7 @@ export async function createIncident(formData: FormData, userId: string) {
   const attachments = attachmentsRaw.map((a) => a.toString())
 
   if (!title || !description || !userId) {
+    // Проверка обязательных полей
     return { error: "Заполните все обязательные поля" }
   }
 
@@ -105,7 +107,7 @@ export async function createIncident(formData: FormData, userId: string) {
   }
 }
 
-// Обновление инцидента
+// Обновить инцидент
 export async function updateIncident(id: string, formData: FormData) {
   const title = formData.get("title") as string
   const description = formData.get("description") as string
@@ -136,7 +138,7 @@ export async function updateIncident(id: string, formData: FormData) {
   }
 }
 
-// Изменение статуса инцидента (только для администратора)
+// Сменить статус инцидента (только для администратора)
 export async function updateIncidentStatus(id: string, status: string) {
   try {
     const incident = await prisma.incident.update({
@@ -160,7 +162,7 @@ export async function updateIncidentStatus(id: string, status: string) {
   }
 }
 
-// Назначение сотрудника на инцидент (только для администратора)
+// Назначить сотрудника на инцидент (только для администратора)
 export async function assignIncidentToUser(id: string, userId: string) {
   try {
     await prisma.incident.update({
@@ -179,17 +181,5 @@ export async function assignIncidentToUser(id: string, userId: string) {
   } catch (error) {
     console.error("Error assigning incident:", error)
     return { error: "Ошибка при назначении сотрудника" }
-  }
-}
-
-// Удаление инцидента (только для администратора)
-export async function deleteIncidentById(id: string) {
-  try {
-    await prisma.incident.delete({ where: { id } })
-    revalidatePath("/incidents")
-    return { success: true }
-  } catch (error) {
-    console.error("Error deleting incident:", error)
-    return { error: "Ошибка при удалении инцидента" }
   }
 }

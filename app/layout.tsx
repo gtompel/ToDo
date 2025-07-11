@@ -1,3 +1,5 @@
+// Главный layout приложения Next.js
+// Здесь задаётся общая структура (header, sidebar, основной контент)
 import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
@@ -14,14 +16,11 @@ export const metadata: Metadata = {
   description: "Система управления IT-услугами"
 }
 
-export default async function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+// Главный layout-компонент приложения
+export default async function RootLayout({ children, }: { children: React.ReactNode }) {
   const user = await getCurrentUser()
 
-  // If no user, render without layout (for login page)
+  // Если пользователь не авторизован, рендерим без layout (например, для страницы логина)
   if (!user) {
     return (
       <html lang="ru" suppressHydrationWarning>
@@ -39,9 +38,12 @@ export default async function RootLayout({
       <body className={inter.className + " bg-background text-foreground"}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <div className="h-screen flex flex-col">
+            {/* Хедер */}
             <Header />
             <div className="flex flex-1 overflow-hidden">
+              {/* Боковое меню */}
               <Sidebar />
+              {/* Основной контент */}
               <main className="flex-1 overflow-y-auto p-6 bg-background text-foreground">{children}</main>
             </div>
           </div>

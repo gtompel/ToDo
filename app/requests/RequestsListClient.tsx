@@ -24,7 +24,9 @@ function getCardClassByStatus(status: string) {
   }
 }
 
+// Компонент для отображения и управления списком запросов
 export default function RequestsListClient({ requests, isAdmin, assignableUsers }: any) {
+  // Состояние для отслеживания загрузки по id запроса и действию
   const [open, setOpen] = useState<string[]>([])
   const [filter, setFilter] = useState({ department: "", lastName: "" })
   const [loadingId, setLoadingId] = useState<string | null>(null)
@@ -101,10 +103,12 @@ export default function RequestsListClient({ requests, isAdmin, assignableUsers 
     )
   }
 
+  // Обработчик административных действий (смена статуса, приоритета, назначение, удаление)
   const handleAdminAction = async (action: string, id: string, value?: string) => {
     setLoadingId(id + action)
     let url = ""
     let body: any = { id }
+    // Определяем url и тело запроса в зависимости от действия
     if (action === "status") {
       url = "/api/requests/status"
       body.status = value
@@ -119,6 +123,7 @@ export default function RequestsListClient({ requests, isAdmin, assignableUsers 
     }
     if (!url) return
     try {
+      // Выполняем запрос к API
       const res = await fetchWithTimeout(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -129,6 +134,7 @@ export default function RequestsListClient({ requests, isAdmin, assignableUsers 
       toast({ title: "Успех", description: "Изменения сохранены" })
       window.location.reload()
     } catch (e: any) {
+      // Показываем ошибку через toast
       toast({ title: "Ошибка", description: e.message, variant: "destructive" })
     } finally {
       setLoadingId(null)

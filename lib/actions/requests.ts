@@ -1,3 +1,4 @@
+// Серверные экшены для работы с запросами (Request)
 "use server"
 
 import { prisma } from "@/lib/prisma"
@@ -5,6 +6,7 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { createNotification } from "./notifications";
 
+// Получить все запросы
 export async function getRequests() {
   try {
     const requests = await prisma.request.findMany({
@@ -38,6 +40,7 @@ export async function getRequests() {
   }
 }
 
+// Получить один запрос по id
 export async function getRequest(id: string) {
   try {
     const request = await prisma.request.findUnique({
@@ -69,6 +72,7 @@ export async function getRequest(id: string) {
   }
 }
 
+// Создать новый запрос
 export async function createRequest(formData: FormData, userId?: string) {
   const title = formData.get("title") as string
   const description = formData.get("description") as string
@@ -76,6 +80,7 @@ export async function createRequest(formData: FormData, userId?: string) {
   const assignedToId = formData.get("assigneeId") as string
 
   if (!title || !description || !userId) {
+    // Проверка обязательных полей
     return { error: "Заполните все обязательные поля" }
   }
 
@@ -98,6 +103,7 @@ export async function createRequest(formData: FormData, userId?: string) {
   }
 }
 
+// Обновить запрос
 export async function updateRequest(id: string, formData: FormData) {
   const title = formData.get("title") as string
   const description = formData.get("description") as string
@@ -125,6 +131,7 @@ export async function updateRequest(id: string, formData: FormData) {
   }
 }
 
+// Сменить статус запроса
 export async function updateRequestStatus(id: string, status: string) {
   try {
     const request = await prisma.request.update({
@@ -147,31 +154,22 @@ export async function updateRequestStatus(id: string, status: string) {
   }
 }
 
+// Сменить приоритет запроса
 export async function updateRequestPriority(id: string, priority: string) {
   try {
-    await prisma.request.update({
+    const request = await prisma.request.update({
       where: { id },
       data: { priority: priority as any },
-    })
-    revalidatePath("/requests")
-    return { success: true }
+    });
+    revalidatePath("/requests");
+    return { success: true };
   } catch (error) {
-    console.error("Error updating request priority:", error)
-    return { error: "Ошибка при смене приоритета" }
+    console.error("Error updating request priority:", error);
+    return { error: "Ошибка при смене приоритета" };
   }
 }
 
-export async function deleteRequestById(id: string) {
-  try {
-    await prisma.request.delete({ where: { id } })
-    revalidatePath("/requests")
-    return { success: true }
-  } catch (error) {
-    console.error("Error deleting request:", error)
-    return { error: "Ошибка при удалении запроса" }
-  }
-}
-
+// Назначить исполнителя на запрос
 export async function assignRequestToUser(id: string, userId: string) {
   try {
     await prisma.request.update({

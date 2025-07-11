@@ -1,3 +1,4 @@
+// Серверные экшены для работы с изменениями (Change)
 "use server"
 
 import { prisma } from "@/lib/prisma"
@@ -5,6 +6,7 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { createNotification } from "./notifications";
 
+// Получить все изменения
 export async function getChanges() {
   try {
     const changes = await prisma.change.findMany({
@@ -38,6 +40,7 @@ export async function getChanges() {
   }
 }
 
+// Получить одно изменение по id
 export async function getChange(id: string) {
   try {
     const change = await prisma.change.findUnique({
@@ -69,6 +72,7 @@ export async function getChange(id: string) {
   }
 }
 
+// Создать новое изменение
 export async function createChange(formData: FormData) {
   const title = formData.get("title") as string
   const description = formData.get("description") as string
@@ -81,6 +85,7 @@ export async function createChange(formData: FormData) {
   const backoutPlan = formData.get("backoutPlan") as string
 
   if (!title || !description || !createdById) {
+    // Проверка обязательных полей
     return { error: "Заполните все обязательные поля" }
   }
 
@@ -117,6 +122,7 @@ export async function createChange(formData: FormData) {
   }
 }
 
+// Обновить изменение
 export async function updateChange(id: string, formData: FormData) {
   const title = formData.get("title") as string
   const description = formData.get("description") as string
@@ -152,19 +158,7 @@ export async function updateChange(id: string, formData: FormData) {
   }
 }
 
-export async function deleteChange(id: string) {
-  try {
-    await prisma.change.delete({
-      where: { id },
-    })
-
-    revalidatePath("/changes")
-  } catch (error) {
-    console.error("Error deleting change:", error)
-    return { error: "Ошибка при удалении изменения" }
-  }
-}
-
+// Назначить исполнителя на изменение
 export async function assignChangeToUser(id: string, userId: string) {
   try {
     await prisma.change.update({
@@ -179,6 +173,7 @@ export async function assignChangeToUser(id: string, userId: string) {
   }
 }
 
+// Сменить статус изменения
 export async function updateChangeStatus(id: string, status: string) {
   try {
     const change = await prisma.change.update({
@@ -194,6 +189,7 @@ export async function updateChangeStatus(id: string, status: string) {
   }
 }
 
+// Сменить приоритет изменения
 export async function updateChangePriority(id: string, priority: string) {
   try {
     const change = await prisma.change.update({

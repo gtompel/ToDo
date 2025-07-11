@@ -1,3 +1,4 @@
+// Импортируем необходимые компоненты и функции
 import { Suspense } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -9,6 +10,7 @@ import { getCurrentUser } from "@/lib/auth"
 import ChangesAdminActions from "./ChangesAdminActions"
 import { getAssignableUsers } from "@/lib/actions/users"
 
+// Получение всех изменений из базы данных
 async function getChanges() {
   return prisma.change.findMany({
     include: {
@@ -19,6 +21,7 @@ async function getChanges() {
   })
 }
 
+// Получение бейджа статуса для отображения
 function getStatusBadge(status: string) {
   switch (status) {
     case "PENDING":
@@ -34,6 +37,7 @@ function getStatusBadge(status: string) {
   }
 }
 
+// Получение бейджа риска (используется для приоритета)
 function getRiskBadge(risk: string) {
   switch (risk) {
     case "HIGH":
@@ -47,9 +51,11 @@ function getRiskBadge(risk: string) {
   }
 }
 
+// Компонент списка изменений
 async function ChangesList({ isAdmin, assignees }: { isAdmin: boolean, assignees: any[] }) {
   const changes = await getChanges()
 
+  // Если изменений нет, показываем заглушку
   if (changes.length === 0) {
     return (
       <Card>
@@ -68,6 +74,7 @@ async function ChangesList({ isAdmin, assignees }: { isAdmin: boolean, assignees
     )
   }
 
+  // Отображаем список изменений
   return (
     <div className="space-y-4">
       {changes.map((change: any) => (
@@ -101,6 +108,7 @@ async function ChangesList({ isAdmin, assignees }: { isAdmin: boolean, assignees
                 <span className="font-medium">Тип:</span> {change.category || "-"}
               </div>
             </div>
+            {/* Административные действия доступны только админу */}
             {isAdmin && <ChangesAdminActions change={change} assignees={assignees} />}
           </CardContent>
         </Card>
@@ -109,10 +117,11 @@ async function ChangesList({ isAdmin, assignees }: { isAdmin: boolean, assignees
   )
 }
 
+// Главная страница управления изменениями
 export default async function ChangesPage() {
-  const user = await getCurrentUser()
-  const isAdmin = user?.role === "ADMIN"
-  const assignees = await getAssignableUsers()
+  const user = await getCurrentUser() // Получаем текущего пользователя
+  const isAdmin = user?.role === "ADMIN" // Проверяем, админ ли пользователь
+  const assignees = await getAssignableUsers() // Получаем список пользователей для назначения
 
   return (
     <div className="space-y-6">
@@ -129,6 +138,7 @@ export default async function ChangesPage() {
         </Button>
       </div>
 
+      {/* Список изменений с поддержкой Suspense */}
       <Suspense fallback={<div>Загрузка...</div>}>
         <ChangesList isAdmin={isAdmin} assignees={assignees} />
       </Suspense>

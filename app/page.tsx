@@ -1,9 +1,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { AlertTriangle, HelpCircle, GitBranch } from "lucide-react"
-import { getCurrentUser } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
+// Получение статистики для дашборда
 async function getDashboardStats() {
   const [totalIncidents, openIncidents, totalRequests, openRequests, totalChanges, pendingChanges] = await Promise.all([
     prisma.incident.count(),
@@ -24,6 +24,7 @@ async function getDashboardStats() {
   }
 }
 
+// Получение последних инцидентов
 async function getRecentIncidents() {
   return prisma.incident.findMany({
     take: 5,
@@ -37,6 +38,7 @@ async function getRecentIncidents() {
   })
 }
 
+// Получение последних запросов
 async function getRecentRequests() {
   return prisma.request.findMany({
     take: 5,
@@ -50,12 +52,13 @@ async function getRecentRequests() {
   })
 }
 
+// Главная страница дашборда
 export default async function Dashboard() {
-  const user = await getCurrentUser()
   const stats = await getDashboardStats()
   const recentIncidents = await getRecentIncidents()
   const recentRequests = await getRecentRequests()
 
+  // Получение бейджа статуса
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "OPEN":
@@ -71,6 +74,7 @@ export default async function Dashboard() {
     }
   }
 
+  // Получение бейджа приоритета
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
       case "HIGH":
@@ -87,11 +91,11 @@ export default async function Dashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Добро пожаловать, {user?.name}!</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Добро пожаловать!</h1>
         <p className="text-gray-600">Обзор системы управления IT-услугами</p>
       </div>
 
-      {/* Stats Cards */}
+      {/* Карточки статистики */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -128,7 +132,7 @@ export default async function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Incidents */}
+        {/* Последние инциденты */}
         <Card>
           <CardHeader>
             <CardTitle>Последние инциденты</CardTitle>
@@ -157,7 +161,7 @@ export default async function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Recent Requests */}
+        {/* Последние запросы */}
         <Card>
           <CardHeader>
             <CardTitle>Последние запросы</CardTitle>
