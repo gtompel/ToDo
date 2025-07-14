@@ -24,7 +24,7 @@ export async function GET() {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: "Не авторизован" }, { status: 401 })
   const fullUser = await prisma.user.findUnique({ where: { id: user.id }, select: userSelect })
-  return NextResponse.json(fullUser)
+  return NextResponse.json({ user: fullUser })
 }
 
 export async function PATCH(req: Request) {

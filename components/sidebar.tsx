@@ -3,11 +3,13 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Home, AlertTriangle, HelpCircle, GitBranch, Users, FileText, BarChart3, Settings, Bell, Layers } from "lucide-react"
+import { Home, AlertTriangle, HelpCircle, GitBranch, Users, FileText, BarChart3, Settings, Bell, Layers, Database, ChevronLeft, ChevronRight, Monitor } from "lucide-react"
 import { useEffect, useState } from "react"
 
 const navigationBase = [
   { name: "Главная", href: "/", icon: Home },
+  { name: "ИТ-ресурсы", href: "/it-resources", icon: Database },
+  { name: "Рабочие станции", href: "/workstations", icon: Monitor },
   { name: "Инциденты", href: "/incidents", icon: AlertTriangle },
   { name: "Запросы", href: "/requests", icon: HelpCircle },
   { name: "Изменения", href: "/changes", icon: GitBranch },
@@ -21,6 +23,7 @@ const navigationBase = [
 export default function Sidebar() {
   const pathname = usePathname()
   const [userRole, setUserRole] = useState<string | null>(null)
+  const [collapsed, setCollapsed] = useState(false)
 
   useEffect(() => {
     fetch("/api/users/me").then(res => res.json()).then(data => {
@@ -43,10 +46,14 @@ export default function Sidebar() {
     : navigationBase
 
   return (
-    <div className="flex h-full w-64 flex-col bg-sidebar text-sidebar-foreground border-r">
-      {/* DEBUG: userRole удалено */}
-      <div className="flex flex-1 flex-col pt-5 pb-4 overflow-y-auto">
-        <nav className="mt-5 flex-1 px-2 space-y-1">
+    <div className={cn("flex h-full flex-col bg-sidebar text-sidebar-foreground border-r transition-all duration-200", collapsed ? "w-20" : "w-64")}>
+      <div className="flex items-center justify-end px-2 pt-2 pb-1">
+        <button onClick={() => setCollapsed(c => !c)} className="p-1 rounded hover:bg-muted transition-colors" aria-label={collapsed ? "Развернуть" : "Свернуть"}>
+          {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
+        </button>
+      </div>
+      <div className="flex flex-1 flex-col pt-2 pb-4 overflow-y-auto">
+        <nav className="mt-2 flex-1 px-2 space-y-1">
           {navigation.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
             return (
@@ -55,16 +62,20 @@ export default function Sidebar() {
                 href={item.href}
                 className={cn(
                   "group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors",
-                  isActive ? "bg-card text-card-foreground" : "text-sidebar-foreground hover:bg-card hover:text-card-foreground",
+                  isActive ? "bg-primary/10 text-primary font-bold border-l-4 border-primary" : "text-sidebar-foreground hover:bg-card hover:text-card-foreground",
+                  collapsed && "justify-center px-0"
                 )}
+                style={collapsed ? { width: 48, minWidth: 48, paddingLeft: 0, paddingRight: 0 } : {}}
+                title={collapsed ? item.name : undefined}
               >
                 <item.icon
                   className={cn(
-                    "mr-3 flex-shrink-0 h-5 w-5",
-                    isActive ? "text-gray-500" : "text-gray-400 group-hover:text-gray-500",
+                    "flex-shrink-0 h-5 w-5",
+                    isActive ? "text-primary" : "text-gray-400 group-hover:text-gray-500",
+                    collapsed ? "mx-auto" : "mr-3"
                   )}
                 />
-                {item.name}
+                {!collapsed && item.name}
               </Link>
             )
           })}

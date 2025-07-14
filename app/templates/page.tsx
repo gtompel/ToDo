@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -190,17 +190,20 @@ export default function TemplatesAdminPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto py-8">
-      <Card>
-        <CardHeader>
-          <CardTitle>Шаблоны заявок и инцидентов</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-4 flex justify-between items-center">
-            <div className="flex gap-2">
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="container mx-auto px-4 max-w-4xl">
+        <Card className="shadow-md">
+          <CardHeader>
+            <CardTitle className="text-2xl">Шаблоны заявок и инцидентов</CardTitle>
+            <CardDescription className="text-gray-600 text-sm mt-2">
+              Здесь вы можете создавать и редактировать шаблоны для инцидентов и запросов. Шаблоны позволяют быстро заполнять формы пользователям и стандартизировать структуру заявок.<br/>
+              <b>Только для администратора.</b>
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col md:flex-row md:items-center gap-2 mb-6">
               <Button onClick={() => { setShowForm(true); setEditId(""); setForm({ type: "INCIDENT", name: "", description: "", fields: "[]", isActive: true }); setWizardStep(1); }}>Создать шаблон</Button>
               <Button variant="outline" onClick={() => {
-                // Экспорт всех шаблонов (можно сделать экспорт одного — по аналогии)
                 const data = JSON.stringify(templates, null, 2)
                 const blob = new Blob([data], { type: "application/json" })
                 const url = URL.createObjectURL(blob)
@@ -211,7 +214,7 @@ export default function TemplatesAdminPage() {
                 URL.revokeObjectURL(url)
               }}>Экспорт</Button>
               <Button variant="outline" asChild>
-                <label>
+                <label className="cursor-pointer">
                   Импорт
                   <input type="file" accept="application/json" hidden onChange={async e => {
                     const file = e.target.files?.[0]
@@ -232,155 +235,49 @@ export default function TemplatesAdminPage() {
                 </label>
               </Button>
             </div>
-          </div>
-          <div className="mb-6 text-gray-600 text-sm">
-            Здесь вы можете создавать и редактировать шаблоны для инцидентов и запросов. Шаблоны позволяют быстро заполнять формы пользователям и стандартизировать структуру заявок.<br/>
-            <b>Только для администратора.</b>
-          </div>
-          {loading ? (
-            <div>Загрузка...</div>
-          ) : (
-            <table className="w-full border text-sm">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="p-2 border">Тип</th>
-                  <th className="p-2 border">Название</th>
-                  <th className="p-2 border">Активен</th>
-                  <th className="p-2 border">Действия</th>
-                </tr>
-              </thead>
-              <tbody>
-                {templates.map(t => (
-                  <tr key={t.id}>
-                    <td className="p-2 border">{t.type}</td>
-                    <td className="p-2 border">
-                      <Link href={`/templates/${t.id}`} className="text-blue-600 hover:underline">{t.name}</Link>
-                    </td>
-                    <td className="p-2 border text-center">{t.isActive ? "Да" : "Нет"}</td>
-                    <td className="p-2 border flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => { handleEdit(t); setWizardStep(1); }}>Редактировать</Button>
-                      <Button size="sm" variant="destructive" onClick={() => handleDelete(t.id)}>Удалить</Button>
-                      <Button size="sm" variant="secondary" onClick={async () => {
-                        const copy = { ...t, id: undefined, name: t.name + " (копия)" }
-                        await fetch("/api/templates", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify(copy),
-                        })
-                        fetchTemplates()
-                      }}>Клонировать</Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </CardContent>
-      </Card>
-
-      {showForm && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-0 w-full max-w-lg max-h-[90vh] flex flex-col">
-            <h2 className="text-xl font-bold mb-4 p-6 pb-0">{editId ? "Редактировать шаблон" : "Создать шаблон"}</h2>
-            {error && <div className="text-red-600 mb-2 px-6">{error}</div>}
-            <form onSubmit={handleSubmit} className="space-y-4 flex-1 overflow-y-auto px-6 pb-4" style={{minHeight: 0}}>
-              {/* Wizard step 1: Инфо */}
-              {wizardStep === 1 && (
-                <>
-                  <div>
-                    <Label>Тип</Label>
-                    <select className="w-full border rounded px-3 py-2" value={form.type} onChange={e => setForm((f: any) => ({ ...f, type: e.target.value }))}>
-                      <option value="INCIDENT">Инцидент</option>
-                      <option value="REQUEST">Запрос</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label>Название</Label>
-                    <Input value={form.name} onChange={e => setForm((f: any) => ({ ...f, name: e.target.value }))} required />
-                  </div>
-                  <div>
-                    <Label>Описание</Label>
-                    <Textarea value={form.description} onChange={e => setForm((f: any) => ({ ...f, description: e.target.value }))} />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input type="checkbox" checked={form.isActive} onChange={e => setForm((f: any) => ({ ...f, isActive: e.target.checked }))} id="isActive" />
-                    <Label htmlFor="isActive">Активен</Label>
-                  </div>
-                  <div className="flex gap-4 mt-4">
-                    <Button type="button" variant="outline" onClick={() => { setShowForm(false); setEditId(""); setFieldsUI([]) }}>Отмена</Button>
-                    <Button type="button" onClick={() => setWizardStep(2)}>Далее</Button>
-                  </div>
-                </>
-              )}
-              {/* Wizard step 2: Структура полей + превью */}
-              {wizardStep === 2 && (
-                <>
-                  <div>
-                    <Label>Структура полей</Label>
-                    <DragDropContext onDragEnd={result => {
-                      if (!result.destination) return
-                      const items = Array.from(fieldsUI)
-                      const [removed] = items.splice(result.source.index, 1)
-                      items.splice(result.destination.index, 0, removed)
-                      setFieldsUI(items)
-                    }}>
-                      <Droppable droppableId="fields-list">
-                        {provided => (
-                          <div ref={provided.innerRef} {...provided.droppableProps}>
-                            {fieldsUI.map((field, idx) => (
-                              <Draggable key={idx} draggableId={String(idx)} index={idx}>
-                                {prov => (
-                                  <div ref={prov.innerRef} {...prov.draggableProps} {...prov.dragHandleProps}>
-                                    <FieldEditor
-                                      field={field}
-                                      onChange={(val: any) => handleFieldChange(idx, val)}
-                                      onDelete={() => handleFieldDelete(idx)}
-                                    />
-                                  </div>
-                                )}
-                              </Draggable>
-                            ))}
-                            {provided.placeholder}
-                          </div>
-                        )}
-                      </Droppable>
-                    </DragDropContext>
-                    <Button type="button" variant="outline" onClick={handleAddField}>Добавить поле</Button>
-                  </div>
-                  <div className="mt-6 mb-2 text-gray-600 text-sm">Превью формы по шаблону:</div>
-                  <div className="border rounded p-4 bg-gray-50 mb-4">
-                    {fieldsUI.length === 0 && <div className="text-gray-400">Нет полей</div>}
-                    {fieldsUI.map((field, idx) => (
-                      <div key={idx} className="mb-3">
-                        <Label className="block font-semibold mb-1">{field.name}{field.required && <span className="text-red-500">*</span>}</Label>
-                        {field.type === "text" && <Input disabled placeholder={field.description} />}
-                        {field.type === "number" && <Input type="number" disabled placeholder={field.description} />}
-                        {field.type === "date" && <Input type="date" disabled />}
-                        {field.type === "email" && <Input type="email" disabled placeholder={field.description} />}
-                        {field.type === "password" && <Input type="password" disabled placeholder={field.description} />}
-                        {field.type === "tel" && <Input type="tel" disabled placeholder={field.description} />}
-                        {field.type === "file" && <Input type="file" disabled />}
-                        {field.type === "url" && <Input type="url" disabled placeholder={field.description} />}
-                        {field.type === "color" && <Input type="color" disabled />}
-                        {field.type === "time" && <Input type="time" disabled />}
-                        {field.type === "range" && <Input type="range" disabled />}
-                        {field.type === "textarea" && <Textarea disabled placeholder={field.description} />}
-                        {field.type === "select" && <select disabled className="border rounded px-2 py-1 w-full"><option>Выберите вариант</option>{field.options?.map((opt: string) => <option key={opt}>{opt}</option>)}</select>}
-                        {field.type === "checkbox" && <input type="checkbox" disabled className="ml-2" />}
-                        {field.description && <div className="text-xs text-gray-500 mt-1">{field.description}</div>}
-                      </div>
+            {loading ? (
+              <div className="text-center py-8 text-gray-500">Загрузка...</div>
+            ) : (
+              <div className="overflow-x-auto rounded-lg border bg-white">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="p-3 font-semibold">Тип</th>
+                      <th className="p-3 font-semibold">Название</th>
+                      <th className="p-3 font-semibold text-center">Активен</th>
+                      <th className="p-3 font-semibold">Действия</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {templates.map(t => (
+                      <tr key={t.id} className="border-t hover:bg-gray-50">
+                        <td className="p-3">{t.type}</td>
+                        <td className="p-3">
+                          <Link href={`/templates/${t.id}`} className="text-blue-600 hover:underline">{t.name}</Link>
+                        </td>
+                        <td className="p-3 text-center">{t.isActive ? "Да" : "Нет"}</td>
+                        <td className="p-3 flex flex-wrap gap-2">
+                          <Button size="sm" variant="outline" onClick={() => { handleEdit(t); setWizardStep(1); }}>Редактировать</Button>
+                          <Button size="sm" variant="destructive" onClick={() => handleDelete(t.id)}>Удалить</Button>
+                          <Button size="sm" variant="secondary" onClick={async () => {
+                            const copy = { ...t, id: undefined, name: t.name + " (копия)" }
+                            await fetch("/api/templates", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify(copy),
+                            })
+                            fetchTemplates()
+                          }}>Клонировать</Button>
+                        </td>
+                      </tr>
                     ))}
-                  </div>
-                  <div className="flex gap-4 mt-4">
-                    <Button type="button" variant="outline" onClick={() => setWizardStep(1)}>Назад</Button>
-                    <Button type="submit">Сохранить</Button>
-                  </div>
-                </>
-              )}
-            </form>
-          </div>
-        </div>
-      )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 } 

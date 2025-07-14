@@ -27,6 +27,7 @@ model User {
   passwordLastChanged DateTime?
   articles            Article[]      @relation("UserArticles")
   notifications       Notification[]
+  workstations        Workstation[]
   assignedChanges     Change[]       @relation("AssignedTo")
   changes             Change[]       @relation("CreatedBy")
   assignedIncidents   Incident[]     @relation("AssignedTo")
@@ -144,13 +145,37 @@ model Notification {
 
 model Template {
   id          String   @id @default(cuid())
-  type        String   // INCIDENT | REQUEST
+  type        String
   name        String
   description String?
-  fields      Json     // структура и значения по умолчанию
+  fields      Json
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model ITResource {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  owner       String
+  source      String
+  roles       String[]
+  note        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Workstation {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  userId      String?
+  ip          String?
+  status      String   @default("active")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User?    @relation(fields: [userId], references: [id])
 }
 
 enum Role {

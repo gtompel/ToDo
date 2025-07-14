@@ -26,7 +26,7 @@ const FIELD_TYPES = [
   { value: "range", label: "Слайдер" },
 ]
 
-function FieldEditor({ field, onChange, onDelete }: any) {
+function FieldEditor({ field, onChange, onDelete }: { field: any, onChange: (val: any) => void, onDelete: () => void }) {
   return (
     <div className="border rounded p-3 mb-2 bg-gray-50">
       <div className="flex gap-2 mb-2">
