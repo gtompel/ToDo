@@ -2,14 +2,21 @@ import { getCurrentUser } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import LoginForm from "./LoginForm"
+import { headers } from "next/headers"
 
-export default async function LoginPage({ searchParams }: { searchParams?: URLSearchParams }) {
+export default async function LoginPage() {
   const user = await getCurrentUser()
   if (user) redirect("/")
 
+  // Получаем searchParams из URL через headers (headers() теперь async)
+  const hdrs = await headers()
+  const urlHeader = hdrs.get("x-url")
   let error = ""
-  if (searchParams && typeof searchParams.get === "function") {
-    error = searchParams.get("error") || ""
+  if (urlHeader) {
+    try {
+      const url = new URL(urlHeader, "http://localhost")
+      error = url.searchParams.get("error") || ""
+    } catch {}
   }
 
   return (

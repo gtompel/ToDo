@@ -21,12 +21,14 @@ export async function middleware(request: NextRequest) {
   }
   const token = request.cookies.get("auth-token")?.value
   if (!token) {
-    return NextResponse.redirect(new URL("/login", request.url))
+    const response = NextResponse.redirect(new URL("/login", request.url))
+    response.cookies.set({ name: "auth-token", value: "", path: "/", expires: new Date(0) })
+    return response
   }
   const decoded = await verifyEdgeJWT(token)
   if (!decoded) {
     const response = NextResponse.redirect(new URL("/login", request.url))
-    response.cookies.delete("auth-token")
+    response.cookies.set({ name: "auth-token", value: "", path: "/", expires: new Date(0) })
     return response
   }
   return NextResponse.next()

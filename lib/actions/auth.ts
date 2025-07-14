@@ -29,7 +29,7 @@ export async function loginAction(formData: FormData) {
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 7, // 7 days
     })
-    redirect("/") // только при успехе!
+    return { success: true }
   } catch (error) {
     console.error("Login error:", error)
     return { error: "Произошла ошибка при входе" }

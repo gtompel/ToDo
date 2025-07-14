@@ -185,3 +185,14 @@ export async function assignRequestToUser(id: string, userId: string) {
     return { error: "Ошибка при назначении сотрудника" }
   }
 }
+
+// Удалить запрос по id
+export async function deleteRequestById(id: string) {
+  if (!id) return { error: 'Не передан id' }
+  try {
+    await prisma.request.delete({ where: { id } })
+    return { success: true }
+  } catch (e: any) {
+    return { error: e.message || 'Ошибка удаления запроса' }
+  }
+}

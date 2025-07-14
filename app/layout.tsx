@@ -16,11 +16,10 @@ export const metadata: Metadata = {
   description: "Система управления IT-услугами"
 }
 
-// Главный layout-компонент приложения
 export default async function RootLayout({ children, }: { children: React.ReactNode }) {
   const user = await getCurrentUser()
 
-  // Если пользователь не авторизован, рендерим без layout (например, для страницы логина)
+  // Если пользователь не авторизован, рендерим только children (login/register)
   if (!user) {
     return (
       <html lang="ru" suppressHydrationWarning>
@@ -33,6 +32,7 @@ export default async function RootLayout({ children, }: { children: React.ReactN
     )
   }
 
+  // Если пользователь авторизован — рендерим layout
   return (
     <html lang="ru" suppressHydrationWarning>
       <body className={inter.className + " bg-background text-foreground"}>

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { loginAction } from "@/lib/actions/auth"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 
 // Форма входа пользователя
 export default function LoginForm({ initialError }: { initialError?: string }) {
@@ -22,8 +22,9 @@ export default function LoginForm({ initialError }: { initialError?: string }) {
     const res = await loginAction(formData)
     if (res?.error) {
       setError(res.error)
+    } else if (res?.success) {
+      router.push("/")
     }
-    // если нет ошибки — редирект произойдёт на сервере, ничего делать не надо
   }
 
   return (

@@ -185,3 +185,14 @@ export async function assignIncidentToUser(id: string, userId: string) {
     return { error: "Ошибка при назначении сотрудника" }
   }
 }
+
+// Удалить инцидент по id
+export async function deleteIncidentById(id: string) {
+  if (!id) return { error: 'Не передан id' }
+  try {
+    await prisma.incident.delete({ where: { id } })
+    return { success: true }
+  } catch (e: any) {
+    return { error: e.message || 'Ошибка удаления инцидента' }
+  }
+}

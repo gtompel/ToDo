@@ -32,6 +32,9 @@ export default function NewIncidentPage() {
   const [loading, setLoading] = useState(false)
   const [assignees, setAssignees] = useState<{id: string, name: string, position: string, email: string}[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
+  // Состояния ошибок
+  const [errors, setErrors] = useState<{[key: string]: string}>({})
+  const [formError, setFormError] = useState("")
 
   // Загрузка списка исполнителей при монтировании
   useEffect(() => {
@@ -58,6 +61,18 @@ export default function NewIncidentPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setFormError("")
+    setErrors({})
+    // Клиентская валидация обязательных полей
+    const newErrors: {[key: string]: string} = {}
+    if (!formData.title.trim()) newErrors.title = "Заполните краткое описание проблемы"
+    if (!formData.description.trim()) newErrors.description = "Заполните подробное описание"
+    if (!formData.priority) newErrors.priority = "Выберите приоритет"
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      setFormError("Пожалуйста, заполните все обязательные поля")
+      return
+    }
     setLoading(true)
 
     const data = new FormData()
@@ -91,7 +106,12 @@ export default function NewIncidentPage() {
       if (fileInputRef.current) fileInputRef.current.value = ""
       router.push("/incidents")
     } else {
-      alert("Ошибка при создании инцидента")
+      let msg = "Ошибка при создании инцидента"
+      try {
+        const data = await res.json()
+        if (data?.error) msg = data.error
+      } catch {}
+      setFormError(msg)
     }
   }
 
@@ -110,6 +130,11 @@ export default function NewIncidentPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {formError && (
+          <div className="bg-red-100 text-red-700 px-4 py-2 rounded border border-red-300">
+            {formError}
+          </div>
+        )}
         <Card>
           <CardHeader>
             <CardTitle>Основная информация</CardTitle>
@@ -124,25 +149,29 @@ export default function NewIncidentPage() {
                 value={formData.title}
                 onChange={(e) => handleInputChange("title", e.target.value)}
                 required
+                className={errors.title ? "border-red-500 focus:border-red-500" : ""}
               />
+              {errors.title && <div className="text-red-500 text-xs mt-1">{errors.title}</div>}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Подробное описание</Label>
+              <Label htmlFor="description">Подробное описание *</Label>
               <Textarea
                 id="description"
                 placeholder="Опишите проблему детально, укажите шаги для воспроизведения, влияние на бизнес..."
                 rows={4}
                 value={formData.description}
                 onChange={(e) => handleInputChange("description", e.target.value)}
+                className={errors.description ? "border-red-500 focus:border-red-500" : ""}
               />
+              {errors.description && <div className="text-red-500 text-xs mt-1">{errors.description}</div>}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="priority">Приоритет *</Label>
                 <Select value={formData.priority} onValueChange={(value) => handleInputChange("priority", value)}>
-                  <SelectTrigger>
+                  <SelectTrigger className={errors.priority ? "border-red-500 focus:border-red-500" : ""}>
                     <SelectValue placeholder="Выберите приоритет" />
                   </SelectTrigger>
                   <SelectContent>
@@ -152,6 +181,7 @@ export default function NewIncidentPage() {
                     <SelectItem value="LOW">Низкий - Минимальное влияние</SelectItem>
                   </SelectContent>
                 </Select>
+                {errors.priority && <div className="text-red-500 text-xs mt-1">{errors.priority}</div>}
               </div>
 
               <div className="space-y-2">
