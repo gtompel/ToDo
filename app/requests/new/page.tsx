@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -10,43 +10,57 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { ArrowLeft, ArrowRight, Upload, Check } from "lucide-react"
 import Link from "next/link"
-import { prisma } from "@/lib/prisma";
 
 export default function NewApplicationPage() {
   const [currentStep, setCurrentStep] = useState(1)
-  const [formData, setFormData] = useState({
-    // User information
+  const [formData, setFormData] = useState<Record<string, any>>({
     fullName: "",
     department: "",
     position: "",
     building: "",
     room: "",
-
-    // Equipment information
     deviceType: "",
     manufacturer: "",
     model: "",
     serialNumber: "",
-
-    // Monitor information
     monitorManufacturer: "",
     monitorModel: "",
     monitorSerial: "",
-
-    // Software and additional equipment
     operatingSystem: "",
     additionalSoftware: "",
     flashDrive: "",
     additionalInfo: "",
-
-    // Requirements
     needsEMVS: false,
     needsSKZI: false,
     needsRosatomAccess: false,
-
-    // Files
     acknowledgmentFile: null as File | null,
   })
+
+  // Состояния для шаблонов
+  const [templates, setTemplates] = useState<any[]>([])
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("")
+  const [step, setStep] = useState<"select"|"form">("select")
+  const [formErrors, setFormErrors] = useState<{[key: string]: string}>({})
+  const [formError, setFormError] = useState("")
+
+  // Загрузка шаблонов при монтировании
+  useEffect(() => {
+    fetch("/api/templates?type=REQUEST")
+      .then(res => res.json())
+      .then(data => setTemplates(data.templates || []))
+  }, [])
+
+  // Автозаполнение при выборе шаблона
+  useEffect(() => {
+    if (!selectedTemplateId) return
+    const template = templates.find(t => t.id === selectedTemplateId)
+    if (!template) return
+    const fields = template.fields || {}
+    setFormData(prev => ({
+      ...prev,
+      ...fields,
+    }))
+  }, [selectedTemplateId])
 
   const handleInputChange = (field: string, value: string | boolean | File | null) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -106,6 +120,190 @@ export default function NewApplicationPage() {
     } catch (e) {
       alert("Ошибка при отправке запроса")
     }
+  }
+
+  // Получить выбранный шаблон
+  const selectedTemplate = templates.find(t => t.id === selectedTemplateId)
+
+  // Динамический рендеринг формы по шаблону
+  const renderTemplateForm = () => {
+    if (!selectedTemplate) return null
+    return (
+      <form
+        onSubmit={e => {
+          e.preventDefault()
+          setFormError("")
+          setFormErrors({})
+          // Валидация
+          const errors: {[key: string]: string} = {}
+          for (const field of selectedTemplate.fields) {
+            if (field.required && !formData[field.name]) {
+              errors[field.name] = "Обязательное поле"
+            }
+          }
+          if (Object.keys(errors).length > 0) {
+            setFormErrors(errors)
+            setFormError("Пожалуйста, заполните все обязательные поля")
+            return
+          }
+          handleSubmit()
+        }}
+        className="space-y-6"
+      >
+        <Button type="button" variant="outline" onClick={() => setStep("select")}>Назад к выбору шаблона</Button>
+        {formError && (
+          <div className="bg-red-100 text-red-700 px-4 py-2 rounded border border-red-300">
+            {formError}
+          </div>
+        )}
+        <Card>
+          <CardHeader>
+            <CardTitle>Данные запроса</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {selectedTemplate.fields.map((field: any) => (
+              <div className="space-y-2" key={field.name}>
+                <Label htmlFor={field.name}>{field.name}{field.required && " *"}</Label>
+                {field.type === "text" && (
+                  <Input
+                    id={field.name}
+                    value={formData[field.name] ?? ""}
+                    onChange={e => handleInputChange(field.name, e.target.value)}
+                    required={field.required}
+                    placeholder={field.description}
+                    className={formErrors[field.name] ? "border-red-500" : ""}
+                  />
+                )}
+                {field.type === "number" && (
+                  <Input
+                    id={field.name}
+                    type="number"
+                    value={formData[field.name] ?? ""}
+                    onChange={e => handleInputChange(field.name, e.target.value)}
+                    required={field.required}
+                    placeholder={field.description}
+                    className={formErrors[field.name] ? "border-red-500" : ""}
+                  />
+                )}
+                {field.type === "date" && (
+                  <Input
+                    id={field.name}
+                    type="date"
+                    value={formData[field.name] ?? ""}
+                    onChange={e => handleInputChange(field.name, e.target.value)}
+                    required={field.required}
+                    className={formErrors[field.name] ? "border-red-500" : ""}
+                  />
+                )}
+                {field.type === "email" && (
+                  <Input
+                    id={field.name}
+                    type="email"
+                    value={formData[field.name] ?? ""}
+                    onChange={e => handleInputChange(field.name, e.target.value)}
+                    required={field.required}
+                    placeholder={field.description}
+                    className={formErrors[field.name] ? "border-red-500" : ""}
+                  />
+                )}
+                {field.type === "password" && (
+                  <Input
+                    id={field.name}
+                    type="password"
+                    value={formData[field.name] ?? ""}
+                    onChange={e => handleInputChange(field.name, e.target.value)}
+                    required={field.required}
+                    placeholder={field.description}
+                    className={formErrors[field.name] ? "border-red-500" : ""}
+                  />
+                )}
+                {field.type === "tel" && (
+                  <Input
+                    id={field.name}
+                    type="tel"
+                    value={formData[field.name] ?? ""}
+                    onChange={e => handleInputChange(field.name, e.target.value)}
+                    required={field.required}
+                    placeholder={field.description}
+                    className={formErrors[field.name] ? "border-red-500" : ""}
+                  />
+                )}
+                {field.type === "textarea" && (
+                  <Textarea
+                    id={field.name}
+                    value={formData[field.name] ?? ""}
+                    onChange={e => handleInputChange(field.name, e.target.value)}
+                    required={field.required}
+                    placeholder={field.description}
+                    className={formErrors[field.name] ? "border-red-500" : ""}
+                  />
+                )}
+                {field.type === "select" && (
+                  <Select value={formData[field.name] ?? ""} onValueChange={val => handleInputChange(field.name, val)}>
+                    <SelectTrigger className={formErrors[field.name] ? "border-red-500" : ""}>
+                      <SelectValue placeholder={field.description || "Выберите вариант"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {field.options?.map((opt: string) => (
+                        <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                {field.type === "checkbox" && (
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id={field.name}
+                      checked={!!formData[field.name]}
+                      onCheckedChange={val => handleInputChange(field.name, !!val)}
+                    />
+                    <Label htmlFor={field.name}>{field.description}</Label>
+                  </div>
+                )}
+                {formErrors[field.name] && <div className="text-red-500 text-xs mt-1">{formErrors[field.name]}</div>}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+        <div className="flex gap-4">
+          <Button type="submit" className="flex-1 md:flex-none">
+            <Check className="w-4 h-4 mr-2" />
+            Подать заявку
+          </Button>
+        </div>
+      </form>
+    )
+  }
+
+  if (step === "select") {
+    return (
+      <div className="max-w-xl mx-auto py-12">
+        <h1 className="text-2xl font-bold mb-6">Выберите шаблон запроса</h1>
+        <div className="space-y-3 mb-8">
+          <button
+            className={`w-full border rounded p-3 text-left hover:bg-gray-50 ${selectedTemplateId === "" ? "border-blue-500" : ""}`}
+            onClick={() => { setSelectedTemplateId(""); setStep("form") }}
+          >
+            Без шаблона (стандартная форма)
+          </button>
+          {templates.map(t => (
+            <button
+              key={t.id}
+              className={`w-full border rounded p-3 text-left hover:bg-gray-50 ${selectedTemplateId === t.id ? "border-blue-500" : ""}`}
+              onClick={() => { setSelectedTemplateId(t.id); setStep("form") }}
+            >
+              <div className="font-semibold">{t.name}</div>
+              <div className="text-sm text-gray-500">{t.description}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  // Если выбран шаблон — показываем только форму по шаблону
+  if (selectedTemplate) {
+    return renderTemplateForm()
   }
 
   const renderStep = () => {
@@ -377,18 +575,29 @@ export default function NewApplicationPage() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4 max-w-4xl">
         <div className="mb-8">
-          <Link href="/" className="inline-flex items-center text-blue-600 hover:text-blue-800">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Вернуться на главную
-          </Link>
+          <Button type="button" variant="outline" onClick={() => setStep("select")}>Назад к выбору шаблона</Button>
         </div>
-
         <Card>
           <CardHeader>
             <CardTitle>Новая заявка на создание АП АСЗИ «НИТИ»</CardTitle>
             <CardDescription>Заполните все необходимые поля для подачи заявки</CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Выбор шаблона */}
+            <div className="space-y-2 mb-6">
+              <Label htmlFor="template">Шаблон</Label>
+              <select
+                id="template"
+                className="w-full border rounded px-3 py-2"
+                value={selectedTemplateId}
+                onChange={e => setSelectedTemplateId(e.target.value)}
+              >
+                <option value="">Без шаблона</option>
+                {templates.map(t => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </div>
             {/* Progress indicator */}
             <div className="mb-8">
               <div className="flex items-center justify-between">
@@ -412,15 +621,12 @@ export default function NewApplicationPage() {
                 <span>Документы</span>
               </div>
             </div>
-
             {renderStep()}
-
             <div className="flex justify-between mt-8">
               <Button variant="outline" onClick={prevStep} disabled={currentStep === 1}>
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Назад
               </Button>
-
               {currentStep < 4 ? (
                 <Button onClick={nextStep}>
                   Далее
