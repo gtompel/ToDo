@@ -11,9 +11,18 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
 export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params
   const data = await req.json()
+  let updateData = { ...data }
+  if (Object.prototype.hasOwnProperty.call(updateData, 'userId')) {
+    if (updateData.userId) {
+      updateData.user = { connect: { id: updateData.userId } }
+    } else {
+      updateData.user = { disconnect: true }
+    }
+    delete updateData.userId
+  }
   const workstation = await prisma.workstation.update({
     where: { id },
-    data,
+    data: updateData,
     include: { user: true }
   })
   return NextResponse.json({ workstation })

@@ -175,6 +175,9 @@ model Workstation {
   status      String   @default("active")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  department  String?
+  room        String?
+  type        String?
   user        User?    @relation(fields: [userId], references: [id])
 }
 

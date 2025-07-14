@@ -11,6 +11,9 @@ export default function WorkstationForm({ initial, onSuccess }: { initial?: any,
     userId: initial?.userId || "",
     ip: initial?.ip || "",
     status: initial?.status || "active",
+    type: initial?.type || "",
+    room: initial?.room || "",
+    department: initial?.department || "",
   })
   const [users, setUsers] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
@@ -31,10 +34,11 @@ export default function WorkstationForm({ initial, onSuccess }: { initial?: any,
     try {
       const method = initial ? "PUT" : "POST"
       const url = initial ? `/api/workstations/${initial.id}` : "/api/workstations"
+      const payload = { ...form, userId: form.userId === "" ? null : form.userId }
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       })
       if (!res.ok) throw new Error("Ошибка сохранения")
       onSuccess()
@@ -48,12 +52,16 @@ export default function WorkstationForm({ initial, onSuccess }: { initial?: any,
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
       <div>
-        <label className="block text-sm mb-1 font-medium">Название <span className="text-red-500">*</span></label>
+        <label className="block text-sm mb-1 font-medium">Имя компьютера <span className="text-red-500">*</span></label>
         <Input name="name" value={form.name} onChange={handleChange} required />
       </div>
       <div>
-        <label className="block text-sm mb-1 font-medium">Описание <span className="text-red-500">*</span></label>
-        <Textarea name="description" value={form.description} onChange={handleChange} required />
+        <label className="block text-sm mb-1 font-medium">IP-адрес <span className="text-red-500">*</span></label>
+        <Input name="ip" value={form.ip} onChange={handleChange} required />
+      </div>
+      <div>
+        <label className="block text-sm mb-1 font-medium">Тип <span className="text-red-500">*</span></label>
+        <Input name="type" value={form.type} onChange={handleChange} required placeholder="ПК, Ноутбук и т.д." />
       </div>
       <div>
         <label className="block text-sm mb-1 font-medium">Пользователь</label>
@@ -63,15 +71,24 @@ export default function WorkstationForm({ initial, onSuccess }: { initial?: any,
         </select>
       </div>
       <div>
-        <label className="block text-sm mb-1 font-medium">IP-адрес</label>
-        <Input name="ip" value={form.ip} onChange={handleChange} />
+        <label className="block text-sm mb-1 font-medium">Кабинет <span className="text-red-500">*</span></label>
+        <Input name="room" value={form.room} onChange={handleChange} required />
+      </div>
+      <div>
+        <label className="block text-sm mb-1 font-medium">Отдел <span className="text-red-500">*</span></label>
+        <Input name="department" value={form.department} onChange={handleChange} required />
       </div>
       <div>
         <label className="block text-sm mb-1 font-medium">Статус</label>
         <select name="status" value={form.status} onChange={handleChange} className="w-full border rounded px-2 py-1">
           <option value="active">Активна</option>
           <option value="inactive">Неактивна</option>
+          <option value="free">Свободна</option>
         </select>
+      </div>
+      <div>
+        <label className="block text-sm mb-1 font-medium">Описание</label>
+        <Textarea name="description" value={form.description} onChange={handleChange} />
       </div>
       {error && <div className="text-red-600 text-sm">{error}</div>}
       <Button type="submit" disabled={loading}>{loading ? "Сохранение..." : "Сохранить"}</Button>

@@ -4,6 +4,8 @@ const prisma = new PrismaClient()
 async function main() {
   console.log('Start seeding...');
   // Очистка всех таблиц (в правильном порядке)
+  await prisma.workstation.deleteMany({})
+  await prisma.iTResource.deleteMany({})
   await prisma.session.deleteMany({})
   await prisma.incident.deleteMany({})
   await prisma.request.deleteMany({})
@@ -155,6 +157,9 @@ async function main() {
         userId: 'user-1',
         ip: '192.168.1.101',
         status: 'active',
+        type: 'ПК',
+        room: '101',
+        department: 'Бухгалтерия',
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -164,6 +169,9 @@ async function main() {
         userId: 'admin-1',
         ip: '192.168.1.102',
         status: 'active',
+        type: 'ПК',
+        room: '102',
+        department: 'ИТ отдел',
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -173,6 +181,9 @@ async function main() {
         userId: 'tech-1',
         ip: '192.168.1.103',
         status: 'inactive',
+        type: 'Ноутбук',
+        room: '103',
+        department: 'ИТ отдел',
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -182,6 +193,9 @@ async function main() {
         userId: 'manager-1',
         ip: '192.168.1.104',
         status: 'active',
+        type: 'ПК',
+        room: '104',
+        department: 'ИТ отдел',
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -191,6 +205,9 @@ async function main() {
         userId: null,
         ip: '192.168.1.105',
         status: 'free',
+        type: 'ПК',
+        room: '105',
+        department: 'ИТ отдел',
         createdAt: new Date(),
         updatedAt: new Date(),
       },
