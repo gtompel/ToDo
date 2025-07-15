@@ -57,6 +57,9 @@ export default function ProfileSettingsPage() {
   if (error && !user) return <div className="p-8 text-center text-red-500">{error}</div>;
   if (!user) return <div className="p-8 text-center text-muted-foreground">Пользователь не найден</div>;
 
+  // Признак LDAP-пользователя: пароль пустой
+  const isLDAP = !user?.user?.password || user?.user?.password === '';
+
   return (
     <div className="max-w-xl mx-auto p-6">
       <Card>
@@ -65,9 +68,10 @@ export default function ProfileSettingsPage() {
         </CardHeader>
         <CardContent>
           <UserForm
-            initial={user}
+            initial={user.user}
             loading={loading}
             onSubmit={updateUser}
+            isLDAP={isLDAP}
           />
         </CardContent>
       </Card>

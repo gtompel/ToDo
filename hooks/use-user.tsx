@@ -1,5 +1,5 @@
 // Хук для работы с пользователем: загрузка, обновление, состояния
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { fetchWithTimeout } from "@/lib/utils";
 
 // Кастомный хук для получения и управления пользователем по id
@@ -50,4 +50,31 @@ export function useUser(userId?: string) {
 
   // Возвращаем состояния и методы для работы с пользователем
   return { user, loading, error, loadUser, updateUser };
+}
+
+// Хук для получения текущего пользователя по JWT (auth-token)
+export function useCurrentUser() {
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/auth/me");
+      if (!res.ok) throw new Error("Ошибка авторизации");
+      const data = await res.json();
+      setUser(data);
+    } catch (e: any) {
+      setError(e.message || "Ошибка авторизации");
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  return { user, loading, error, refresh: load };
 } 

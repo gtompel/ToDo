@@ -17,7 +17,7 @@ const userSchema = z.object({
 });
 
 // Форма пользователя (создание/редактирование)
-export function UserForm({ initial, loading, onSubmit }: { initial: any, loading: boolean, onSubmit: (data: any) => Promise<any> }) {
+export function UserForm({ initial, loading, onSubmit, isLDAP }: { initial: any, loading: boolean, onSubmit: (data: any) => Promise<any>, isLDAP?: boolean }) {
   // Состояния формы и ошибок
   const [form, setForm] = useState(initial || {});
   const [error, setError] = useState("");
@@ -48,36 +48,38 @@ export function UserForm({ initial, loading, onSubmit }: { initial: any, loading
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <Label>Email</Label>
-        <Input value={form.email || ""} onChange={e => handleChange("email", e.target.value)} required />
+        <Input value={form.email || ""} onChange={e => handleChange("email", e.target.value)} required readOnly={isLDAP} />
       </div>
       <div>
         <Label>Имя</Label>
-        <Input value={form.firstName || ""} onChange={e => handleChange("firstName", e.target.value)} required />
+        <Input value={form.firstName || ""} onChange={e => handleChange("firstName", e.target.value)} required readOnly={isLDAP} />
       </div>
       <div>
         <Label>Фамилия</Label>
-        <Input value={form.lastName || ""} onChange={e => handleChange("lastName", e.target.value)} required />
+        <Input value={form.lastName || ""} onChange={e => handleChange("lastName", e.target.value)} required readOnly={isLDAP} />
       </div>
       <div>
         <Label>Отчество</Label>
-        <Input value={form.middleName || ""} onChange={e => handleChange("middleName", e.target.value)} />
+        <Input value={form.middleName || ""} onChange={e => handleChange("middleName", e.target.value)} readOnly={isLDAP} />
       </div>
       <div>
         <Label>Телефон</Label>
-        <Input value={form.phone || ""} onChange={e => handleChange("phone", e.target.value)} />
+        <Input value={form.phone || ""} onChange={e => handleChange("phone", e.target.value)} readOnly={isLDAP} />
       </div>
       <div>
         <Label>Должность</Label>
-        <Input value={form.position || ""} onChange={e => handleChange("position", e.target.value)} />
+        <Input value={form.position || ""} onChange={e => handleChange("position", e.target.value)} readOnly={isLDAP} />
       </div>
       <div>
         <Label>Отдел</Label>
-        <Input value={form.department || ""} onChange={e => handleChange("department", e.target.value)} />
+        <Input value={form.department || ""} onChange={e => handleChange("department", e.target.value)} readOnly={isLDAP} />
       </div>
-      <div>
-        <Label>Пароль</Label>
-        <Input type="password" value={form.password || ""} onChange={e => handleChange("password", e.target.value)} />
-      </div>
+      {!isLDAP && (
+        <div>
+          <Label>Пароль</Label>
+          <Input type="password" value={form.password || ""} onChange={e => handleChange("password", e.target.value)} />
+        </div>
+      )}
       {error && <div className="text-red-500 text-sm">{error}</div>}
       <div className="flex gap-4 mt-6">
         <Button type="submit" disabled={loading}>{loading ? "Сохранение..." : "Сохранить"}</Button>

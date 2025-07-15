@@ -1,6 +1,13 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Activity } from "lucide-react";
 
+function formatDate(date?: string | Date | null) {
+  if (!date) return '-';
+  const d = typeof date === 'string' ? new Date(date) : date;
+  if (!d || isNaN(d.getTime())) return '-';
+  return d.toLocaleString('ru-RU');
+}
+
 export function UserActivityCard({ user }: { user: any }) {
   return (
     <Card>
@@ -13,15 +20,15 @@ export function UserActivityCard({ user }: { user: any }) {
       <CardContent className="space-y-4">
         <div className="flex justify-between">
           <span className="text-sm text-muted-foreground">Последний вход:</span>
-          <span className="text-sm font-medium">{user.lastLogin || "-"}</span>
+          <span className="text-sm font-medium">{formatDate(user.lastLogin)}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-sm text-muted-foreground">Последняя активность:</span>
-          <span className="text-sm font-medium">{user.lastActivity || "-"}</span>
+          <span className="text-sm font-medium">{formatDate(user.lastActivity)}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-sm text-muted-foreground">Смена пароля:</span>
-          <span className="text-sm font-medium">{user.passwordLastChanged || "-"}</span>
+          <span className="text-sm font-medium">{formatDate(user.passwordLastChanged)}</span>
         </div>
       </CardContent>
     </Card>

@@ -1,39 +1,25 @@
-import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
-import { jwtVerify } from "jose"
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { getCurrentUser } from '@/lib/auth'
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key")
-
-async function verifyEdgeJWT(token: string): Promise<{ userId: string } | null> {
-  try {
-    const { payload } = await jwtVerify(token, JWT_SECRET)
-    return { userId: payload.userId as string }
-  } catch {
-    return null
-  }
-}
-
-export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
-  const publicRoutes = ["/login", "/register"]
-  if (publicRoutes.includes(pathname)) {
+export async function middleware(req: any) {
+  // Не обновлять lastActivity для публичных и auth роутов
+  const publicPaths = ['/login', '/register', '/api/auth/ldap-login', '/_next', '/favicon.ico', '/public']
+  if (publicPaths.some(path => req.nextUrl.pathname.startsWith(path))) {
     return NextResponse.next()
   }
-  const token = request.cookies.get("auth-token")?.value
-  if (!token) {
-    const response = NextResponse.redirect(new URL("/login", request.url))
-    response.cookies.set({ name: "auth-token", value: "", path: "/", expires: new Date(0) })
-    return response
+
+  // Получаем текущего пользователя
+  const user = await getCurrentUser()
+  if (user && user.id) {
+    // Обновляем lastActivity
+    await prisma.user.update({ where: { id: user.id }, data: { lastActivity: new Date() } })
   }
-  const decoded = await verifyEdgeJWT(token)
-  if (!decoded) {
-    const response = NextResponse.redirect(new URL("/login", request.url))
-    response.cookies.set({ name: "auth-token", value: "", path: "/", expires: new Date(0) })
-    return response
-  }
+
   return NextResponse.next()
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|public).*)"],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 }
