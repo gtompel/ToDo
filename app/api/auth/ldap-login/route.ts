@@ -91,11 +91,20 @@ export async function POST(req: any) {
         const phone = '';
         const position = '';
         const department = '';
-        // Найти или создать пользователя в БД
-        let user = await prisma.user.findUnique({ where: { email: loginUPN } });
+        // --- Корректный поиск пользователя по username/email ---
+        let user = await prisma.user.findUnique({ where: { username: login } });
+        if (!user) {
+          user = await prisma.user.findUnique({ where: { email: loginUPN } });
+          if (user && !user.username) {
+            // Если найден по email, но username пустой — обновить username
+            user = await prisma.user.update({ where: { id: user.id }, data: { username: login } });
+            diagnostics.steps.push({ step: 'userUpdatedUsername', userId: user.id });
+          }
+        }
         if (!user) {
           user = await prisma.user.create({
             data: {
+              username: login,
               email: loginUPN,
               password: '',
               firstName,

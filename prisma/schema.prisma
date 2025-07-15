@@ -25,6 +25,7 @@ model User {
   updatedAt           DateTime       @updatedAt
   lastActivity        DateTime?
   passwordLastChanged DateTime?
+  username            String?        @unique
   articles            Article[]      @relation("UserArticles")
   notifications       Notification[]
   workstations        Workstation[]

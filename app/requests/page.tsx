@@ -11,10 +11,12 @@ import { updateRequestStatus, updateRequestPriority, deleteRequestById, assignRe
 import { useTransition } from "react"
 import { getAssignableUsers } from "@/lib/actions/users"
 import { ChevronDown, ChevronRight } from "lucide-react"
+import RequestsListWrapper from './RequestsListWrapper';
 
 import { getStatusBadge, getPriorityBadge, renderRequestDetails, formatRequestId, STATUS_OPTIONS, PRIORITY_OPTIONS } from "./RequestsListHelpers"
-import RequestsListClient from "./RequestsListClient"
-export { updateRequestStatus, updateRequestPriority, deleteRequestById, assignRequestToUser } from "@/lib/actions/requests"
+// Удаляю обычный импорт RequestsListClient
+// const RequestsListClient = dynamic(() => import('./RequestsListClient'), { loading: () => <div>Загрузка таблицы заявок...</div>, ssr: false });
+// Удаляю все упоминания dynamic, RequestsListClient и ssr: false
 
 async function getRequests() {
   return prisma.request.findMany({
@@ -59,12 +61,14 @@ function RequestsFilterPanel({ departments, filter, setFilter }: any) {
 async function RequestsList({ isAdmin }: { isAdmin: boolean }) {
   const requests = await getRequests()
   const assignableUsers = isAdmin ? await getAssignableUsers() : []
-  return <RequestsListClient requests={requests} isAdmin={isAdmin} assignableUsers={assignableUsers} />
+  return <RequestsListWrapper requests={requests} isAdmin={isAdmin} assignableUsers={assignableUsers} />
 }
 
 export default async function RequestsPage() {
   const user = await getCurrentUser()
   const isAdmin = user && (user.role === "ADMIN" || user.role === "MANAGER")
+  const requests = await getRequests();
+  const assignableUsers = isAdmin ? await getAssignableUsers() : [];
 
   return (
     <div className="space-y-6">
@@ -80,10 +84,7 @@ export default async function RequestsPage() {
           </Link>
         </Button>
       </div>
-
-      <Suspense fallback={<div>Загрузка...</div>}>
-        <RequestsList isAdmin={isAdmin} />
-      </Suspense>
+      <RequestsListWrapper requests={requests} isAdmin={isAdmin} assignableUsers={assignableUsers} />
     </div>
   )
 }

@@ -24,62 +24,14 @@ import {
   Trash2,
   Plus,
 } from "lucide-react"
+import { useNotificationsSWR, Notification } from '@/hooks/use-notifications-swr';
 
 export default function NotificationsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [filterType, setFilterType] = useState("all")
   const [filterStatus, setFilterStatus] = useState("all")
 
-  const notifications = [
-    {
-      id: "NOT-001",
-      title: "Новый инцидент INC-045 назначен вам",
-      message: "Инцидент 'Проблемы с почтовым сервером' был назначен вам для решения",
-      type: "incident",
-      priority: "high",
-      status: "unread",
-      timestamp: "2024-01-15 16:30",
-      sender: "Система",
-      recipient: "Иванов И.И.",
-      channels: ["browser", "email"],
-    },
-    {
-      id: "NOT-002",
-      title: "Запрос REQ-023 требует утверждения",
-      message: "Запрос на установку ПО ожидает вашего утверждения",
-      type: "request",
-      priority: "medium",
-      status: "read",
-      timestamp: "2024-01-15 15:45",
-      sender: "Петров П.П.",
-      recipient: "Сидорова А.С.",
-      channels: ["browser", "email", "sms"],
-    },
-    {
-      id: "NOT-003",
-      title: "SLA нарушение по инциденту INC-042",
-      message: "Время решения инцидента превысило установленные SLA",
-      type: "sla",
-      priority: "critical",
-      status: "unread",
-      timestamp: "2024-01-15 14:20",
-      sender: "Система",
-      recipient: "Менеджер службы",
-      channels: ["browser", "email", "push"],
-    },
-    {
-      id: "NOT-004",
-      title: "Изменение CHG-015 успешно внедрено",
-      message: "Плановое изменение сетевой инфраструктуры завершено успешно",
-      type: "change",
-      priority: "low",
-      status: "read",
-      timestamp: "2024-01-15 12:00",
-      sender: "Система",
-      recipient: "Команда IT",
-      channels: ["browser", "email"],
-    },
-  ]
+  const { notifications, isLoading, isError } = useNotificationsSWR();
 
   const notificationSettings = {
     incidents: {
@@ -210,13 +162,20 @@ export default function NotificationsPage() {
 
   const filteredNotifications = notifications.filter((notification) => {
     const matchesSearch =
-      notification.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      notification.message.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesType = filterType === "all" || notification.type === filterType
-    const matchesStatus = filterStatus === "all" || notification.status === filterStatus
+      (notification.title?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (notification.message?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+    const matchesType = filterType === "all" || notification.type === filterType;
+    const matchesStatus = filterStatus === "all" || notification.status === filterStatus;
 
-    return matchesSearch && matchesType && matchesStatus
+    return matchesSearch && matchesType && matchesStatus;
   })
+
+  if (isLoading) {
+    return <div className="p-4">Загрузка уведомлений...</div>;
+  }
+  if (isError) {
+    return <div className="p-4 text-red-500">Ошибка загрузки уведомлений</div>;
+  }
 
   const handleSettingChange = (category: string, channel: string, value: boolean) => {
     console.log(`Изменение настройки: ${category}.${channel} = ${value}`)
@@ -361,7 +320,7 @@ export default function NotificationsPage() {
                     <div className="flex items-start justify-between">
                       <div className="flex-1 space-y-2">
                         <div className="flex items-center gap-2">
-                          <Badge className={getTypeColor(notification.type)}>
+                          <Badge className={getTypeColor(notification.type || '')}>
                             {notification.type === "incident"
                               ? "Инцидент"
                               : notification.type === "request"
@@ -372,7 +331,7 @@ export default function NotificationsPage() {
                                     ? "SLA"
                                     : "База знаний"}
                           </Badge>
-                          <Badge className={getPriorityColor(notification.priority)}>
+                          <Badge className={getPriorityColor(notification.priority || '')}>
                             {notification.priority === "critical"
                               ? "Критический"
                               : notification.priority === "high"
@@ -401,7 +360,7 @@ export default function NotificationsPage() {
                           <span>Кому: {notification.recipient}</span>
                         </div>
                         <div className="flex gap-1">
-                          {notification.channels.map((channel) => (
+                          {(notification.channels || []).map((channel: string) => (
                             <Badge key={channel} variant="secondary" className="text-xs">
                               {channel === "browser"
                                 ? "Браузер"
@@ -631,7 +590,7 @@ export default function NotificationsPage() {
                         <div>
                           <Label className="text-sm font-medium">Каналы:</Label>
                           <div className="flex gap-1 mt-1">
-                            {rule.channels.map((channel) => (
+                            {(rule.channels || []).map((channel: string) => (
                               <Badge key={channel} variant="secondary" className="text-xs">
                                 {channel === "email" ? "Email" : channel === "sms" ? "SMS" : "Push"}
                               </Badge>

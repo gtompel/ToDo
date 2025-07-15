@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Search, Edit, MoreHorizontal, Users, RefreshCw, Phone, BadgeIcon as IdCard } from "lucide-react"
 import Link from "next/link"
 import { getUsers } from "@/lib/actions/users"
+import dynamic from 'next/dynamic';
 
 interface User {
   id: string
@@ -126,6 +127,11 @@ export default function UsersPage() {
     )
   }
 
+  const UsersTableClient = dynamic(() => import('./UsersTableClient'), {
+    loading: () => <div className="flex items-center justify-center h-64"><div className="text-center"><RefreshCw className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-2" /><p className="text-gray-600">Загрузка таблицы пользователей...</p></div></div>,
+    ssr: false,
+  });
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -198,110 +204,7 @@ export default function UsersPage() {
         {/* Users Table */}
         <Card>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-gray-50">
-                    <TableHead className="w-12 text-center">№</TableHead>
-                    <TableHead>ФИО</TableHead>
-                    <TableHead className="text-center">Табельный номер</TableHead>
-                    <TableHead className="text-center">Телефон</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead className="text-center">Роли</TableHead>
-                    <TableHead className="text-center">Отдел</TableHead>
-                    <TableHead className="text-center">Действия</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUsers.map((user, index) => (
-                    <TableRow key={user.id} className="hover:bg-gray-50">
-                      <TableCell className="text-center font-medium">{index + 1}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Users className="w-4 h-4 text-gray-400" />
-                          <div>
-                            <div className="font-medium">
-                              {user.lastName} {user.firstName} {user.middleName}
-                            </div>
-                            <div className="text-sm text-gray-500">{user.position}</div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <IdCard className="w-4 h-4 text-gray-400" />
-                          <span>1001</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <Phone className="w-4 h-4 text-gray-400" />
-                          <span>{user.phone || "—"}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Link
-                          href={`mailto:${user.email}`}
-                          className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                        >
-                          {user.email}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                          {getRoleLabel(user.role)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center">{user.department || "—"}</TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-gray-400 hover:text-blue-600"
-                            asChild
-                          >
-                            <Link href={`/users/${user.id}`}>
-                              <Edit className="w-4 h-4" />
-                            </Link>
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-
-            {/* Pagination */}
-            <div className="flex items-center justify-between px-6 py-4 border-t bg-gray-50">
-              <div className="text-sm text-gray-600">1-10 из {filteredUsers.length} записей</div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" disabled>
-                  1
-                </Button>
-                <Button variant="ghost" size="sm">
-                  2
-                </Button>
-                <Button variant="ghost" size="sm">
-                  <span>›</span>
-                </Button>
-                <Select defaultValue="10">
-                  <SelectTrigger className="w-20 h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="10">10</SelectItem>
-                    <SelectItem value="25">25</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
-                  </SelectContent>
-                </Select>
-                <span className="text-sm text-gray-600">/ page</span>
-              </div>
-            </div>
+            <UsersTableClient users={filteredUsers} />
           </CardContent>
         </Card>
       </div>

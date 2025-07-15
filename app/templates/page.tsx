@@ -26,6 +26,12 @@ const FIELD_TYPES = [
   { value: "range", label: "Слайдер" },
 ]
 
+// Для выпадающего списка типов шаблонов
+const TEMPLATE_TYPE_OPTIONS = [
+  { value: "INCIDENT", label: "Инцидент" },
+  { value: "REQUEST", label: "Запрос" },
+]
+
 function FieldEditor({ field, onChange, onDelete }: any) {
   return (
     <div className="border rounded p-3 mb-2 bg-gray-50">
@@ -89,7 +95,7 @@ export default function TemplatesAdminPage() {
     type: "INCIDENT",
     name: "",
     description: "",
-    fields: "[]", // Changed to array of objects
+    fields: [],
     isActive: true,
   })
   const [error, setError] = useState("")
@@ -116,11 +122,7 @@ export default function TemplatesAdminPage() {
   // При открытии формы редактирования — заполняем fieldsUI
   useEffect(() => {
     if (showForm) {
-      try {
-        setFieldsUI(Array.isArray(form.fields) ? form.fields : JSON.parse(form.fields))
-      } catch {
-        setFieldsUI([])
-      }
+      setFieldsUI(Array.isArray(form.fields) ? form.fields : [])
     }
   }, [showForm])
 
@@ -130,7 +132,7 @@ export default function TemplatesAdminPage() {
       type: tpl.type,
       name: tpl.name,
       description: tpl.description || "",
-      fields: JSON.stringify(tpl.fields, null, 2),
+      fields: Array.isArray(tpl.fields) ? tpl.fields : [],
       isActive: tpl.isActive,
     })
     setShowForm(true)
@@ -192,6 +194,109 @@ export default function TemplatesAdminPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4 max-w-4xl">
+        {showForm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+            <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full p-6 relative overflow-y-auto max-h-[90vh]">
+              <button className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-2xl" onClick={() => { setShowForm(false); setWizardStep(1); }}>&times;</button>
+              <h2 className="text-xl font-bold mb-4">{editId ? "Редактировать шаблон" : "Создать шаблон"}</h2>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {wizardStep === 1 && (
+                  <>
+                    <div>
+                      <Label>Тип</Label>
+                      <select className="w-full border rounded px-3 py-2" value={form.type} onChange={e => setForm((f: any) => ({ ...f, type: e.target.value }))}>
+                        {TEMPLATE_TYPE_OPTIONS.map(opt => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <Label>Название</Label>
+                      <Input value={form.name} onChange={e => setForm((f: any) => ({ ...f, name: e.target.value }))} required />
+                    </div>
+                    <div>
+                      <Label>Описание</Label>
+                      <Textarea value={form.description} onChange={e => setForm((f: any) => ({ ...f, description: e.target.value }))} />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input type="checkbox" checked={form.isActive} onChange={e => setForm((f: any) => ({ ...f, isActive: e.target.checked }))} id="isActive" />
+                      <Label htmlFor="isActive">Активен</Label>
+                    </div>
+                    <div className="flex gap-4 mt-4">
+                      <Button type="button" variant="outline" onClick={() => { setShowForm(false); setWizardStep(1); }}>Отмена</Button>
+                      <Button type="button" onClick={() => setWizardStep(2)}>Далее</Button>
+                    </div>
+                  </>
+                )}
+                {wizardStep === 2 && (
+                  <>
+                    <div>
+                      <Label>Структура полей</Label>
+                      <DragDropContext onDragEnd={result => {
+                        if (!result.destination) return
+                        const items = Array.from(fieldsUI)
+                        const [removed] = items.splice(result.source.index, 1)
+                        items.splice(result.destination.index, 0, removed)
+                        setFieldsUI(items)
+                      }}>
+                        <Droppable droppableId="fields-list">
+                          {provided => (
+                            <div ref={provided.innerRef} {...provided.droppableProps}>
+                              {fieldsUI.map((field, idx) => (
+                                <Draggable key={idx} draggableId={String(idx)} index={idx}>
+                                  {prov => (
+                                    <div ref={prov.innerRef} {...prov.draggableProps} {...prov.dragHandleProps}>
+                                      <FieldEditor
+                                        field={field}
+                                        onChange={(val: any) => handleFieldChange(idx, val)}
+                                        onDelete={() => handleFieldDelete(idx)}
+                                      />
+                                    </div>
+                                  )}
+                                </Draggable>
+                              ))}
+                              {provided.placeholder}
+                            </div>
+                          )}
+                        </Droppable>
+                      </DragDropContext>
+                      <Button type="button" variant="outline" onClick={handleAddField}>Добавить поле</Button>
+                    </div>
+                    <div className="mt-6 mb-2 text-gray-600 text-sm">Превью формы по шаблону:</div>
+                    <div className="border rounded p-4 bg-gray-50 mb-4">
+                      {fieldsUI.length === 0 && <div className="text-gray-400">Нет полей</div>}
+                      {fieldsUI.map((field, idx) => (
+                        <div key={idx} className="mb-3">
+                          <Label className="block font-semibold mb-1">{field.name}{field.required && <span className="text-red-500">*</span>}</Label>
+                          {field.type === "text" && <Input disabled placeholder={field.description} />}
+                          {field.type === "number" && <Input type="number" disabled placeholder={field.description} />}
+                          {field.type === "date" && <Input type="date" disabled />}
+                          {field.type === "email" && <Input type="email" disabled placeholder={field.description} />}
+                          {field.type === "password" && <Input type="password" disabled placeholder={field.description} />}
+                          {field.type === "tel" && <Input type="tel" disabled placeholder={field.description} />}
+                          {field.type === "file" && <Input type="file" disabled />}
+                          {field.type === "url" && <Input type="url" disabled placeholder={field.description} />}
+                          {field.type === "color" && <Input type="color" disabled />}
+                          {field.type === "time" && <Input type="time" disabled />}
+                          {field.type === "range" && <Input type="range" disabled />}
+                          {field.type === "textarea" && <Textarea disabled placeholder={field.description} />}
+                          {field.type === "select" && <select disabled className="border rounded px-2 py-1 w-full"><option>Выберите вариант</option>{field.options?.map((opt: string) => <option key={opt}>{opt}</option>)}</select>}
+                          {field.type === "checkbox" && <input type="checkbox" disabled className="ml-2" />}
+                          {field.description && <div className="text-xs text-gray-500 mt-1">{field.description}</div>}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex gap-4 mt-4">
+                      <Button type="button" variant="outline" onClick={() => setWizardStep(1)}>Назад</Button>
+                      <Button type="submit">Сохранить</Button>
+                    </div>
+                  </>
+                )}
+                {error && <div className="text-red-600 text-sm mt-2">{error}</div>}
+              </form>
+            </div>
+          </div>
+        )}
         <Card className="shadow-md">
           <CardHeader>
             <CardTitle className="text-2xl">Шаблоны заявок и инцидентов</CardTitle>
@@ -202,7 +307,7 @@ export default function TemplatesAdminPage() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-col md:flex-row md:items-center gap-2 mb-6">
-              <Button onClick={() => { setShowForm(true); setEditId(""); setForm({ type: "INCIDENT", name: "", description: "", fields: "[]", isActive: true }); setWizardStep(1); }}>Создать шаблон</Button>
+              <Button onClick={() => { setShowForm(true); setEditId(""); setForm({ type: "INCIDENT", name: "", description: "", fields: [], isActive: true }); setWizardStep(1); }}>Создать шаблон</Button>
               <Button variant="outline" onClick={() => {
                 const data = JSON.stringify(templates, null, 2)
                 const blob = new Blob([data], { type: "application/json" })
@@ -251,7 +356,7 @@ export default function TemplatesAdminPage() {
                   <tbody>
                     {templates.map(t => (
                       <tr key={t.id} className="border-t hover:bg-gray-50">
-                        <td className="p-3">{t.type}</td>
+                        <td className="p-3">{TEMPLATE_TYPE_OPTIONS.find(opt => opt.value === t.type)?.label || t.type}</td>
                         <td className="p-3">
                           <Link href={`/templates/${t.id}`} className="text-blue-600 hover:underline">{t.name}</Link>
                         </td>

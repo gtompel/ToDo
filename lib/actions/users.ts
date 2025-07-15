@@ -194,7 +194,7 @@ export async function getAssignableUsers() {
   try {
     const users = await prisma.user.findMany({
       where: {
-        role: { in: ["USER", "TECHNICIAN"] },
+        role: "TECHNICIAN",
         isActive: true,
       },
       select: {

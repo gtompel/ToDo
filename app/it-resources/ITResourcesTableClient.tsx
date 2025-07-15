@@ -12,6 +12,7 @@ export default function ITResourcesTable({ resources: initialResources }: { reso
   const [resources, setResources] = useState(initialResources)
   const [showCreate, setShowCreate] = useState(false)
   const [editResource, setEditResource] = useState<any>(null)
+  const [viewResource, setViewResource] = useState<any>(null) // новое состояние для просмотра
   const { toast } = useToast()
 
   const fetchResources = async () => {
@@ -42,6 +43,25 @@ export default function ITResourcesTable({ resources: initialResources }: { reso
           </DialogHeader>
           {editResource && (
             <ITResourceForm initial={editResource} onSuccess={() => { setEditResource(null); fetchResources() }} onCancel={() => setEditResource(null)} />
+          )}
+        </DialogContent>
+      </Dialog>
+      {/* Модалка просмотра подробной информации */}
+      <Dialog open={!!viewResource} onOpenChange={v => { if (!v) setViewResource(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Информация об ИТ-ресурсе</DialogTitle>
+            <DialogDescription />
+          </DialogHeader>
+          {viewResource && (
+            <div className="space-y-2">
+              <div><b>Название:</b> {viewResource.name}</div>
+              <div><b>Описание:</b> {viewResource.description}</div>
+              <div><b>Владелец:</b> {viewResource.owner}</div>
+              <div><b>Источник:</b> <a href={viewResource.source} className="text-blue-600 underline" target="_blank" rel="noopener noreferrer">{viewResource.source}</a></div>
+              <div><b>Роли:</b> {viewResource.roles && viewResource.roles.length > 0 ? viewResource.roles.map((role: string) => <span key={role} className="inline-block border rounded px-2 py-0.5 mr-1 text-xs bg-gray-100">{role}</span>) : <span>-</span>}</div>
+              <div><b>Примечание:</b> {viewResource.note || <span>-</span>}</div>
+            </div>
           )}
         </DialogContent>
       </Dialog>
@@ -104,9 +124,11 @@ export default function ITResourcesTable({ resources: initialResources }: { reso
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <button aria-label="Инфо" className="mr-2 focus-visible:ring-2 focus-visible:ring-primary"><Info className="w-4 h-4" /></button>
+                      <button aria-label="Инфо" className="mr-2 focus-visible:ring-2 focus-visible:ring-primary text-blue-600 hover:text-blue-800" onClick={() => setViewResource(r)}>
+                        <Info className="w-4 h-4" />
+                      </button>
                     </TooltipTrigger>
-                    <TooltipContent>Инфо</TooltipContent>
+                    <TooltipContent>Подробнее</TooltipContent>
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
