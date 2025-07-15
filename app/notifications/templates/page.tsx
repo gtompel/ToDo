@@ -24,7 +24,6 @@ export default function NotificationTemplatesPage() {
     category: "",
     subject: "",
     emailBody: "",
-    smsBody: "",
     pushTitle: "",
     pushBody: "",
     variables: [] as string[],
@@ -65,7 +64,7 @@ export default function NotificationTemplatesPage() {
   }
 
   const insertVariable = (variable: string) => {
-    const field = activeTab === "email" ? "emailBody" : activeTab === "sms" ? "smsBody" : "pushBody"
+    const field = activeTab === "email" ? "emailBody" : "pushBody"
     const currentValue = formData[field as keyof typeof formData] as string
     handleInputChange(field, currentValue + variable)
   }
@@ -209,10 +208,6 @@ export default function NotificationTemplatesPage() {
                       <Mail className="w-4 h-4" />
                       Email
                     </TabsTrigger>
-                    <TabsTrigger value="sms" className="flex items-center gap-2">
-                      <Smartphone className="w-4 h-4" />
-                      SMS
-                    </TabsTrigger>
                     <TabsTrigger value="push" className="flex items-center gap-2">
                       <Bell className="w-4 h-4" />
                       Push
@@ -251,29 +246,6 @@ export default function NotificationTemplatesPage() {
                       ) : (
                         <div className="p-4 border rounded-md bg-muted min-h-32">
                           <div className="whitespace-pre-wrap">{renderPreview(formData.emailBody)}</div>
-                        </div>
-                      )}
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="sms" className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="smsBody">Текст SMS (макс. 160 символов)</Label>
-                      {!previewMode ? (
-                        <Textarea
-                          id="smsBody"
-                          placeholder="Краткое SMS уведомление"
-                          rows={4}
-                          maxLength={160}
-                          value={formData.smsBody}
-                          onChange={(e) => handleInputChange("smsBody", e.target.value)}
-                        />
-                      ) : (
-                        <div className="p-3 border rounded-md bg-muted">
-                          <p>{renderPreview(formData.smsBody)}</p>
-                          <p className="text-xs text-muted-foreground mt-2">
-                            Символов: {renderPreview(formData.smsBody).length}/160
-                          </p>
                         </div>
                       )}
                     </div>

@@ -29,4 +29,12 @@ export async function markAllNotificationsAsRead(userId: string) {
     where: { userId, read: false },
     data: { read: true },
   });
+}
+
+// Получить все уведомления (для администратора)
+export async function getAllNotifications() {
+  return prisma.notification.findMany({
+    orderBy: { createdAt: 'desc' },
+    include: { user: { select: { id: true, email: true, firstName: true, lastName: true, middleName: true } } }
+  });
 } 

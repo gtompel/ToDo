@@ -20,24 +20,19 @@ const defaultSettings = {
   systemDescription: "Система управления IT-сервисами",
   timezone: "Europe/Moscow",
   language: "ru",
-
   // Уведомления
   emailNotifications: true,
   pushNotifications: true,
-  smsNotifications: false,
   notificationFrequency: "immediate",
-
   // Безопасность
   sessionTimeout: "30",
   passwordMinLength: "8",
   requireTwoFactor: false,
   allowPasswordReset: true,
-
   // База данных
   backupFrequency: "daily",
   retentionPeriod: "90",
   autoCleanup: true,
-
   // Интеграции (LDAP)
   ldapName: "",
   ldapDescription: "",
@@ -68,24 +63,19 @@ export default function SettingsPage() {
     systemDescription: "Система управления IT-сервисами",
     timezone: "Europe/Moscow",
     language: "ru",
-
     // Уведомления
     emailNotifications: true,
     pushNotifications: true,
-    smsNotifications: false,
     notificationFrequency: "immediate",
-
     // Безопасность
     sessionTimeout: "30",
     passwordMinLength: "8",
     requireTwoFactor: false,
     allowPasswordReset: true,
-
     // База данных
     backupFrequency: "daily",
     retentionPeriod: "90",
     autoCleanup: true,
-
     // Интеграции (LDAP)
     ldapName: "",
     ldapDescription: "",
@@ -400,17 +390,6 @@ export default function SettingsPage() {
                     <Switch
                       checked={settings.pushNotifications}
                       onCheckedChange={(checked) => handleSettingChange("pushNotifications", checked)}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>SMS уведомления</Label>
-                      <p className="text-sm text-muted-foreground">Отправка SMS для критических событий</p>
-                    </div>
-                    <Switch
-                      checked={settings.smsNotifications}
-                      onCheckedChange={(checked) => handleSettingChange("smsNotifications", checked)}
                     />
                   </div>
                 </div>

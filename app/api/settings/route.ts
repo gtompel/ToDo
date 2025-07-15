@@ -8,7 +8,6 @@ const DEFAULTS = {
   language: "ru",
   emailNotifications: true,
   pushNotifications: true,
-  smsNotifications: false,
   notificationFrequency: "immediate",
   sessionTimeout: "30",
   passwordMinLength: "8",
