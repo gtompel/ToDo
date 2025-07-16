@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -16,6 +16,7 @@ import dynamic from "next/dynamic"
 import { useRef, useEffect, useState } from "react"
 
 const CommentsBlock = dynamic(() => import("./CommentsBlock"), { ssr: false, loading: () => <div className="text-muted-foreground">Загрузка комментариев...</div> })
+const RelatedArticlesBlock = dynamic(() => import("./RelatedArticlesBlock"), { ssr: false, loading: () => <div className="text-muted-foreground">Загрузка связанных статей...</div> })
 
 export default function ArticlePageClient({ article, comments }: { article: any, comments: any[] }) {
   const { user: currentUser } = useCurrentUser()
@@ -25,6 +26,8 @@ export default function ArticlePageClient({ article, comments }: { article: any,
   const { toast } = useToast()
   const commentsRef = useRef<HTMLDivElement>(null)
   const [showComments, setShowComments] = useState(false)
+  const relatedRef = useRef<HTMLDivElement>(null)
+  const [showRelated, setShowRelated] = useState(false)
 
   useEffect(() => {
     if (!commentsRef.current) return
@@ -38,12 +41,39 @@ export default function ArticlePageClient({ article, comments }: { article: any,
     return () => observer.disconnect()
   }, [])
 
+  useEffect(() => {
+    if (!relatedRef.current) return
+    const observer = new window.IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) setShowRelated(true)
+      },
+      { threshold: 0.1 }
+    )
+    observer.observe(relatedRef.current)
+    return () => observer.disconnect()
+  }, [])
+
   const canEdit = currentUser && article && (currentUser.id === article.authorId || currentUser.role === "ADMIN")
 
-  // Обработчик выставления рейтинга
+  let ratingTimeout: NodeJS.Timeout | null = null
+
+  // Обработчик выставления рейтинга с debounce
   const handleRating = (value: number) => {
     setRating(value)
-    // Здесь будет отправка рейтинга на сервер
+    if (ratingTimeout) clearTimeout(ratingTimeout)
+    ratingTimeout = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/articles/${article.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ rating: value }),
+        })
+        if (!res.ok) throw new Error("Ошибка отправки рейтинга")
+        toast({ title: "Спасибо за оценку!" })
+      } catch {
+        toast({ title: "Ошибка", description: "Не удалось отправить оценку", variant: "destructive" })
+      }
+    }, 600)
   }
 
   // Обработчик отметки полезности
@@ -283,22 +313,16 @@ export default function ArticlePageClient({ article, comments }: { article: any,
             </CardContent>
           </Card>
           {/* Связанные статьи */}
-          <Card>
+          <Card ref={relatedRef}>
             <CardHeader>
               <CardTitle>Связанные статьи</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {/* Примитивная реализация: по тегам */}
-                {article.tags && article.tags.length > 0 && (
-                  <>
-                    {article.tags.map((tag: string) => (
-                      <span key={tag} className="bg-gray-100 text-gray-800 rounded px-2 py-0.5 text-xs">{tag}</span>
-                    ))}
-                  </>
-                )}
-                {!article.tags?.length && <span className="text-muted-foreground">Нет связанных статей</span>}
-              </div>
+              {showRelated ? (
+                <RelatedArticlesBlock tags={article.tags} />
+              ) : (
+                <div className="text-muted-foreground">Связанные статьи будут загружены при прокрутке...</div>
+              )}
             </CardContent>
           </Card>
         </div>
