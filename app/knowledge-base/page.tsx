@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,81 +9,35 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Plus, Search, Eye, Edit, Star, ThumbsUp, BookOpen, TrendingUp, Clock } from "lucide-react"
 import Link from "next/link"
+import { useCurrentUser } from "@/hooks/use-user"
 
 export default function KnowledgeBasePage() {
+  const { user: currentUser } = useCurrentUser()
   const [searchTerm, setSearchTerm] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("all")
   const [sortBy, setSortBy] = useState("recent")
+  const [articles, setArticles] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+  const [tab, setTab] = useState("articles")
+  const [statusFilter, setStatusFilter] = useState("all")
 
-  const articles = [
-    {
-      id: "KB-001",
-      title: "Решение проблем с подключением к Exchange Server",
-      description: "Пошаговое руководство по диагностике и устранению проблем подключения к почтовому серверу",
-      category: "Почта",
-      tags: ["Exchange", "Outlook", "Подключение"],
-      author: "Иванов И.И.",
-      created: "2024-01-10",
-      updated: "2024-01-15",
-      views: 245,
-      rating: 4.8,
-      votes: 12,
-      status: "Опубликовано",
-    },
-    {
-      id: "KB-002",
-      title: "Настройка VPN подключения для удаленной работы",
-      description: "Детальная инструкция по настройке VPN клиента и решению типичных проблем",
-      category: "Сеть",
-      tags: ["VPN", "Удаленная работа", "Безопасность"],
-      author: "Петров П.П.",
-      created: "2024-01-12",
-      updated: "2024-01-14",
-      views: 189,
-      rating: 4.6,
-      votes: 8,
-      status: "Опубликовано",
-    },
-    {
-      id: "KB-003",
-      title: "Восстановление данных из резервных копий",
-      description: "Процедуры восстановления файлов и баз данных из различных типов резервных копий",
-      category: "Резервное копирование",
-      tags: ["Backup", "Восстановление", "Данные"],
-      author: "Сидоров С.С.",
-      created: "2024-01-08",
-      updated: "2024-01-13",
-      views: 156,
-      rating: 4.9,
-      votes: 15,
-      status: "Опубликовано",
-    },
-    {
-      id: "KB-004",
-      title: "Установка и настройка антивирусного ПО",
-      description: "Руководство по развертыванию корпоративного антивируса и настройке политик безопасности",
-      category: "Безопасность",
-      tags: ["Антивирус", "Безопасность", "Политики"],
-      author: "Волков В.В.",
-      created: "2024-01-05",
-      updated: "2024-01-11",
-      views: 203,
-      rating: 4.4,
-      votes: 9,
-      status: "На рассмотрении",
-    },
-  ]
+  useEffect(() => {
+    setLoading(true)
+    fetch("/api/articles")
+      .then(r => r.json())
+      .then(data => setArticles(data.articles || []))
+      .catch(() => setError("Ошибка загрузки статей"))
+      .finally(() => setLoading(false))
+  }, [])
 
-  const categories = [
-    { name: "Почта", count: 15, color: "bg-blue-100 text-blue-800" },
-    { name: "Сеть", count: 23, color: "bg-green-100 text-green-800" },
-    { name: "Безопасность", count: 18, color: "bg-red-100 text-red-800" },
-    { name: "Резервное копирование", count: 12, color: "bg-purple-100 text-purple-800" },
-    { name: "Оборудование", count: 20, color: "bg-yellow-100 text-yellow-800" },
-    { name: "ПО", count: 25, color: "bg-indigo-100 text-indigo-800" },
-  ]
-
-  const popularTags = ["Exchange", "VPN", "Backup", "Active Directory", "Windows", "Linux", "Сеть", "Принтеры"]
+  // Категории и теги можно вычислять из статей
+  const categories = Array.from(new Set(articles.map(a => a.category).filter(Boolean))).map(name => ({
+    name,
+    count: articles.filter(a => a.category === name).length,
+    color: "bg-blue-100 text-blue-800"
+  }))
+  const popularTags = Array.from(new Set(articles.flatMap(a => a.tags || [])))
 
   const getCategoryColor = (category: string) => {
     const cat = categories.find((c) => c.name === category)
@@ -93,25 +47,34 @@ export default function KnowledgeBasePage() {
   const filteredArticles = articles.filter((article) => {
     const matchesSearch =
       article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      article.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      article.tags.some((tag) => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+      (article.description || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (article.tags || []).some((tag: string) => tag.toLowerCase().includes(searchTerm.toLowerCase()))
     const matchesCategory = categoryFilter === "all" || article.category === categoryFilter
-
+    // Черновики видны только автору или админу
+    const isDraft = article.status === "draft"
+    const canSeeDraft = currentUser && (currentUser.id === article.authorId || currentUser.role === "ADMIN")
+    if (isDraft && !canSeeDraft) return false
+    // Фильтр по статусу
+    if (statusFilter === "published" && article.status === "draft") return false
+    if (statusFilter === "draft" && article.status !== "draft") return false
     return matchesSearch && matchesCategory
   })
 
   const sortedArticles = [...filteredArticles].sort((a, b) => {
     switch (sortBy) {
       case "rating":
-        return b.rating - a.rating
+        return (b.rating || 0) - (a.rating || 0)
       case "views":
-        return b.views - a.views
+        return (b.views || 0) - (a.views || 0)
       case "recent":
-        return new Date(b.updated).getTime() - new Date(a.updated).getTime()
+        return new Date(b.updatedAt || b.updated).getTime() - new Date(a.updatedAt || a.updated).getTime()
       default:
         return 0
     }
   })
+
+  if (loading) return <div className="p-8 text-center text-muted-foreground">Загрузка статей...</div>
+  if (error) return <div className="p-8 text-center text-red-500">{error}</div>
 
   return (
     <div className="space-y-6">
@@ -120,12 +83,19 @@ export default function KnowledgeBasePage() {
           <h1 className="text-3xl font-bold">База знаний</h1>
           <p className="text-muted-foreground">Накопленные знания и решения IT-проблем</p>
         </div>
-        <Button asChild>
-          <Link href="/knowledge-base/new">
-            <Plus className="w-4 h-4 mr-2" />
-            Создать статью
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild>
+            <Link href="/knowledge-base/new">
+              <Plus className="w-4 h-4 mr-2" />
+              Создать статью
+            </Link>
+          </Button>
+          {currentUser && (
+            <Button asChild variant="outline">
+              <Link href="/knowledge-base/drafts">Мои черновики</Link>
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Статистика */}
@@ -146,7 +116,7 @@ export default function KnowledgeBasePage() {
             <Eye className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{articles.reduce((sum, a) => sum + a.views, 0)}</div>
+            <div className="text-2xl font-bold">{articles.reduce((sum, a) => sum + (a.views || 0), 0)}</div>
             <p className="text-xs text-muted-foreground">+12% за месяц</p>
           </CardContent>
         </Card>
@@ -157,7 +127,7 @@ export default function KnowledgeBasePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {(articles.reduce((sum, a) => sum + a.rating, 0) / articles.length).toFixed(1)}
+              {(articles.reduce((sum, a) => sum + (a.rating || 0), 0) / articles.length).toFixed(1)}
             </div>
             <p className="text-xs text-muted-foreground">из 5.0</p>
           </CardContent>
@@ -174,7 +144,7 @@ export default function KnowledgeBasePage() {
         </Card>
       </div>
 
-      <Tabs defaultValue="articles" className="space-y-4">
+      <Tabs value={tab} onValueChange={setTab} defaultValue="articles" className="space-y-4">
         <TabsList>
           <TabsTrigger value="articles">Статьи</TabsTrigger>
           <TabsTrigger value="categories">Категории</TabsTrigger>
@@ -222,6 +192,16 @@ export default function KnowledgeBasePage() {
                     <SelectItem value="views">По просмотрам</SelectItem>
                   </SelectContent>
                 </Select>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full md:w-48">
+                    <SelectValue placeholder="Статус" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Все статусы</SelectItem>
+                    <SelectItem value="published">Опубликовано</SelectItem>
+                    <SelectItem value="draft">Черновики</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </CardContent>
           </Card>
@@ -255,7 +235,7 @@ export default function KnowledgeBasePage() {
                       </div>
 
                       <div className="flex flex-wrap gap-1">
-                        {article.tags.map((tag) => (
+                        {article.tags.map((tag: string) => (
                           <Badge key={tag} variant="secondary" className="text-xs">
                             {tag}
                           </Badge>
@@ -263,22 +243,29 @@ export default function KnowledgeBasePage() {
                       </div>
 
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span>Автор: {article.author}</span>
+                        <span>Автор: {article.author?.lastName || ''} {article.author?.firstName || ''}{!article.author?.lastName && !article.author?.firstName ? article.author?.email : ''}</span>
                         <span className="flex items-center gap-1">
                           <Eye className="w-3 h-3" />
-                          {article.views}
+                          {article.views || 0}
                         </span>
                         <span className="flex items-center gap-1">
                           <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                          {article.rating}
+                          {article.rating || 0}/5
                         </span>
                         <span className="flex items-center gap-1">
-                          <ThumbsUp className="w-3 h-3" />
-                          {article.votes}
+                          👍 {article.helpful || 0}
                         </span>
                         <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          Обновлено: {article.updated}
+                          👎 {article.notHelpful || 0}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          💬 {article.commentsCount || 0}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          Создано: {article.createdAt ? new Date(article.createdAt).toLocaleDateString() : '-'}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          Обновлено: {article.updatedAt ? new Date(article.updatedAt).toLocaleDateString() : '-'}
                         </span>
                       </div>
                     </div>
@@ -315,7 +302,14 @@ export default function KnowledgeBasePage() {
         <TabsContent value="categories" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {categories.map((category) => (
-              <Card key={category.name} className="hover:shadow-md transition-shadow cursor-pointer">
+              <Card
+                key={category.name}
+                className="hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => {
+                  setCategoryFilter(category.name)
+                  setTab("articles")
+                }}
+              >
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -354,7 +348,7 @@ export default function KnowledgeBasePage() {
             <CardContent>
               <div className="space-y-4">
                 {articles
-                  .sort((a, b) => b.views - a.views)
+                  .sort((a, b) => (b.views || 0) - (a.views || 0))
                   .slice(0, 5)
                   .map((article, index) => (
                     <div key={article.id} className="flex items-center gap-4 p-3 border rounded-lg">

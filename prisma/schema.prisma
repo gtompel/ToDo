@@ -36,6 +36,7 @@ model User {
   assignedRequests    Request[]      @relation("AssignedTo")
   requests            Request[]      @relation("CreatedBy")
   sessions            Session[]
+  comments            Comment[]
 
   @@map("users")
 }
@@ -121,15 +122,21 @@ model Change {
 model Article {
   id          String   @id @default(cuid())
   title       String
+  description String?
   content     String
   category    String?
   tags        String[]
   isPublished Boolean  @default(false)
+  status      String?
+  helpful     Int      @default(0)
+  notHelpful  Int      @default(0)
   createdById String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   authorId    String
   author      User     @relation("UserArticles", fields: [authorId], references: [id])
+  comments    Comment[]
+  views       Int      @default(0)
 }
 
 model Notification {
@@ -187,6 +194,17 @@ model SystemSettings {
   key       String   @unique
   value     String
   updatedAt DateTime @updatedAt
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  articleId String
+  userId    String
+  article   Article  @relation(fields: [articleId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 enum Role {

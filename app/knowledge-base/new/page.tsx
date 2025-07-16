@@ -13,10 +13,13 @@ import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Save, Eye, Plus, X, Upload, Bold, Italic, List, Link2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import ReactMarkdown from "react-markdown"
+import { useToast } from "@/components/ui/use-toast"
 
 // Страница создания новой статьи базы знаний
 export default function NewArticlePage() {
   const router = useRouter()
+  const { toast } = useToast()
   // Состояния формы, тегов и режима предпросмотра
   const [formData, setFormData] = useState({
     title: "",
@@ -28,6 +31,8 @@ export default function NewArticlePage() {
   })
   const [newTag, setNewTag] = useState("")
   const [previewMode, setPreviewMode] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
 
   // Категории для выбора
   const categories = [
@@ -44,10 +49,36 @@ export default function NewArticlePage() {
   ]
 
   // Обработчик отправки формы
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("Создание статьи:", formData)
-    router.push("/knowledge-base")
+    setLoading(true)
+    setError("")
+    if (!formData.title || !formData.content) {
+      setError("Заполните обязательные поля")
+      setLoading(false)
+      return
+    }
+    try {
+      const res = await fetch("/api/articles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        setError(data.error || "Ошибка создания статьи")
+        toast({ title: "Ошибка", description: data.error || "Ошибка создания статьи", variant: "destructive" })
+        setLoading(false)
+        return
+      }
+      const data = await res.json()
+      toast({ title: "Статья создана", description: "Статья успешно добавлена!" })
+      router.push(`/knowledge-base/${data.article.id}`)
+    } catch {
+      setError("Ошибка создания статьи")
+      toast({ title: "Ошибка", description: "Ошибка создания статьи", variant: "destructive" })
+      setLoading(false)
+    }
   }
 
   // Обработчик изменения поля формы
@@ -135,7 +166,9 @@ export default function NewArticlePage() {
                     value={formData.title}
                     onChange={(e) => handleInputChange("title", e.target.value)}
                     required
+                    className={error && !formData.title ? "border-red-500" : ""}
                   />
+                  {error && !formData.title && <p className="text-red-500 text-sm mt-1">Заголовок обязателен</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -218,10 +251,14 @@ export default function NewArticlePage() {
                       rows={10}
                       value={formData.content}
                       onChange={(e) => handleInputChange("content", e.target.value)}
+                      className={error && !formData.content ? "border-red-500" : ""}
                     />
+                    {error && !formData.content && <p className="text-red-500 text-sm mt-1">Содержание обязательно</p>}
                   </div>
                 ) : (
-                  <div className="prose max-w-none">{formData.content}</div>
+                  <div className="prose max-w-none border rounded p-4 bg-muted/50">
+                    <ReactMarkdown>{formData.content || "_Нет содержимого_"}</ReactMarkdown>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -241,6 +278,7 @@ export default function NewArticlePage() {
                     value={formData.category}
                     onValueChange={(value) => handleInputChange("category", value)}
                     defaultValue=""
+                    className={error && !formData.category ? "border-red-500" : ""}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Выберите категорию" />
@@ -253,6 +291,7 @@ export default function NewArticlePage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {error && !formData.category && <p className="text-red-500 text-sm mt-1">Категория обязательна</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -306,11 +345,14 @@ export default function NewArticlePage() {
         </div>
 
         <div className="flex justify-end">
-          <Button type="submit" variant="default">
-            <Save className="w-4 h-4 mr-2" />
-            Сохранить
+          <Button type="submit" className="flex-1 md:flex-none" disabled={loading}>
+            {loading ? "Сохранение..." : "Сохранить статью"}
+          </Button>
+          <Button type="button" variant="outline" asChild disabled={loading}>
+            <Link href="/knowledge-base">Отмена</Link>
           </Button>
         </div>
+        {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
       </form>
     </div>
   )
