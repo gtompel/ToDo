@@ -473,7 +473,7 @@ export default function NotificationsCenterPage() {
             ) : (
               <>
                 {bulkMode ? (
-                <div>
+            <div>
                     <Label>Пользователи</Label>
                     <Input placeholder="Поиск по ФИО или email..." value={userSearch} onChange={e => setUserSearch(e.target.value)} className="mb-2" disabled={createLoading || usersLoading} />
                     <div className="max-h-40 overflow-y-auto border rounded p-2 bg-white">

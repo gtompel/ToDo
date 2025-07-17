@@ -17,42 +17,25 @@ import {
   Calendar,
   Download,
   RefreshCw,
+  Loader2,
 } from "lucide-react"
 import { ChartContainer } from "@/components/ui/chart"
 import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from "recharts"
+import { Tooltip as UITooltip } from "@/components/ui/tooltip"
+import useSWR from 'swr'
 
 // Страница отчетов
 export default function ReportsPage() {
   // Состояния для диапазона времени и загрузки
   const [timeRange, setTimeRange] = useState("30d")
   const [refreshing, setRefreshing] = useState(false)
-  const [metrics, setMetrics] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
-  const [trend, setTrend] = useState<any>(null)
-  const [trendLoading, setTrendLoading] = useState(true)
-  const [trendError, setTrendError] = useState("")
   const [trendPeriod, setTrendPeriod] = useState(30)
 
-  useEffect(() => {
-    setLoading(true)
-    fetch("/api/reports/metrics")
-      .then(r => r.json())
-      .then(data => { setMetrics(data); setError("") })
-      .catch(() => setError("Ошибка загрузки метрик"))
-      .finally(() => setLoading(false))
-  }, [refreshing])
+  const fetcher = (url: string) => fetch(url).then(r => r.json())
+  const { data: metrics, error: metricsError, isLoading: metricsLoading } = useSWR('/api/reports/metrics', fetcher, { revalidateOnFocus: false })
+  const { data: trend, error: trendError, isLoading: trendLoading } = useSWR(`/api/reports/trends?days=${trendPeriod}`, fetcher, { revalidateOnFocus: false })
 
-  useEffect(() => {
-    setTrendLoading(true)
-    fetch(`/api/reports/trends?days=${trendPeriod}`)
-      .then(r => r.json())
-      .then(data => { setTrend(data); setTrendError("") })
-      .catch(() => setTrendError("Ошибка загрузки трендов"))
-      .finally(() => setTrendLoading(false))
-  }, [trendPeriod])
-
-// Цвета и иконки для статусов инцидентов
+  // Цвета и иконки для статусов инцидентов
   const incidentStatusMeta: Record<string, { color: string; icon: any; label: string }> = {
     CLOSED: { color: "#22c55e", icon: CheckCircle, label: "Решено" },
     IN_PROGRESS: { color: "#f59e42", icon: Clock, label: "В работе" },
@@ -90,21 +73,31 @@ export default function ReportsPage() {
   }
 
   // Формируем массив статусов с реальными данными (0 если нет)
-  const statusOrder = [
-    { key: 'CLOSED', label: 'Решено' },
-    { key: 'IN_PROGRESS', label: 'В работе' },
-    { key: 'OPEN', label: 'Новые' },
+  const statusData = [
+    {
+      status: 'RESOLVED',
+      label: 'Решено',
+      value:
+        ((metrics?.incidentStatus || []).find((s: any) => s.status === 'CLOSED')?._count._all || 0) +
+        ((metrics?.incidentStatus || []).find((s: any) => s.status === 'RESOLVED')?._count._all || 0),
+      color: incidentStatusMeta['CLOSED']?.color || '#64748b',
+      icon: incidentStatusMeta['CLOSED']?.icon || AlertTriangle,
+    },
+    {
+      status: 'IN_PROGRESS',
+      label: 'В работе',
+      value: (metrics?.incidentStatus || []).find((s: any) => s.status === 'IN_PROGRESS')?._count._all || 0,
+      color: incidentStatusMeta['IN_PROGRESS']?.color || '#64748b',
+      icon: incidentStatusMeta['IN_PROGRESS']?.icon || AlertTriangle,
+    },
+    {
+      status: 'OPEN',
+      label: 'Новые',
+      value: (metrics?.incidentStatus || []).find((s: any) => s.status === 'OPEN')?._count._all || 0,
+      color: incidentStatusMeta['OPEN']?.color || '#64748b',
+      icon: incidentStatusMeta['OPEN']?.icon || AlertTriangle,
+    },
   ]
-  const statusData = statusOrder.map(({ key, label }) => {
-    const found = (metrics?.incidentStatus || []).find((s: any) => s.status === key)
-    return {
-      status: key,
-      label,
-      value: found ? found._count._all : 0,
-      color: incidentStatusMeta[key]?.color || '#64748b',
-      icon: incidentStatusMeta[key]?.icon || AlertTriangle,
-    }
-  })
 
   // Фиксированные категории для заявок
   const requestCategoryOrder = [
@@ -137,6 +130,16 @@ export default function ReportsPage() {
     IN_PROGRESS: 'В работе',
   }
 
+  // Получаем только сотрудников с задачами
+  const assigneesWithTasks = Object.values(assignees).filter((u: any) => {
+    const openTasks = [
+      metrics?.incidentByAssignee?.find((a: any) => a.assignedToId === u.id)?._count._all || 0,
+      metrics?.requestByAssignee?.find((a: any) => a.assignedToId === u.id)?._count._all || 0,
+      metrics?.changeByAssignee?.find((a: any) => a.assignedToId === u.id)?._count._all || 0,
+    ].reduce((a, b) => a + b, 0)
+    return openTasks > 0
+  })
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -168,10 +171,10 @@ export default function ReportsPage() {
       </div>
 
       {/* Ключевые метрики */}
-      {loading ? (
+      {metricsLoading ? (
         <div className="p-8 text-center text-muted-foreground">Загрузка метрик...</div>
-      ) : error ? (
-        <div className="p-8 text-center text-red-500">{error}</div>
+      ) : metricsError ? (
+        <div className="p-8 text-center text-red-500">{metricsError}</div>
       ) : metrics && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
@@ -206,7 +209,7 @@ export default function ReportsPage() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Всего заявок</CardTitle>
+              <CardTitle className="text-sm font-medium">Всего запросов</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -224,24 +227,37 @@ export default function ReportsPage() {
           <Card>
             <CardHeader><CardTitle>Статус инцидентов</CardTitle></CardHeader>
             <CardContent>
-              <BarChart width={220} height={120} data={statusData}>
-                <Bar dataKey="value">
-                  {statusData.map((s, idx) => (
-                    <Cell key={s.status} fill={s.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-              <ul className="text-xs space-y-1 mt-4">
-                {statusData.map((s) => {
-                  const Icon = s.icon
-                  return (
-                    <li key={s.status} className="flex items-center gap-2">
-                      <Badge style={{ background: s.color, color: '#fff' }}><Icon className="w-3 h-3 mr-1 inline" />{s.label}</Badge>
-                      <span className="ml-2 font-bold">{s.value}</span>
-                    </li>
-                  )
-                })}
-              </ul>
+              {metricsLoading ? (
+                <div className="h-64 flex items-center justify-center text-muted-foreground">Загрузка графика...</div>
+              ) : metricsError ? (
+                <div className="h-64 flex items-center justify-center text-red-500">{metricsError}</div>
+              ) : statusData.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+                  <span className="text-3xl">📊</span>
+                  <span className="mt-2">Нет данных по статусам</span>
+                </div>
+              ) : (
+                <>
+                  <BarChart width={220} height={120} data={statusData}>
+                    <Bar dataKey="value">
+                      {statusData.map((s, idx) => (
+                        <Cell key={s.status} fill={s.color} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                  <ul className="text-xs space-y-1 mt-4">
+                    {statusData.map((s) => {
+                      const Icon = s.icon
+                      return (
+                        <li key={s.status} className="flex items-center gap-2">
+                          <Badge style={{ background: s.color, color: '#fff' }}><Icon className="w-3 h-3 mr-1 inline" />{s.label}</Badge>
+                          <span className="ml-2 font-bold">{s.value}</span>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </>
+              )}
             </CardContent>
           </Card>
           {/* Инциденты по категории */}
@@ -255,9 +271,9 @@ export default function ReportsPage() {
               </ul>
             </CardContent>
           </Card>
-          {/* Заявки */}
+          {/* Запросы */}
           <Card>
-            <CardHeader><CardTitle>Заявки по статусу</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Запросы по статусу</CardTitle></CardHeader>
             <CardContent>
               <ul className="text-xs space-y-1">
                 {(metrics?.requestStatus || []).map((s: any) => (
@@ -267,7 +283,7 @@ export default function ReportsPage() {
             </CardContent>
           </Card>
           <Card>
-            <CardHeader><CardTitle>Заявки по категории</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Запросы по категории</CardTitle></CardHeader>
             <CardContent>
               <ul className="text-xs space-y-1">
                 {(metrics?.requestCategory || []).map((c: any) => (
@@ -348,7 +364,7 @@ export default function ReportsPage() {
                         <Tooltip />
                         <Legend />
                         <Line type="monotone" dataKey="incidents" stroke="#2563eb" name="Инциденты" />
-                        <Line type="monotone" dataKey="requests" stroke="#059669" name="Заявки" />
+                        <Line type="monotone" dataKey="requests" stroke="#059669" name="Запросы" />
                         <Line type="monotone" dataKey="changes" stroke="#f59e42" name="Изменения" />
                       </LineChart>
                     </ResponsiveContainer>
@@ -378,16 +394,20 @@ export default function ReportsPage() {
                           className="h-full bg-green-500"
                           style={{
                             width: `${
-                              ((metrics?.incidentStatus?.find(
-                                (s: { status: string; _count: { _all: number } }) => s.status === 'CLOSED'
-                              )?._count._all || 0) / (metrics?.totalIncidents || 1)) * 100
+                              (
+                                (
+                                  (metrics?.incidentStatus?.find((s: { status: string; _count: { _all: number } }) => s.status === 'CLOSED')?._count._all || 0) +
+                                  (metrics?.incidentStatus?.find((s: { status: string; _count: { _all: number } }) => s.status === 'RESOLVED')?._count._all || 0)
+                                ) / (metrics?.totalIncidents || 1)
+                              ) * 100
                             }%`
                           }}
                         />
                       </div>
                       <span className="text-sm font-medium">
                         {
-                          metrics?.incidentStatus?.find((s: { status: string; _count: { _all: number } }) => s.status === 'CLOSED')?._count._all || 0
+                          ((metrics?.incidentStatus?.find((s: { status: string; _count: { _all: number } }) => s.status === 'CLOSED')?._count._all || 0) +
+                          (metrics?.incidentStatus?.find((s: { status: string; _count: { _all: number } }) => s.status === 'RESOLVED')?._count._all || 0))
                         }
                       </span>
                     </div>
@@ -517,13 +537,12 @@ export default function ReportsPage() {
                   </Bar>
                 </BarChart>
                 <ul className="text-xs space-y-1 mt-4">
-                  {(metrics?.incidentStatus || []).map((s: any) => {
-                    const meta = incidentStatusMeta[s.status] || { color: '#64748b', icon: AlertTriangle, label: s.status || 'Без статуса' }
-                    const Icon = meta.icon
+                  {statusData.map((s) => {
+                    const Icon = s.icon
                     return (
                       <li key={s.status} className="flex items-center gap-2">
-                        <Badge style={{ background: meta.color, color: '#fff' }}><Icon className="w-3 h-3 mr-1 inline" />{meta.label}</Badge>
-                        <span className="ml-2 font-bold">{s._count._all}</span>
+                        <Badge style={{ background: s.color, color: '#fff' }}><Icon className="w-3 h-3 mr-1 inline" />{s.label}</Badge>
+                        <span className="ml-2 font-bold">{s.value}</span>
                       </li>
                     )
                   })}
@@ -539,21 +558,32 @@ export default function ReportsPage() {
             <Card>
               <CardHeader><CardTitle>Статистика по категориям запросов</CardTitle></CardHeader>
               <CardContent>
-                <BarChart width={320} height={180} data={requestCategoryData}>
-                  <Bar dataKey="value" fill="#2563eb">
-                    {requestCategoryData.map((c, idx) => (
-                      <Cell key={c.category} fill={["#2563eb", "#f59e42", "#22c55e"][idx % 3]} />
-                    ))}
-                  </Bar>
-                  <XAxis dataKey="label" tick={{ fontSize: 10 }} />
-                  <YAxis allowDecimals={false} />
-                  <Tooltip />
-                </BarChart>
-                <ul className="text-xs space-y-1 mt-4">
-                  {requestCategoryData.map((c) => (
-                    <li key={c.category}>{c.label}: <b>{c.value}</b></li>
-                  ))}
-                </ul>
+                {metricsLoading ? (
+                  <div className="flex items-center justify-center h-40"><Loader2 className="animate-spin w-8 h-8 text-muted-foreground" aria-label="Загрузка" /></div>
+                ) : requestCategoryData.every(c => c.value === 0) ? (
+                  <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
+                    <span className="text-3xl">📊</span>
+                    <span className="mt-2">Нет данных по выбранным категориям</span>
+                  </div>
+                ) : (
+                  <>
+                    <BarChart width={320} height={180} data={requestCategoryData}>
+                      <Bar dataKey="value" fill="#2563eb">
+                        {requestCategoryData.map((c, idx) => (
+                          <Cell key={c.category} fill={["#2563eb", "#f59e42", "#22c55e"][idx % 3]} />
+                        ))}
+                      </Bar>
+                      <XAxis dataKey="label" tick={{ fontSize: 10 }} />
+                      <YAxis allowDecimals={false} />
+                      <Tooltip />
+                    </BarChart>
+                    <ul className="text-xs space-y-1 mt-4">
+                      {requestCategoryData.map((c) => (
+                        <li key={c.category}>{c.label}: <b>{c.value}</b></li>
+                      ))}
+                    </ul>
+                  </>
+                )}
               </CardContent>
             </Card>
             {/* Вкладка "Запросы" */}
@@ -615,30 +645,87 @@ export default function ReportsPage() {
 
         <TabsContent value="team" className="space-y-4">
           <div className="grid gap-6 md:grid-cols-2">
-            {/* BarChart по исполнителям */}
+            {/* BarChart по загрузке сотрудников */}
             <Card>
-              <CardHeader><CardTitle>Топ исполнителей (инциденты)</CardTitle></CardHeader>
+              <CardHeader><CardTitle>Загрузка сотрудников</CardTitle></CardHeader>
               <CardContent>
-                <BarChart width={320} height={180} data={(metrics?.incidentByAssignee || []).map((a: any) => ({
-                  name: assignees[a.assignedToId]?.name || a.assignedToId || '—',
-                  value: a._count._all,
-                }))}>
-                  <Bar dataKey="value" fill="#2563eb" />
-                  <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                  <YAxis allowDecimals={false} />
-                  <Tooltip />
-                </BarChart>
-                <ul className="text-xs space-y-1 mt-4">
-                  {(metrics?.incidentByAssignee || []).map((a: any) => (
-                    <li key={a.assignedToId} className="flex items-center gap-2">
-                      <span className="font-bold">{assignees[a.assignedToId]?.name || a.assignedToId || '—'}</span>
-                      <span className="ml-2">{a._count._all}</span>
-                    </li>
-                  ))}
-                </ul>
+                {metricsLoading ? (
+                  <div className="flex items-center justify-center h-40"><Loader2 className="animate-spin w-8 h-8 text-muted-foreground" aria-label="Загрузка" /></div>
+                ) : (metrics?.incidentByAssignee?.length || 0) + (metrics?.requestByAssignee?.length || 0) + (metrics?.changeByAssignee?.length || 0) === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
+                    <span className="text-3xl">👥</span>
+                    <span className="mt-2">Нет данных по сотрудникам</span>
+                  </div>
+                ) : (
+                  <BarChart width={340} height={200} data={Object.values(assignees).map((u: any) => {
+                    const openTasks = [
+                      metrics?.incidentByAssignee?.find((a: any) => a.assignedToId === u.id)?._count._all || 0,
+                      metrics?.requestByAssignee?.find((a: any) => a.assignedToId === u.id)?._count._all || 0,
+                      metrics?.changeByAssignee?.find((a: any) => a.assignedToId === u.id)?._count._all || 0,
+                    ].reduce((a, b) => a + b, 0)
+                    return {
+                      name: `${u.lastName} ${u.firstName}`,
+                      value: openTasks,
+                    }
+                  })}>
+                    <Bar dataKey="value" fill="#2563eb" />
+                    <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip />
+                  </BarChart>
+                )}
               </CardContent>
             </Card>
-            {/* Аналогично для заявок и изменений ... */}
+            {/* Таблица эффективности */}
+            <Card>
+              <CardHeader><CardTitle>Эффективность сотрудников</CardTitle></CardHeader>
+              <CardContent>
+                {metricsLoading ? (
+                  <div className="flex items-center justify-center h-40"><Loader2 className="animate-spin w-8 h-8 text-muted-foreground" aria-label="Загрузка" /></div>
+                ) : Object.keys(assignees).length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
+                    <span className="text-3xl">📋</span>
+                    <span className="mt-2">Нет данных по сотрудникам</span>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="p-2 text-left">Сотрудник</th>
+                          <th className="p-2 text-left">Открыто</th>
+                          <th className="p-2 text-left">Решено</th>
+                          <th className="p-2 text-left">Статус</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {/* Получаем только сотрудников с задачами */}
+                        {assigneesWithTasks.map((u: any) => {
+                          const openTasks = [
+                            metrics?.incidentByAssignee?.find((a: any) => a.assignedToId === u.id)?._count._all || 0,
+                            metrics?.requestByAssignee?.find((a: any) => a.assignedToId === u.id)?._count._all || 0,
+                            metrics?.changeByAssignee?.find((a: any) => a.assignedToId === u.id)?._count._all || 0,
+                          ].reduce((a, b) => a + b, 0)
+                          // Решено — можно добавить аналогично, если есть такие данные
+                          return (
+                            <tr key={u.id} className="border-b">
+                              <td className="p-2 font-medium">{u.lastName || u.firstName ? `${u.lastName || ''} ${u.firstName || ''}`.trim() : u.email || 'Без имени'}</td>
+                              <td className="p-2">{openTasks}</td>
+                              <td className="p-2">—</td>
+                              <td className="p-2">
+                                <Badge variant={u.isActive ? undefined : "outline"} className={u.isActive ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
+                                  {u.isActive ? "Активен" : "Неактивен"}
+                                </Badge>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
       </Tabs>

@@ -16,7 +16,7 @@ const navigationGroups = [
     ]
   },
   {
-    title: "Заявки и инциденты",
+    title: "Запросы и инциденты",
     items: [
       { name: "Инциденты", href: "/incidents", icon: AlertTriangle },
       { name: "Запросы", href: "/requests", icon: HelpCircle },

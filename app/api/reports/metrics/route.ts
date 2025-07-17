@@ -28,7 +28,7 @@ export async function GET() {
     _count: { _all: true }
   })
 
-  // Заявки
+  // Запросы
   const totalRequests = await prisma.request.count()
   const openRequests = await prisma.request.count({ where: { status: "OPEN" } })
   const closedRequests = await prisma.request.count({ where: { status: "CLOSED" } })
@@ -59,6 +59,16 @@ export async function GET() {
   const slaIncidents = closed.filter((i: { createdAt: Date; resolvedAt: Date }) => (i.resolvedAt.getTime() - i.createdAt.getTime()) <= 8 * 60 * 60 * 1000).length
   const slaPercent = totalIncidents > 0 ? Math.round((slaIncidents / totalIncidents) * 100) : 0
 
+  // SLA по инцидентам (решено за 8 часов)
+  const slaIncidentsPercent = totalIncidents > 0 ? Math.round((slaIncidents / totalIncidents) * 100) : 0
+  // SLA по запросам (решено за 24 часа)
+  const closedRequestsDetailed = await prisma.request.findMany({ where: { status: "CLOSED", resolvedAt: { not: null } }, select: { createdAt: true, resolvedAt: true } })
+  const slaRequests = closedRequestsDetailed.filter((r: { createdAt: Date; resolvedAt: Date }) => (r.resolvedAt.getTime() - r.createdAt.getTime()) <= 24 * 60 * 60 * 1000).length
+  const slaRequestsPercent = totalRequests > 0 ? Math.round((slaRequests / totalRequests) * 100) : 0
+  // SLA по первому отклику (от createdAt до updatedAt, если updatedAt - createdAt <= 1 час)
+  const firstResponseIncidents = closed.filter((i: { createdAt: Date; updatedAt: Date }) => (i.updatedAt.getTime() - i.createdAt.getTime()) <= 1 * 60 * 60 * 1000).length
+  const slaFirstResponsePercent = totalIncidents > 0 ? Math.round((firstResponseIncidents / totalIncidents) * 100) : 0
+
   // --- Группировка по исполнителям (assignedTo) ---
   // Инциденты
   let incidentByAssignee = await prisma.incident.groupBy({
@@ -67,7 +77,7 @@ export async function GET() {
     where: { assignedToId: { not: null } },
   })
   incidentByAssignee = incidentByAssignee.sort((a: any, b: any) => b._count._all - a._count._all).slice(0, 5)
-  // Заявки
+  // Запросы
   let requestByAssignee = await prisma.request.groupBy({
     by: ["assignedToId"],
     _count: { _all: true },
@@ -101,6 +111,9 @@ export async function GET() {
     implementedChanges,
     approvedChanges,
     slaPercent,
+    slaIncidentsPercent,
+    slaRequestsPercent,
+    slaFirstResponsePercent,
     // Детализация
     incidentStatus,
     incidentCategory,

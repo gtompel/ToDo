@@ -131,98 +131,98 @@ export default function RequestsListClient({ requests, isAdmin, assignableUsers 
     }
   }
 
-  // Вынести рендер одной карточки заявки в отдельную функцию RequestCard
+  // Вынести рендер одной карточки запроса в отдельную функцию RequestCard
   function RequestCard({ request, isOpen, toggle, isAdmin, assignableUsers, handleAdminAction }: any) {
-    return (
+  return (
       <Card key={request.id} className={getCardClassByStatus(request.status) + " transition-colors duration-200 mb-4"}>
-        <CardHeader className="cursor-pointer select-none" onClick={() => toggle(request.id)}>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <span>{isOpen ? <ChevronDown className="inline w-4 h-4" /> : <ChevronRight className="inline w-4 h-4" />}</span>
-              {request.title} <span className="text-xs text-gray-400 ml-2">{formatRequestId(request.id)}</span>
-            </CardTitle>
-            <div className="flex gap-2">
-              {getStatusBadge(request.status)}
-              {getPriorityBadge(request.priority)}
-            </div>
-          </div>
-          <CardDescription>
-            ID: {formatRequestId(request.id)} • Создан: {new Date(request.createdAt).toLocaleDateString("ru-RU")}
-          </CardDescription>
-        </CardHeader>
-        {isOpen && (
-          <CardContent>
-            {renderRequestDetails(request.description)}
-            <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
-              <div>
-                <span className="font-medium">Создал:</span> {request.createdBy?.firstName} {request.createdBy?.lastName}
-              </div>
-              <div>
+              <CardHeader className="cursor-pointer select-none" onClick={() => toggle(request.id)}>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <span>{isOpen ? <ChevronDown className="inline w-4 h-4" /> : <ChevronRight className="inline w-4 h-4" />}</span>
+                    {request.title} <span className="text-xs text-gray-400 ml-2">{formatRequestId(request.id)}</span>
+                  </CardTitle>
+                  <div className="flex gap-2">
+                    {getStatusBadge(request.status)}
+                    {getPriorityBadge(request.priority)}
+                  </div>
+                </div>
+                <CardDescription>
+                  ID: {formatRequestId(request.id)} • Создан: {new Date(request.createdAt).toLocaleDateString("ru-RU")}
+                </CardDescription>
+              </CardHeader>
+              {isOpen && (
+                <CardContent>
+                  {renderRequestDetails(request.description)}
+                  <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
+                    <div>
+                      <span className="font-medium">Создал:</span> {request.createdBy?.firstName} {request.createdBy?.lastName}
+                    </div>
+                    <div>
                 <span className="font-medium">Назначен:</span> {request.assignedTo ? `${request.assignedTo.firstName} ${request.assignedTo.lastName}` : "—"}
-              </div>
-            </div>
-            {isAdmin && (
-              <form className="flex flex-wrap gap-2 items-center mt-2" onSubmit={async (e) => {
+                    </div>
+                  </div>
+                  {isAdmin && (
+                    <form className="flex flex-wrap gap-2 items-center mt-2" onSubmit={async (e) => {
                 e.preventDefault();
                 const form = e.currentTarget as HTMLFormElement & { elements: { [key: string]: any } };
                 const action = form.elements['action'].value;
-                if (action === "status") {
+                      if (action === "status") {
                   await handleAdminAction("status", request.id, form.elements['status'].value);
-                } else if (action === "priority") {
+                      } else if (action === "priority") {
                   await handleAdminAction("priority", request.id, form.elements['priority'].value);
-                } else if (action === "assign") {
+                      } else if (action === "assign") {
                   await handleAdminAction("assign", request.id, form.elements['userId'].value);
-                } else if (action === "delete") {
+                      } else if (action === "delete") {
                   await handleAdminAction("delete", request.id);
-                }
-              }}>
-                <label>
-                  Статус:
-                  <select name="status" defaultValue={request.status} className="ml-1 border rounded px-2 py-1">
-                    {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                  </select>
-                </label>
+                      }
+                    }}>
+                      <label>
+                        Статус:
+                        <select name="status" defaultValue={request.status} className="ml-1 border rounded px-2 py-1">
+                          {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                        </select>
+                      </label>
                 <input type="hidden" name="action" value="status" />
-                <button type="submit" className="px-2 py-1 border rounded bg-blue-100 hover:bg-blue-200"
+                      <button type="submit" className="px-2 py-1 border rounded bg-blue-100 hover:bg-blue-200"
                   onClick={e => { (e.currentTarget.form as any).elements['action'].value = "status" }}>
-                  Сменить
-                </button>
-                <label>
-                  Приоритет:
-                  <select name="priority" defaultValue={request.priority} className="ml-1 border rounded px-2 py-1">
-                    {PRIORITY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                  </select>
-                </label>
-                <button type="submit" className="px-2 py-1 border rounded bg-blue-100 hover:bg-blue-200"
+                        Сменить
+                      </button>
+                      <label>
+                        Приоритет:
+                        <select name="priority" defaultValue={request.priority} className="ml-1 border rounded px-2 py-1">
+                          {PRIORITY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                        </select>
+                      </label>
+                      <button type="submit" className="px-2 py-1 border rounded bg-blue-100 hover:bg-blue-200"
                   onClick={e => { (e.currentTarget.form as any).elements['action'].value = "priority" }}>
-                  Сменить
-                </button>
-                <label>
-                  Назначить:
-                  <select name="userId" defaultValue={request.assignedToId || ""} className="ml-1 border rounded px-2 py-1">
-                    <option value="">Выбрать...</option>
-                    {assignableUsers && assignableUsers.length > 0 ? (
-                      assignableUsers.map((user: any) => (
-                        <option key={user.id} value={user.id}>{user.lastName} {user.firstName} ({user.email})</option>
-                      ))
-                    ) : (
-                      <option value="" disabled>Нет доступных исполнителей</option>
-                    )}
-                  </select>
-                </label>
-                <button type="submit" className="px-2 py-1 border rounded bg-green-100 hover:bg-green-200"
+                        Сменить
+                      </button>
+                      <label>
+                        Назначить:
+                        <select name="userId" defaultValue={request.assignedToId || ""} className="ml-1 border rounded px-2 py-1">
+                          <option value="">Выбрать...</option>
+                          {assignableUsers && assignableUsers.length > 0 ? (
+                            assignableUsers.map((user: any) => (
+                              <option key={user.id} value={user.id}>{user.lastName} {user.firstName} ({user.email})</option>
+                            ))
+                          ) : (
+                            <option value="" disabled>Нет доступных исполнителей</option>
+                          )}
+                        </select>
+                      </label>
+                      <button type="submit" className="px-2 py-1 border rounded bg-green-100 hover:bg-green-200"
                   onClick={e => { (e.currentTarget.form as any).elements['action'].value = "assign" }}>
-                  Назначить
-                </button>
-                <button type="submit" className="px-2 py-1 border rounded bg-red-100 hover:bg-red-200 ml-2"
+                        Назначить
+                      </button>
+                      <button type="submit" className="px-2 py-1 border rounded bg-red-100 hover:bg-red-200 ml-2"
                   onClick={e => { (e.currentTarget.form as any).elements['action'].value = "delete" }}>
-                  Удалить
-                </button>
-              </form>
-            )}
-          </CardContent>
-        )}
-      </Card>
+                        Удалить
+                      </button>
+                    </form>
+                  )}
+                </CardContent>
+              )}
+            </Card>
     );
   }
 

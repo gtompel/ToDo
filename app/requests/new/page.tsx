@@ -90,10 +90,10 @@ export default function NewApplicationPage() {
       })
       if (!res.ok) {
         const err = await res.json()
-        alert(err.error || "Ошибка при создании заявки")
+        alert(err.error || "Ошибка при создании запроса")
         return
       }
-      alert("Заявка успешно подана!")
+      alert("Запрос успешно подан!")
       setCurrentStep(1)
       setFormData({
         fullName: "",
@@ -268,7 +268,7 @@ export default function NewApplicationPage() {
         <div className="flex gap-4">
           <Button type="submit" className="flex-1 md:flex-none">
             <Check className="w-4 h-4 mr-2" />
-            Подать заявку
+            Подать запрос
           </Button>
         </div>
       </form>
@@ -579,8 +579,8 @@ export default function NewApplicationPage() {
         </div>
         <Card>
           <CardHeader>
-            <CardTitle>Новая заявка на создание АП АСЗИ «НИТИ»</CardTitle>
-            <CardDescription>Заполните все необходимые поля для подачи заявки</CardDescription>
+            <CardTitle>Новый запрос на создание АП АСЗИ «НИТИ»</CardTitle>
+            <CardDescription>Заполните все необходимые поля для подачи запроса</CardDescription>
           </CardHeader>
           <CardContent>
             {/* Выбор шаблона */}
@@ -634,7 +634,7 @@ export default function NewApplicationPage() {
                 </Button>
               ) : (
                 <Button onClick={handleSubmit} className="bg-green-600 hover:bg-green-700">
-                  Подать заявку
+                  Подать запрос
                   <Check className="w-4 h-4 ml-2" />
                 </Button>
               )}
