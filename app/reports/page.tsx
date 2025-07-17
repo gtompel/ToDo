@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -18,93 +18,68 @@ import {
   Download,
   RefreshCw,
 } from "lucide-react"
+import { ChartContainer } from "@/components/ui/chart"
+import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from "recharts"
 
 // Страница отчетов
 export default function ReportsPage() {
   // Состояния для диапазона времени и загрузки
   const [timeRange, setTimeRange] = useState("30d")
   const [refreshing, setRefreshing] = useState(false)
+  const [metrics, setMetrics] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+  const [trend, setTrend] = useState<any>(null)
+  const [trendLoading, setTrendLoading] = useState(true)
+  const [trendError, setTrendError] = useState("")
+  const [trendPeriod, setTrendPeriod] = useState(30)
 
-  // Данные для метрик (заглушка)
-  const kpiMetrics = [
-    {
-      title: "Среднее время решения",
-      value: "4.2ч",
-      change: "-12%",
-      trend: "down",
-      icon: Clock,
-      description: "Среднее время от создания до закрытия инцидента",
-    },
-    {
-      title: "Первое время отклика",
-      value: "18мин",
-      change: "+5%",
-      trend: "up",
-      icon: AlertTriangle,
-      description: "Время до первого ответа на инцидент",
-    },
-    {
-      title: "Процент решения с первого раза",
-      value: "78%",
-      change: "+3%",
-      trend: "up",
-      icon: CheckCircle,
-      description: "Инциденты, решенные без эскалации",
-    },
-    {
-      title: "Удовлетворенность пользователей",
-      value: "4.6/5",
-      change: "+0.2",
-      trend: "up",
-      icon: Users,
-      description: "Средняя оценка качества обслуживания",
-    },
-  ]
+  useEffect(() => {
+    setLoading(true)
+    fetch("/api/reports/metrics")
+      .then(r => r.json())
+      .then(data => { setMetrics(data); setError("") })
+      .catch(() => setError("Ошибка загрузки метрик"))
+      .finally(() => setLoading(false))
+  }, [refreshing])
 
-  // Данные по инцидентам (заглушка)
-  const incidentStats = {
-    total: 156,
-    resolved: 134,
-    inProgress: 18,
-    new: 4,
-    byPriority: {
-      critical: 2,
-      high: 8,
-      medium: 12,
-      low: 134,
-    },
-    byCategory: [
-      { name: "Инфраструктура", count: 45, percentage: 29 },
-      { name: "Приложения", count: 38, percentage: 24 },
-      { name: "Сеть", count: 32, percentage: 21 },
-      { name: "Оборудование", count: 25, percentage: 16 },
-      { name: "Безопасность", count: 16, percentage: 10 },
-    ],
+  useEffect(() => {
+    setTrendLoading(true)
+    fetch(`/api/reports/trends?days=${trendPeriod}`)
+      .then(r => r.json())
+      .then(data => { setTrend(data); setTrendError("") })
+      .catch(() => setTrendError("Ошибка загрузки трендов"))
+      .finally(() => setTrendLoading(false))
+  }, [trendPeriod])
+
+// Цвета и иконки для статусов инцидентов
+  const incidentStatusMeta: Record<string, { color: string; icon: any; label: string }> = {
+    CLOSED: { color: "#22c55e", icon: CheckCircle, label: "Решено" },
+    IN_PROGRESS: { color: "#f59e42", icon: Clock, label: "В работе" },
+    OPEN: { color: "#2563eb", icon: AlertTriangle, label: "Новые" },
+    RESOLVED: { color: "#06b6d4", icon: CheckCircle, label: "Решено (ожидает)" },
   }
 
-  // Данные по запросам (заглушка)
-  const requestStats = {
-    total: 89,
-    completed: 67,
-    inProgress: 15,
-    pending: 7,
-    avgCompletionTime: "2.1 дня",
-    slaCompliance: 92,
-  }
-
-  // Данные по эффективности команды (заглушка)
-  const teamPerformance = [
-    { name: "Иванов И.И.", resolved: 23, avgTime: "3.2ч", satisfaction: 4.8 },
-    { name: "Петров П.П.", resolved: 19, avgTime: "4.1ч", satisfaction: 4.6 },
-    { name: "Сидоров С.С.", resolved: 17, avgTime: "3.8ч", satisfaction: 4.7 },
-    { name: "Волков В.В.", resolved: 15, avgTime: "5.2ч", satisfaction: 4.4 },
-  ]
+  // Получить ФИО исполнителей по id
+  const [assignees, setAssignees] = useState<any>({})
+  useEffect(() => {
+    if (!metrics) return
+    const ids = [
+      ...metrics.incidentByAssignee.map((a: any) => a.assignedToId),
+      ...metrics.requestByAssignee.map((a: any) => a.assignedToId),
+      ...metrics.changeByAssignee.map((a: any) => a.assignedToId),
+    ].filter(Boolean)
+    if (ids.length === 0) return
+    fetch(`/api/users?ids=${ids.join(",")}`)
+      .then(r => r.json())
+      .then(data => setAssignees(data.users.reduce((acc: any, u: any) => { acc[u.id] = u; return acc }, {})))
+  }, [metrics])
 
   // Обновить данные отчета
   const handleRefresh = async () => {
     setRefreshing(true)
     // Имитация загрузки данных
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    await new Promise((resolve) => setTimeout(resolve, 500))
     setRefreshing(false)
   }
 
@@ -112,6 +87,54 @@ export default function ReportsPage() {
   const exportReport = () => {
     // Логика экспорта отчета
     console.log("Экспорт отчета за период:", timeRange)
+  }
+
+  // Формируем массив статусов с реальными данными (0 если нет)
+  const statusOrder = [
+    { key: 'CLOSED', label: 'Решено' },
+    { key: 'IN_PROGRESS', label: 'В работе' },
+    { key: 'OPEN', label: 'Новые' },
+  ]
+  const statusData = statusOrder.map(({ key, label }) => {
+    const found = (metrics?.incidentStatus || []).find((s: any) => s.status === key)
+    return {
+      status: key,
+      label,
+      value: found ? found._count._all : 0,
+      color: incidentStatusMeta[key]?.color || '#64748b',
+      icon: incidentStatusMeta[key]?.icon || AlertTriangle,
+    }
+  })
+
+  // Фиксированные категории для заявок
+  const requestCategoryOrder = [
+    { key: 'Доступ', label: 'Доступ' },
+    { key: 'ПО', label: 'ПО' },
+    { key: 'Оборудование', label: 'Оборудование' },
+  ]
+  const requestCategoryData = requestCategoryOrder.map(({ key, label }) => {
+    const found = (metrics?.requestCategory || []).find((c: any) => c.category === key)
+    return {
+      category: key,
+      label,
+      value: found ? found._count._all : 0,
+    }
+  })
+
+  // Словари русских названий статусов
+  const requestStatusRu: Record<string, string> = {
+    OPEN: 'Открыта',
+    RESOLVED: 'Решено',
+    IN_PROGRESS: 'В работе',
+    CLOSED: 'Закрыта',
+  }
+  const changeStatusRu: Record<string, string> = {
+    APPROVED: 'Утверждено',
+    PENDING_APPROVAL: 'Ожидает утверждения',
+    DRAFT: 'Черновик',
+    IMPLEMENTED: 'Внедрено',
+    REJECTED: 'Отклонено',
+    IN_PROGRESS: 'В работе',
   }
 
   return (
@@ -145,29 +168,137 @@ export default function ReportsPage() {
       </div>
 
       {/* Ключевые метрики */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {kpiMetrics.map((metric, index) => (
-          <Card key={index}>
+      {loading ? (
+        <div className="p-8 text-center text-muted-foreground">Загрузка метрик...</div>
+      ) : error ? (
+        <div className="p-8 text-center text-red-500">{error}</div>
+      ) : metrics && (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{metric.title}</CardTitle>
-              <metric.icon className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Всего инцидентов</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{metric.value}</div>
-              <div className="flex items-center text-xs">
-                {metric.trend === "up" ? (
-                  <TrendingUp className="w-3 h-3 text-green-500 mr-1" />
-                ) : (
-                  <TrendingDown className="w-3 h-3 text-red-500 mr-1" />
-                )}
-                <span className={metric.trend === "up" ? "text-green-600" : "text-red-600"}>{metric.change}</span>
-                <span className="text-muted-foreground ml-1">за период</span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">{metric.description}</p>
+              <div className="text-2xl font-bold">{metrics.totalIncidents}</div>
+              <div className="text-xs text-muted-foreground mt-1">Открытых: {metrics.openIncidents}, Закрытых: {metrics.closedIncidents}</div>
             </CardContent>
           </Card>
-        ))}
-      </div>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Среднее время решения</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{metrics.avgIncidentResolution ? `${metrics.avgIncidentResolution} ч` : "-"}</div>
+              <div className="text-xs text-muted-foreground mt-1">Среднее время от создания до закрытия инцидента</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">SLA (8ч)</CardTitle>
+              <CheckCircle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{metrics.slaPercent}%</div>
+              <div className="text-xs text-muted-foreground mt-1">Инциденты, решённые за 8 часов</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Всего заявок</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{metrics.totalRequests}</div>
+              <div className="text-xs text-muted-foreground mt-1">Открытых: {metrics.openRequests}, Закрытых: {metrics.closedRequests}</div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Детализация по статусам и категориям */}
+      {metrics && (
+        <div className="grid gap-6 md:grid-cols-3">
+          {/* Инциденты по статусу — BarChart + список */}
+          <Card>
+            <CardHeader><CardTitle>Статус инцидентов</CardTitle></CardHeader>
+            <CardContent>
+              <BarChart width={220} height={120} data={statusData}>
+                <Bar dataKey="value">
+                  {statusData.map((s, idx) => (
+                    <Cell key={s.status} fill={s.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+              <ul className="text-xs space-y-1 mt-4">
+                {statusData.map((s) => {
+                  const Icon = s.icon
+                  return (
+                    <li key={s.status} className="flex items-center gap-2">
+                      <Badge style={{ background: s.color, color: '#fff' }}><Icon className="w-3 h-3 mr-1 inline" />{s.label}</Badge>
+                      <span className="ml-2 font-bold">{s.value}</span>
+                    </li>
+                  )
+                })}
+              </ul>
+            </CardContent>
+          </Card>
+          {/* Инциденты по категории */}
+          <Card>
+            <CardHeader><CardTitle>Инциденты по категории</CardTitle></CardHeader>
+            <CardContent>
+              <ul className="text-xs space-y-1">
+                {(metrics?.incidentCategory || []).map((c: any) => (
+                  <li key={c.category}>{c.category || 'Без категории'}: <b>{c._count._all}</b></li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+          {/* Заявки */}
+          <Card>
+            <CardHeader><CardTitle>Заявки по статусу</CardTitle></CardHeader>
+            <CardContent>
+              <ul className="text-xs space-y-1">
+                {(metrics?.requestStatus || []).map((s: any) => (
+                  <li key={s.status}>{requestStatusRu[s.status] || s.status}: <b>{s._count._all}</b></li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader><CardTitle>Заявки по категории</CardTitle></CardHeader>
+            <CardContent>
+              <ul className="text-xs space-y-1">
+                {(metrics?.requestCategory || []).map((c: any) => (
+                  <li key={c.category}>{c.category || 'Без категории'}: <b>{c._count._all}</b></li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+          {/* Изменения */}
+          <Card>
+            <CardHeader><CardTitle>Изменения по статусу</CardTitle></CardHeader>
+            <CardContent>
+              <ul className="text-xs space-y-1">
+                {(metrics?.changeStatus || []).map((s: any) => (
+                  <li key={s.status}>{changeStatusRu[s.status] || s.status}: <b>{s._count._all}</b></li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader><CardTitle>Изменения по категории</CardTitle></CardHeader>
+            <CardContent>
+              <ul className="text-xs space-y-1">
+                {(metrics?.changeCategory || []).map((c: any) => (
+                  <li key={c.category}>{c.category || 'Без категории'}: <b>{c._count._all}</b></li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
@@ -186,13 +317,48 @@ export default function ReportsPage() {
                 <CardDescription>Динамика ключевых метрик</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-64 flex items-center justify-center border-2 border-dashed border-muted-foreground/25 rounded-lg">
-                  <div className="text-center">
-                    <BarChart3 className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">График временных рядов</p>
-                    <p className="text-xs text-muted-foreground">Инциденты, запросы, время решения</p>
-                  </div>
+                <div className="flex items-center gap-4 mb-2">
+                  <span className="text-xs text-muted-foreground">Период:</span>
+                  <select
+                    className="border rounded px-2 py-1 text-xs"
+                    value={trendPeriod}
+                    onChange={e => setTrendPeriod(Number(e.target.value))}
+                  >
+                    <option value={7}>7 дней</option>
+                    <option value={30}>30 дней</option>
+                    <option value={90}>90 дней</option>
+                    <option value={365}>Год</option>
+                  </select>
                 </div>
+                {trendLoading ? (
+                  <div className="h-64 flex items-center justify-center text-muted-foreground">Загрузка графика...</div>
+                ) : trendError ? (
+                  <div className="h-64 flex items-center justify-center text-red-500">{trendError}</div>
+                ) : trend && (
+                  <>
+                    <ResponsiveContainer width="100%" height={250}>
+                      <LineChart data={trend.labels.map((label: string, i: number) => ({
+                        date: label,
+                        incidents: trend.incidents[i],
+                        requests: trend.requests[i],
+                        changes: trend.changes[i],
+                      }))}>
+                        <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                        <YAxis allowDecimals={false} />
+                        <Tooltip />
+                        <Legend />
+                        <Line type="monotone" dataKey="incidents" stroke="#2563eb" name="Инциденты" />
+                        <Line type="monotone" dataKey="requests" stroke="#059669" name="Заявки" />
+                        <Line type="monotone" dataKey="changes" stroke="#f59e42" name="Изменения" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                    <div className="flex gap-6 mt-2 text-xs text-muted-foreground">
+                      <span>Инцидентов: <b>{trend.total.incidents}</b></span>
+                      <span>Заявок: <b>{trend.total.requests}</b></span>
+                      <span>Изменений: <b>{trend.total.changes}</b></span>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
 
@@ -210,10 +376,20 @@ export default function ReportsPage() {
                       <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
                         <div
                           className="h-full bg-green-500"
-                          style={{ width: `${(incidentStats.resolved / incidentStats.total) * 100}%` }}
+                          style={{
+                            width: `${
+                              ((metrics?.incidentStatus?.find(
+                                (s: { status: string; _count: { _all: number } }) => s.status === 'CLOSED'
+                              )?._count._all || 0) / (metrics?.totalIncidents || 1)) * 100
+                            }%`
+                          }}
                         />
                       </div>
-                      <span className="text-sm font-medium">{incidentStats.resolved}</span>
+                      <span className="text-sm font-medium">
+                        {
+                          metrics?.incidentStatus?.find((s: { status: string; _count: { _all: number } }) => s.status === 'CLOSED')?._count._all || 0
+                        }
+                      </span>
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
@@ -222,10 +398,22 @@ export default function ReportsPage() {
                       <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
                         <div
                           className="h-full bg-blue-500"
-                          style={{ width: `${(incidentStats.inProgress / incidentStats.total) * 100}%` }}
+                          style={{
+                            width: `${
+                              ((metrics?.incidentStatus?.find(
+                                (s: { status: string; _count: { _all: number } }) => s.status === 'IN_PROGRESS'
+                              )?._count._all || 0) / (metrics?.totalIncidents || 1)) * 100
+                            }%`
+                          }}
                         />
                       </div>
-                      <span className="text-sm font-medium">{incidentStats.inProgress}</span>
+                      <span className="text-sm font-medium">
+                        {
+                          metrics?.incidentStatus?.find(
+                            (s: { status: string; _count: { _all: number } }) => s.status === 'IN_PROGRESS'
+                          )?._count._all || 0
+                        }
+                      </span>
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
@@ -234,10 +422,22 @@ export default function ReportsPage() {
                       <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
                         <div
                           className="h-full bg-yellow-500"
-                          style={{ width: `${(incidentStats.new / incidentStats.total) * 100}%` }}
+                          style={{
+                            width: `${
+                              ((metrics?.incidentStatus?.find(
+                                (s: { status: string; _count: { _all: number } }) => s.status === 'OPEN'
+                              )?._count._all || 0) / (metrics?.totalIncidents || 1)) * 100
+                            }%`
+                          }}
                         />
                       </div>
-                      <span className="text-sm font-medium">{incidentStats.new}</span>
+                      <span className="text-sm font-medium">
+                        {
+                          metrics?.incidentStatus?.find(
+                            (s: { status: string; _count: { _all: number } }) => s.status === 'OPEN'
+                          )?._count._all || 0
+                        }
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -272,96 +472,97 @@ export default function ReportsPage() {
 
         <TabsContent value="incidents" className="space-y-4">
           <div className="grid gap-6 md:grid-cols-2">
-            {/* Распределение по приоритетам */}
+            {/* Динамика инцидентов: создано и решено */}
             <Card>
               <CardHeader>
-                <CardTitle>Распределение по приоритетам</CardTitle>
-                <CardDescription>Инциденты за выбранный период</CardDescription>
+                <CardTitle>Динамика инцидентов</CardTitle>
+                <CardDescription>Создание и решение по дням</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-red-500 rounded-full" />
-                      <span className="text-sm">Критический</span>
-                    </div>
-                    <Badge variant="destructive">{incidentStats.byPriority.critical}</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-orange-500 rounded-full" />
-                      <span className="text-sm">Высокий</span>
-                    </div>
-                    <Badge className="bg-orange-100 text-orange-800">{incidentStats.byPriority.high}</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-yellow-500 rounded-full" />
-                      <span className="text-sm">Средний</span>
-                    </div>
-                    <Badge className="bg-yellow-100 text-yellow-800">{incidentStats.byPriority.medium}</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-green-500 rounded-full" />
-                      <span className="text-sm">Низкий</span>
-                    </div>
-                    <Badge className="bg-green-100 text-green-800">{incidentStats.byPriority.low}</Badge>
-                  </div>
-                </div>
+                {trendLoading ? (
+                  <div className="h-64 flex items-center justify-center text-muted-foreground">Загрузка графика...</div>
+                ) : trendError ? (
+                  <div className="h-64 flex items-center justify-center text-red-500">{trendError}</div>
+                ) : trend && (
+                  <ResponsiveContainer width="100%" height={250}>
+                    <LineChart data={trend.labels.map((label: string, i: number) => ({
+                      date: label,
+                      created: trend.incidentsCreated[i],
+                      closed: trend.incidentsClosed[i],
+                    }))}>
+                      <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                      <YAxis allowDecimals={false} />
+                      <Tooltip />
+                      <Legend />
+                      <Line type="monotone" dataKey="created" stroke="#2563eb" name="Создано" />
+                      <Line type="monotone" dataKey="closed" stroke="#22c55e" name="Решено" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
               </CardContent>
             </Card>
-
-            {/* Распределение по категориям */}
+            {/* Распределение по статусам */}
             <Card>
-              <CardHeader>
-                <CardTitle>Распределение по категориям</CardTitle>
-                <CardDescription>Топ категории инцидентов</CardDescription>
-              </CardHeader>
+              <CardHeader><CardTitle>Статус инцидентов</CardTitle></CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {incidentStats.byCategory.map((category, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <span className="text-sm">{category.name}</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
-                          <div className="h-full bg-primary" style={{ width: `${category.percentage}%` }} />
-                        </div>
-                        <span className="text-sm font-medium w-8">{category.count}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <BarChart width={220} height={120} data={(metrics?.incidentStatus || []).map((s: any) => ({
+                  name: incidentStatusMeta[s.status]?.label || s.status || 'Без статуса',
+                  value: s._count._all,
+                  color: incidentStatusMeta[s.status]?.color || '#64748b',
+                }))}>
+                  <Bar dataKey="value">
+                    {(metrics?.incidentStatus || []).map((s: any, idx: number) => (
+                      <Cell key={s.status} fill={incidentStatusMeta[s.status]?.color || '#64748b'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+                <ul className="text-xs space-y-1 mt-4">
+                  {(metrics?.incidentStatus || []).map((s: any) => {
+                    const meta = incidentStatusMeta[s.status] || { color: '#64748b', icon: AlertTriangle, label: s.status || 'Без статуса' }
+                    const Icon = meta.icon
+                    return (
+                      <li key={s.status} className="flex items-center gap-2">
+                        <Badge style={{ background: meta.color, color: '#fff' }}><Icon className="w-3 h-3 mr-1 inline" />{meta.label}</Badge>
+                        <span className="ml-2 font-bold">{s._count._all}</span>
+                      </li>
+                    )
+                  })}
+                </ul>
               </CardContent>
             </Card>
           </div>
-
-          {/* Временная диаграмма */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Динамика инцидентов</CardTitle>
-              <CardDescription>Создание и решение инцидентов по дням</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-64 flex items-center justify-center border-2 border-dashed border-muted-foreground/25 rounded-lg">
-                <div className="text-center">
-                  <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">Временная диаграмма</p>
-                  <p className="text-xs text-muted-foreground">Создано vs Решено по дням</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="requests" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Столбчатая диаграмма по категориям запросов */}
+            <Card>
+              <CardHeader><CardTitle>Статистика по категориям запросов</CardTitle></CardHeader>
+              <CardContent>
+                <BarChart width={320} height={180} data={requestCategoryData}>
+                  <Bar dataKey="value" fill="#2563eb">
+                    {requestCategoryData.map((c, idx) => (
+                      <Cell key={c.category} fill={["#2563eb", "#f59e42", "#22c55e"][idx % 3]} />
+                    ))}
+                  </Bar>
+                  <XAxis dataKey="label" tick={{ fontSize: 10 }} />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip />
+                </BarChart>
+                <ul className="text-xs space-y-1 mt-4">
+                  {requestCategoryData.map((c) => (
+                    <li key={c.category}>{c.label}: <b>{c.value}</b></li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+            {/* Вкладка "Запросы" */}
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">Всего запросов</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{requestStats.total}</div>
+                <div className="text-2xl font-bold">{metrics?.totalRequests || 0}</div>
               </CardContent>
             </Card>
             <Card>
@@ -369,7 +570,11 @@ export default function ReportsPage() {
                 <CardTitle className="text-sm font-medium">Выполнено</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">{requestStats.completed}</div>
+                <div className="text-2xl font-bold text-green-600">
+                  {
+                    metrics?.requestStatus?.find((s: { status: string; _count: { _all: number } }) => s.status === 'COMPLETED')?._count._all || 0
+                  }
+                </div>
               </CardContent>
             </Card>
             <Card>
@@ -377,7 +582,7 @@ export default function ReportsPage() {
                 <CardTitle className="text-sm font-medium">Среднее время</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{requestStats.avgCompletionTime}</div>
+                <div className="text-2xl font-bold">{metrics?.avgRequestCompletionTime || "-"}</div>
               </CardContent>
             </Card>
             <Card>
@@ -385,7 +590,7 @@ export default function ReportsPage() {
                 <CardTitle className="text-sm font-medium">SLA соблюдение</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-blue-600">{requestStats.slaCompliance}%</div>
+                <div className="text-2xl font-bold text-blue-600">{metrics?.slaCompliancePercent || 0}%</div>
               </CardContent>
             </Card>
           </div>
@@ -409,101 +614,31 @@ export default function ReportsPage() {
         </TabsContent>
 
         <TabsContent value="team" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Производительность команды</CardTitle>
-              <CardDescription>Индивидуальные показатели сотрудников</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-2">Сотрудник</th>
-                      <th className="text-left p-2">Решено</th>
-                      <th className="text-left p-2">Среднее время</th>
-                      <th className="text-left p-2">Оценка</th>
-                      <th className="text-left p-2">Статус</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {teamPerformance.map((member, index) => (
-                      <tr key={index} className="border-b">
-                        <td className="p-2 font-medium">{member.name}</td>
-                        <td className="p-2">{member.resolved}</td>
-                        <td className="p-2">{member.avgTime}</td>
-                        <td className="p-2">
-                          <div className="flex items-center gap-1">
-                            <span>{member.satisfaction}</span>
-                            <div className="flex">
-                              {[1, 2, 3, 4, 5].map((star) => (
-                                <div
-                                  key={star}
-                                  className={`w-3 h-3 ${
-                                    star <= member.satisfaction ? "text-yellow-400" : "text-gray-300"
-                                  }`}
-                                >
-                                  ★
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="p-2">
-                          <Badge variant="outline" className="bg-green-100 text-green-800">
-                            Активен
-                          </Badge>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Загрузка команды */}
           <div className="grid gap-6 md:grid-cols-2">
+            {/* BarChart по исполнителям */}
             <Card>
-              <CardHeader>
-                <CardTitle>Загрузка команды</CardTitle>
-                <CardDescription>Текущие назначения</CardDescription>
-              </CardHeader>
+              <CardHeader><CardTitle>Топ исполнителей (инциденты)</CardTitle></CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {teamPerformance.map((member, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <span className="text-sm">{member.name}</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-blue-500"
-                            style={{ width: `${Math.min((member.resolved / 25) * 100, 100)}%` }}
-                          />
-                        </div>
-                        <span className="text-sm font-medium">{Math.round((member.resolved / 25) * 100)}%</span>
-                      </div>
-                    </div>
+                <BarChart width={320} height={180} data={(metrics?.incidentByAssignee || []).map((a: any) => ({
+                  name: assignees[a.assignedToId]?.name || a.assignedToId || '—',
+                  value: a._count._all,
+                }))}>
+                  <Bar dataKey="value" fill="#2563eb" />
+                  <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip />
+                </BarChart>
+                <ul className="text-xs space-y-1 mt-4">
+                  {(metrics?.incidentByAssignee || []).map((a: any) => (
+                    <li key={a.assignedToId} className="flex items-center gap-2">
+                      <span className="font-bold">{assignees[a.assignedToId]?.name || a.assignedToId || '—'}</span>
+                      <span className="ml-2">{a._count._all}</span>
+                    </li>
                   ))}
-                </div>
+                </ul>
               </CardContent>
             </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Эффективность</CardTitle>
-                <CardDescription>Соотношение скорости и качества</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-48 flex items-center justify-center border-2 border-dashed border-muted-foreground/25 rounded-lg">
-                  <div className="text-center">
-                    <TrendingUp className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">Scatter plot</p>
-                    <p className="text-xs text-muted-foreground">Время vs Качество</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Аналогично для заявок и изменений ... */}
           </div>
         </TabsContent>
       </Tabs>

@@ -13,6 +13,31 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   return NextResponse.json({ article })
 }
 
+// Получить связанные статьи по тегам
+export async function GET_related(req: Request, { params }: { params: { id: string } }) {
+  const { id } = await params
+  // Получаем текущую статью
+  const article = await prisma.article.findUnique({ where: { id } })
+  if (!article) return NextResponse.json({ articles: [] })
+  if (!article.tags || article.tags.length === 0) return NextResponse.json({ articles: [] })
+  // Ищем другие статьи с любым из этих тегов, кроме текущей, только опубликованные
+  const related = await prisma.article.findMany({
+    where: {
+      id: { not: id },
+      tags: { hasSome: article.tags },
+      status: "published",
+    },
+    take: 5,
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      tags: true,
+    },
+  })
+  return NextResponse.json({ articles: related })
+}
+
 // PATCH: обновить статью или оценку полезности
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const { id } = await params

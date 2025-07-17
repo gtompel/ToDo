@@ -47,9 +47,9 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
     // Приводим tags к массиву строк
     const submitData = {
       ...formData,
-      tags: Array.isArray(formData.tags)
-        ? formData.tags
-        : (typeof formData.tags === "string" ? formData.tags.split(",").map((t: string) => t.trim()).filter(Boolean) : []),
+      tags: typeof formData.tags === "string"
+        ? formData.tags.split(",").map((t: string) => t.trim()).filter(Boolean)
+        : [],
     }
     try {
       const res = await fetch(`/api/articles/${id}`, {
@@ -98,6 +98,8 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
   if (loading) return <div className="p-8 text-center text-muted-foreground">Загрузка...</div>
   if (error || !formData) return <div className="p-8 text-center text-red-500">{error || "Статья не найдена"}</div>
 
+  const tagsString = Array.isArray(formData.tags) ? formData.tags.join(', ') : formData.tags;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -128,7 +130,7 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
             </div>
             <div className="space-y-2">
               <Label htmlFor="tags">Теги (через запятую)</Label>
-              <Input id="tags" value={Array.isArray(formData.tags) ? formData.tags.join(", ") : (formData.tags || "")} onChange={e => handleInputChange("tags", e.target.value.split(",").map((t: string) => t.trim()).filter(Boolean))} />
+              <Input id="tags" value={formData.tags || ""} onChange={e => handleInputChange("tags", e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="status">Статус</Label>

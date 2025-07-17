@@ -319,7 +319,7 @@ export default function ArticlePageClient({ article, comments }: { article: any,
             </CardHeader>
             <CardContent>
               {showRelated ? (
-                <RelatedArticlesBlock tags={article.tags} />
+                <RelatedArticlesBlock articleId={article.id} tags={article.tags} />
               ) : (
                 <div className="text-muted-foreground">Связанные статьи будут загружены при прокрутке...</div>
               )}

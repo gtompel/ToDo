@@ -54,6 +54,19 @@ export async function GET(req: Request) {
     take: 5
   })
 
+  // Поиск по статьям базы знаний
+  const articles = await prisma.article.findMany({
+    where: {
+      OR: [
+        { title: { contains: q, mode: "insensitive" } },
+        { content: { contains: q, mode: "insensitive" } },
+        { tags: { has: q } },
+      ],
+      status: "published",
+    },
+    take: 5,
+  })
+
   const results = [
     ...itResources.map((r: any) => ({
       type: "ИТ-ресурс",
@@ -82,6 +95,13 @@ export async function GET(req: Request) {
       title: i.title,
       description: i.description,
       href: `/incidents/${i.id}`
+    })),
+    ...articles.map((a: any) => ({
+      type: "Статья базы знаний",
+      id: a.id,
+      title: a.title,
+      description: a.content?.slice(0, 120) || "",
+      href: `/knowledge-base/${a.id}`
     })),
   ]
 
