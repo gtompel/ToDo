@@ -68,7 +68,7 @@ export default function LoginForm({ initialError }: { initialError?: string }) {
       {authType === 'local' ? (
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
-          <Input id="email" name="email" type="email" placeholder="admin@example.com" required />
+          <Input id="email" name="email" type="email" placeholder="admin@example.com" required={authType === 'local'} />
         </div>
       ) : (
         <div className="space-y-2">

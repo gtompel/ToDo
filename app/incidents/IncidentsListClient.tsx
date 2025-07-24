@@ -139,7 +139,7 @@ export default function IncidentsListClient({ incidents, isAdmin, assignableUser
       <div className="flex items-center gap-2 mb-4">
         <IncidentsFilterPanel categories={categories} filter={filter} setFilter={setFilter} />
         <div className="ml-auto flex gap-2">
-          <Button variant="outline" size="icon" onClick={() => setView(view === 'blocks' ? 'list' : 'blocks')} aria-label={view === 'blocks' ? 'Показать списком' : 'Показать блоками'} onClick={e => e.stopPropagation()}>
+          <Button variant="outline" size="icon" onClick={e => { e.stopPropagation(); setView(view === 'blocks' ? 'list' : 'blocks') }} aria-label={view === 'blocks' ? 'Показать списком' : 'Показать блоками'}>
             {view === 'blocks' ? <ListIcon className="w-5 h-5" /> : <LayoutGrid className="w-5 h-5" />}
           </Button>
         </div>
@@ -192,7 +192,6 @@ export default function IncidentsListClient({ incidents, isAdmin, assignableUser
                               email: ""
                             };
                           })}
-                          onInnerClick={() => toggle(incident.id)}
                         />
                       )}
                     </div>
@@ -254,7 +253,6 @@ export default function IncidentsListClient({ incidents, isAdmin, assignableUser
                               email: ""
                             };
                           })}
-                          onInnerClick={() => toggle(incident.id)}
                         />
                       )}
                     </div>
