@@ -4,7 +4,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Plus, GitBranch } from "lucide-react"
+import { Plus, GitBranch, ChevronDown } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/auth"
 import ChangesAdminActions from "./ChangesAdminActions"
@@ -25,15 +25,15 @@ async function getChanges() {
 function getStatusBadge(status: string) {
   switch (status) {
     case "PENDING":
-      return <Badge variant="secondary">Ожидает</Badge>
+      return <span className="px-2 py-1 rounded bg-yellow-400 text-white text-xs font-bold">Ожидает</span>
     case "APPROVED":
-      return <Badge variant="default">Одобрен</Badge>
+      return <span className="px-2 py-1 rounded bg-green-500 text-white text-xs font-bold">Одобрен</span>
     case "REJECTED":
-      return <Badge variant="destructive">Отклонен</Badge>
+      return <span className="px-2 py-1 rounded bg-red-600 text-white text-xs font-bold">Отклонен</span>
     case "IMPLEMENTED":
-      return <Badge variant="outline">Внедрен</Badge>
+      return <span className="px-2 py-1 rounded bg-blue-600 text-white text-xs font-bold">Внедрен</span>
     default:
-      return <Badge>{status}</Badge>
+      return <span className="px-2 py-1 rounded bg-gray-100 text-gray-700 text-xs">{status}</span>
   }
 }
 
@@ -48,6 +48,21 @@ function getRiskBadge(risk: string) {
       return <Badge variant="outline">Низкий</Badge>
     default:
       return <Badge>{risk}</Badge>
+  }
+}
+
+function getCardClassByStatus(status: string) {
+  switch (status) {
+    case "PENDING":
+      return "border-l-4 border-yellow-400 bg-yellow-50"
+    case "APPROVED":
+      return "border-l-4 border-green-500 bg-green-50"
+    case "REJECTED":
+      return "border-l-4 border-red-600 bg-red-50"
+    case "IMPLEMENTED":
+      return "border-l-4 border-blue-600 bg-blue-50"
+    default:
+      return "border-l-4 border-gray-200 bg-white"
   }
 }
 
@@ -78,7 +93,7 @@ async function ChangesList({ isAdmin, assignees }: { isAdmin: boolean, assignees
   return (
     <div className="space-y-4">
       {changes.map((change: any) => (
-        <Card key={change.id}>
+        <Card key={change.id} className={getCardClassByStatus(change.status)}>
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">{change.title}</CardTitle>

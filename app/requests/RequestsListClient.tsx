@@ -5,22 +5,52 @@ import { ChevronDown, ChevronRight, HelpCircle, Plus } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { getStatusBadge, getPriorityBadge, renderRequestDetails, formatRequestId, STATUS_OPTIONS, PRIORITY_OPTIONS } from "./RequestsListHelpers"
+import { renderRequestDetails, formatRequestId, STATUS_OPTIONS, PRIORITY_OPTIONS } from "./RequestsListHelpers"
 import { fetchWithTimeout } from "@/lib/utils"
 import { toast } from "@/components/ui/use-toast"
+
+function getStatusBadge(status: string) {
+  switch (status) {
+    case "OPEN":
+      return <span className="px-2 py-1 rounded bg-blue-600 text-white text-xs font-bold">Открыт</span>
+    case "IN_PROGRESS":
+      return <span className="px-2 py-1 rounded bg-yellow-400 text-white text-xs font-bold">В работе</span>
+    case "RESOLVED":
+      return <span className="px-2 py-1 rounded bg-green-500 text-white text-xs font-bold">Решен</span>
+    case "CLOSED":
+      return <span className="px-2 py-1 rounded bg-gray-400 text-white text-xs font-bold">Закрыт</span>
+    default:
+      return <span className="px-2 py-1 rounded bg-gray-100 text-gray-700 text-xs">{status}</span>
+  }
+}
+
+function getPriorityBadge(priority: string) {
+  switch (priority) {
+    case "HIGH":
+      return <span className="px-2 py-1 rounded bg-orange-500 text-white text-xs font-bold">Высокий</span>
+    case "MEDIUM":
+      return <span className="px-2 py-1 rounded bg-yellow-300 text-yellow-900 text-xs font-bold">Средний</span>
+    case "LOW":
+      return <span className="px-2 py-1 rounded bg-green-100 text-green-800 text-xs font-bold">Низкий</span>
+    case "CRITICAL":
+      return <span className="px-2 py-1 rounded bg-red-600 text-white text-xs font-bold">Критический</span>
+    default:
+      return <span className="px-2 py-1 rounded bg-gray-100 text-gray-700 text-xs">{priority}</span>
+  }
+}
 
 function getCardClassByStatus(status: string) {
   switch (status) {
     case "OPEN":
-      return "border-red-400 bg-red-50"
+      return "border-l-4 border-blue-600 bg-blue-50"
     case "IN_PROGRESS":
-      return "border-yellow-400 bg-yellow-50"
+      return "border-l-4 border-yellow-400 bg-yellow-50"
     case "RESOLVED":
-      return "border-green-400 bg-green-50"
+      return "border-l-4 border-green-500 bg-green-50"
     case "CLOSED":
-      return "border-gray-300 bg-gray-50"
+      return "border-l-4 border-gray-400 bg-gray-50"
     default:
-      return "border-gray-200 bg-white"
+      return "border-l-4 border-gray-200 bg-white"
   }
 }
 

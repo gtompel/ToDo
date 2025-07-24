@@ -14,6 +14,7 @@ import { useToast } from "@/components/ui/use-toast"
 import ReactMarkdown from "react-markdown"
 import dynamic from "next/dynamic"
 import { useRef, useEffect, useState } from "react"
+import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
 
 const CommentsBlock = dynamic(() => import("./CommentsBlock"), { ssr: false, loading: () => <div className="text-muted-foreground">Загрузка комментариев...</div> })
 const RelatedArticlesBlock = dynamic(() => import("./RelatedArticlesBlock"), { ssr: false, loading: () => <div className="text-muted-foreground">Загрузка связанных статей...</div> })
@@ -137,6 +138,30 @@ export default function ArticlePageClient({ article, comments }: { article: any,
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumbs */}
+      <Breadcrumb className="mb-4">
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/">Главная</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/knowledge-base">База знаний</BreadcrumbLink>
+          </BreadcrumbItem>
+          {article.category && (
+            <>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink href={`/knowledge-base?category=${encodeURIComponent(article.category)}`}>{article.category}</BreadcrumbLink>
+              </BreadcrumbItem>
+            </>
+          )}
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>{article.title}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
           <Link href="/knowledge-base">
@@ -206,7 +231,7 @@ export default function ArticlePageClient({ article, comments }: { article: any,
               </div>
             </CardContent>
           </Card>
-
+          <Separator />
           {/* Содержание статьи */}
           <Card>
             <CardContent className="p-6">
@@ -215,7 +240,7 @@ export default function ArticlePageClient({ article, comments }: { article: any,
               </div>
             </CardContent>
           </Card>
-
+          <Separator />
           {/* Теги */}
           <Card>
             <CardContent className="p-4">
@@ -228,7 +253,7 @@ export default function ArticlePageClient({ article, comments }: { article: any,
               </div>
             </CardContent>
           </Card>
-
+          <Separator />
           {/* Оценка полезности */}
           <Card>
             <CardHeader>
@@ -255,7 +280,7 @@ export default function ArticlePageClient({ article, comments }: { article: any,
               </div>
             </CardContent>
           </Card>
-
+          <Separator />
           {/* Рейтинг */}
           <Card>
             <CardHeader>
@@ -276,7 +301,7 @@ export default function ArticlePageClient({ article, comments }: { article: any,
               </div>
             </CardContent>
           </Card>
-
+          <Separator />
           {/* Комментарии */}
           <Card ref={commentsRef}>
             <CardHeader>
@@ -290,6 +315,22 @@ export default function ArticlePageClient({ article, comments }: { article: any,
                 <CommentsBlock article={article} comments={comments} />
               ) : (
                 <div className="text-muted-foreground">Комментарии будут загружены при прокрутке...</div>
+              )}
+              {/* Textarea для нового комментария */}
+              {currentUser && (
+                <div className="mt-6">
+                  <Textarea
+                    value={comment}
+                    onChange={e => setComment(e.target.value)}
+                    placeholder="Добавить комментарий..."
+                    rows={3}
+                  />
+                  <div className="flex justify-end mt-2">
+                    <Button size="sm" onClick={submitComment} disabled={!comment.trim()}>
+                      Отправить
+                    </Button>
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>

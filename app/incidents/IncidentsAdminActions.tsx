@@ -114,31 +114,31 @@ export default function IncidentsAdminActions({ incident, assignees }: { inciden
       {/* Смена статуса */}
       <label>
         Статус:
-        <select name="status" defaultValue={status} className="ml-1 border rounded px-2 py-1">
+        <select name="status" defaultValue={status} className="ml-1 border rounded px-2 py-1" onClick={e => e.stopPropagation()}>
           {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
         </select>
       </label>
       {/* Скрытое поле для передачи типа действия */}
       <input ref={actionRef} type="hidden" name="action" value="status" />
       <button type="submit" className="px-2 py-1 border rounded bg-blue-100 hover:bg-blue-200" disabled={loading}
-        onClick={() => { if (actionRef.current) actionRef.current.value = "status" }}>
+        onClick={e => { e.stopPropagation(); if (actionRef.current) actionRef.current.value = "status" }}>
         {loading ? "..." : "Сменить"}
       </button>
       {/* Смена приоритета */}
       <label>
         Приоритет:
-        <select name="priority" defaultValue={priority} className="ml-1 border rounded px-2 py-1">
+        <select name="priority" defaultValue={priority} className="ml-1 border rounded px-2 py-1" onClick={e => e.stopPropagation()}>
           {PRIORITY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
         </select>
       </label>
       <button type="submit" className="px-2 py-1 border rounded bg-blue-100 hover:bg-blue-200" disabled={loading}
-        onClick={() => { if (actionRef.current) actionRef.current.value = "priority" }}>
+        onClick={e => { e.stopPropagation(); if (actionRef.current) actionRef.current.value = "priority" }}>
         {loading ? "..." : "Сменить"}
       </button>
       {/* Назначение исполнителя */}
       <label>
         Назначить:
-        <select name="userId" defaultValue={assignee} className="ml-1 border rounded px-2 py-1">
+        <select name="userId" defaultValue={assignee} className="ml-1 border rounded px-2 py-1" onClick={e => e.stopPropagation()}>
           <option value="">Выбрать...</option>
           {assignees && assignees.length > 0 ? (
             assignees.map((user) => (
@@ -150,12 +150,12 @@ export default function IncidentsAdminActions({ incident, assignees }: { inciden
         </select>
       </label>
       <button type="submit" className="px-2 py-1 border rounded bg-green-100 hover:bg-green-200" disabled={loading}
-        onClick={() => { if (actionRef.current) actionRef.current.value = "assign" }}>
+        onClick={e => { e.stopPropagation(); if (actionRef.current) actionRef.current.value = "assign" }}>
         {loading ? "..." : "Назначить"}
       </button>
       {/* Кнопка удаления инцидента */}
       <button type="submit" className="px-2 py-1 border rounded bg-red-100 hover:bg-red-200 ml-2" disabled={loading}
-        onClick={() => { if (actionRef.current) actionRef.current.value = "delete" }}>
+        onClick={e => { e.stopPropagation(); if (actionRef.current) actionRef.current.value = "delete" }}>
         {loading ? "..." : "Удалить"}
       </button>
     </form>
