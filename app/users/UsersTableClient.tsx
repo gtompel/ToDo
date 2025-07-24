@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Users, Edit, MoreHorizontal, Phone, BadgeIcon as IdCard } from "lucide-react";
 import { useState } from 'react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/use-toast';
 
 interface User {
@@ -24,13 +24,17 @@ interface User {
   createdAt: Date;
 }
 
-function getRoleLabel(role: string) {
+function getRoleBadge(role: string) {
   switch (role) {
-    case "ADMIN": return "Администратор";
-    case "MANAGER": return "Менеджер";
-    case "TECHNICIAN": return "Техник";
-    case "USER": return "Пользователь";
-    default: return role;
+    case "ADMIN":
+      return <span className="inline-block px-3 py-1 rounded-full bg-primary text-primary-foreground font-semibold text-xs">Администратор</span>;
+    case "MANAGER":
+      return <span className="inline-block px-3 py-1 rounded-full bg-purple-600 text-white font-semibold text-xs">Менеджер</span>;
+    case "TECHNICIAN":
+      return <span className="inline-block px-3 py-1 rounded-full bg-yellow-400 text-black font-semibold text-xs">Техник</span>;
+    case "USER":
+    default:
+      return <span className="inline-block px-3 py-1 rounded-full bg-muted text-muted-foreground font-semibold text-xs">Пользователь</span>;
   }
 }
 
@@ -85,7 +89,7 @@ export default function UsersTableClient({ users }: { users: User[] }) {
     <div className="overflow-x-auto">
       <Table>
         <TableHeader>
-          <TableRow className="bg-gray-50">
+          <TableRow className="bg-muted">
             <TableHead className="w-12 text-center">№</TableHead>
             <TableHead>ФИО</TableHead>
             <TableHead className="text-center">Табельный номер</TableHead>
@@ -98,43 +102,41 @@ export default function UsersTableClient({ users }: { users: User[] }) {
         </TableHeader>
         <TableBody>
           {pagedUsers.map((user, index) => (
-            <TableRow key={user.id} className="hover:bg-gray-50">
+            <TableRow key={user.id} className="hover:bg-muted">
               <TableCell className="text-center font-medium">{(page - 1) * pageSize + index + 1}</TableCell>
               <TableCell>
                 <div className="flex items-center gap-3">
-                  <Users className="w-4 h-4 text-gray-400" />
+                  <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                   <div>
                     <div className="font-medium">
                       {user.lastName} {user.firstName} {user.middleName}
                     </div>
-                    <div className="text-sm text-gray-500">{user.position}</div>
+                    <div className="text-sm text-muted-foreground">{user.position}</div>
                   </div>
                 </div>
               </TableCell>
               <TableCell className="text-center">
                 <div className="flex items-center justify-center gap-1">
-                  <IdCard className="w-4 h-4 text-gray-400" />
+                  <IdCard className="w-4 h-4 text-muted-foreground" />
                   <span>1001</span>
                 </div>
               </TableCell>
               <TableCell className="text-center">
                 <div className="flex items-center justify-center gap-1">
-                  <Phone className="w-4 h-4 text-gray-400" />
+                  <Phone className="w-4 h-4 text-muted-foreground" />
                   <span>{user.phone || "—"}</span>
                 </div>
               </TableCell>
               <TableCell>
                 <Link
                   href={`mailto:${user.email}`}
-                  className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                  className="text-primary hover:text-primary/80 flex items-center gap-1"
                 >
                   {user.email}
                 </Link>
               </TableCell>
               <TableCell className="text-center">
-                <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                  {getRoleLabel(user.role)}
-                </Badge>
+                {getRoleBadge(user.role)}
               </TableCell>
               <TableCell className="text-center">{user.department || "—"}</TableCell>
               <TableCell className="text-center">
@@ -168,8 +170,8 @@ export default function UsersTableClient({ users }: { users: User[] }) {
         </TableBody>
       </Table>
       {/* Pagination UI */}
-      <div className="flex items-center justify-between px-6 py-4 border-t bg-gray-50">
-        <div className="text-sm text-gray-600">
+      <div className="flex items-center justify-between px-6 py-4 border-t bg-muted">
+        <div className="text-sm text-muted-foreground">
           {users.length === 0 ? 'Нет записей' : `${(page - 1) * pageSize + 1}-${Math.min(page * pageSize, users.length)} из ${users.length} записей`}
         </div>
         <div className="flex items-center gap-2">
@@ -183,7 +185,7 @@ export default function UsersTableClient({ users }: { users: User[] }) {
             <option value={25}>25</option>
             <option value={50}>50</option>
           </select>
-          <span className="text-sm text-gray-600">/ стр.</span>
+          <span className="text-sm text-muted-foreground">/ стр.</span>
         </div>
       </div>
       {/* Модал изменения роли */}
@@ -191,6 +193,7 @@ export default function UsersTableClient({ users }: { users: User[] }) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Изменить роль пользователя</DialogTitle>
+            <DialogDescription>Выберите новую роль для пользователя и нажмите "Сохранить".</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>

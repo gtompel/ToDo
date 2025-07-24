@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from 'react';
+import { useCurrentUser } from '@/hooks/use-user-context';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -11,15 +12,14 @@ export default function HelpPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
+  const user = useCurrentUser();
   useEffect(() => {
     fetch('/api/help').then(res => res.json()).then(data => {
       setHelpText(data.text || '');
       setLoading(false);
     });
-    fetch('/api/users/me').then(res => res.json()).then(data => {
-      setIsAdmin(data?.user?.role === 'ADMIN');
-    });
-  }, []);
+    setIsAdmin(user?.role === 'ADMIN');
+  }, [user]);
 
   const handleSave = async () => {
     setSaving(true);

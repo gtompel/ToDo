@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useCurrentUser } from "@/hooks/use-user-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -99,7 +100,8 @@ export default function TemplatesAdminPage() {
     isActive: true,
   })
   const [error, setError] = useState("")
-  const [userRole, setUserRole] = useState<string>("")
+  const user = useCurrentUser();
+  const userRole = user?.role || "";
 
   // Для визуального редактора полей
   const [fieldsUI, setFieldsUI] = useState<any[]>([])
@@ -114,10 +116,6 @@ export default function TemplatesAdminPage() {
   }
 
   useEffect(() => { fetchTemplates() }, [])
-
-  useEffect(() => {
-    fetch("/api/users/me").then(res => res.json()).then(data => setUserRole(data?.user?.role || ""))
-  }, [])
 
   // При открытии формы редактирования — заполняем fieldsUI
   useEffect(() => {

@@ -4,7 +4,8 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Home, AlertTriangle, HelpCircle, GitBranch, Users, FileText, BarChart3, Settings, Bell, Layers, Database, ChevronLeft, ChevronRight, Monitor, ChevronDown } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useState } from "react"
+import { useCurrentUser } from "@/hooks/use-user-context"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useIsMobile } from "@/hooks/use-mobile"
 
@@ -51,7 +52,8 @@ const navigationGroups = [
 
 export default function Sidebar() {
   const pathname = usePathname()
-  const [userRole, setUserRole] = useState<string | null>(null)
+  const user = useCurrentUser();
+  const userRole = user?.role ?? null;
   const [collapsed, setCollapsed] = useState(false)
   const [openGroups, setOpenGroups] = useState(() => new Set(navigationGroups.map(g => g.title)))
   const isMobile = useIsMobile()
@@ -68,13 +70,6 @@ export default function Sidebar() {
     })
   }
 
-  useEffect(() => {
-    fetch("/api/users/me").then(res => res.json()).then(data => {
-      const role = data?.user?.role || data?.role || ""
-      setUserRole(role)
-    })
-  }, [])
-
   if (userRole === null) {
     // Можно вернуть скелетон/заглушку или null
     return <div className="w-64 bg-sidebar border-r" />
@@ -82,7 +77,7 @@ export default function Sidebar() {
 
   return (
     <TooltipProvider>
-      <div className={cn("flex h-full flex-col bg-sidebar text-sidebar-foreground border-r transition-all duration-200", effectiveCollapsed ? "w-20" : "w-52")}>
+      <div className={cn("flex h-full flex-col bg-background text-foreground border-r transition-all duration-200", effectiveCollapsed ? "w-20" : "w-52")}>
         <div className="flex items-center justify-end px-2 pt-2 pb-1">
           {/* Кнопка сворачивания только если не мобильное устройство */}
           {!isMobile && (
@@ -119,14 +114,14 @@ export default function Sidebar() {
                             href={item.href}
                             className={cn(
                               "group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors",
-                              isActive ? "bg-primary/10 text-primary font-bold border-l-4 border-primary" : "text-sidebar-foreground hover:bg-card hover:text-card-foreground",
+                              isActive ? "bg-primary/10 text-primary font-bold border-l-4 border-primary" : "text-foreground hover:bg-card hover:text-card-foreground",
                               effectiveCollapsed && "justify-center px-0"
                             )}
                           >
                             <item.icon
                               className={cn(
                                 "flex-shrink-0 h-5 w-5",
-                                isActive ? "text-primary" : "text-gray-400 group-hover:text-gray-500",
+                                isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground",
                                 effectiveCollapsed ? "mx-auto" : "mr-3"
                               )}
                             />
@@ -151,14 +146,14 @@ export default function Sidebar() {
                             href={item.href}
                             className={cn(
                               "group flex items-center justify-center px-0 py-2 text-sm font-medium rounded-md transition-colors",
-                              isActive ? "bg-primary/10 text-primary font-bold border-l-4 border-primary" : "text-sidebar-foreground hover:bg-card hover:text-card-foreground"
+                              isActive ? "bg-primary/10 text-primary font-bold border-l-4 border-primary" : "text-foreground hover:bg-card hover:text-card-foreground"
                             )}
                             style={{ width: 48, minWidth: 48 }}
                           >
                             <item.icon
                               className={cn(
                                 "flex-shrink-0 h-5 w-5 mx-auto",
-                                isActive ? "text-primary" : "text-gray-400 group-hover:text-gray-500"
+                                isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
                               )}
                             />
                           </Link>

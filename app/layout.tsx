@@ -10,6 +10,7 @@ import Header from "@/components/header"
 import Sidebar from "@/components/sidebar"
 import { ThemeProvider } from "@/components/theme-provider"
 import AppShell from "./AppShell"
+import { UserProvider } from "@/hooks/use-user-context";
 
 
 const jetbrains = JetBrains_Mono({ subsets: ["latin", "cyrillic"], weight: ["400", "500", "700"] })
@@ -40,7 +41,9 @@ export default async function RootLayout({ children, }: { children: React.ReactN
     <html lang="ru" suppressHydrationWarning>
       <body className={jetbrains.className + " bg-background text-foreground"}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <AppShell>{children}</AppShell>
+          <UserProvider>
+            <AppShell>{children}</AppShell>
+          </UserProvider>
         </ThemeProvider>
       </body>
     </html>
