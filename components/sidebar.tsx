@@ -41,6 +41,12 @@ const navigationGroups = [
       { name: "Настройки", href: "/settings", icon: Settings },
     ]
   },
+  {
+    title: "Справка",
+    items: [
+      { name: "Справка", href: "/help", icon: HelpCircle },
+    ]
+  },
 ]
 
 export default function Sidebar() {

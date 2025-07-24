@@ -5,36 +5,41 @@ import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { createNotification } from "./notifications";
 
-// Получить все инциденты
-export async function getIncidents() {
+// Получить все инциденты с пагинацией
+export async function getIncidents(page = 1, pageSize = 10) {
   try {
-    const incidents = await prisma.incident.findMany({
-      include: {
-        createdBy: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
+    const [incidents, total] = await Promise.all([
+      prisma.incident.findMany({
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        include: {
+          createdBy: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+          assignedTo: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
           },
         },
-        assignedTo: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-          },
+        orderBy: {
+          createdAt: "desc",
         },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    })
-    return incidents
+      }),
+      prisma.incident.count(),
+    ])
+    return { data: incidents, total }
   } catch (error) {
     console.error("Error fetching incidents:", error)
-    return []
+    return { data: [], total: 0 }
   }
 }
 

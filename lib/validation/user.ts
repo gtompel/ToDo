@@ -11,4 +11,5 @@ export const userPatchSchema = z.object({
   password: z.string().min(6).optional(),
   status: z.string().optional(),
   isActive: z.boolean().optional(),
+  role: z.enum(["USER", "TECHNICIAN", "MANAGER", "ADMIN"]).optional(),
 }); 

@@ -55,13 +55,13 @@ function getCardClassByStatus(status: string) {
 }
 
 // Компонент для отображения и управления списком запросов
-export default function RequestsListClient({ requests, isAdmin, assignableUsers }: any) {
+export default function RequestsListClient({ requests, isAdmin, assignableUsers, total, page, pageSize }: any) {
   // Состояние для отслеживания загрузки по id запроса и действию
   const [open, setOpen] = useState<string[]>([])
   const [filter, setFilter] = useState({ department: "", lastName: "" })
   const [loadingId, setLoadingId] = useState<string | null>(null)
 
-  // Фильтрация
+  // Фильтрация только по текущему срезу
   const filtered = useMemo(() => {
     return requests.filter((r: any) => {
       const dep = r.createdBy?.department || r.assignedTo?.department || ""

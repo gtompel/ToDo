@@ -18,56 +18,24 @@ import { getStatusBadge, getPriorityBadge, renderRequestDetails, formatRequestId
 // const RequestsListClient = dynamic(() => import('./RequestsListClient'), { loading: () => <div>Загрузка таблицы заявок...</div>, ssr: false });
 // Удаляю все упоминания dynamic, RequestsListClient и ssr: false
 
-async function getRequests() {
-  return prisma.request.findMany({
-    include: {
-      assignedTo: true,
-      createdBy: true,
-    },
-    orderBy: { createdAt: "desc" },
-  })
+import { getRequests } from '@/lib/actions/requests';
+import { cookies } from 'next/headers';
+
+import { useSearchParams } from 'next/navigation';
+
+function parseIntOrDefault(val: any, def: number) {
+  const n = parseInt(val, 10);
+  return isNaN(n) ? def : n;
 }
 
-function RequestsFilterPanel({ departments, filter, setFilter }: any) {
-  return (
-    <div className="flex flex-wrap gap-4 mb-4 items-end">
-      <div>
-        <label className="block text-xs mb-1">Отдел</label>
-        <select
-          className="border rounded px-2 py-1"
-          value={filter.department}
-          onChange={e => setFilter((f: any) => ({ ...f, department: e.target.value }))}
-        >
-          <option value="">Все</option>
-          {departments.map((d: string) => (
-            <option key={d} value={d}>{d}</option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label className="block text-xs mb-1">Поиск по фамилии</label>
-        <input
-          className="border rounded px-2 py-1"
-          type="text"
-          placeholder="Фамилия..."
-          value={filter.lastName}
-          onChange={e => setFilter((f: any) => ({ ...f, lastName: e.target.value }))}
-        />
-      </div>
-    </div>
-  )
-}
-
-async function RequestsList({ isAdmin }: { isAdmin: boolean }) {
-  const requests = await getRequests()
-  const assignableUsers = isAdmin ? await getAssignableUsers() : []
-  return <RequestsListWrapper requests={requests} isAdmin={isAdmin} assignableUsers={assignableUsers} />
-}
-
-export default async function RequestsPage() {
+export default async function RequestsPage({ searchParams }: { searchParams: any }) {
   const user = await getCurrentUser()
   const isAdmin = user && (user.role === "ADMIN" || user.role === "MANAGER")
-  const requests = await getRequests();
+
+  const page = parseIntOrDefault(searchParams?.page, 1);
+  const pageSize = parseIntOrDefault(searchParams?.pageSize, 10);
+
+  const { data: requests, total } = await getRequests(page, pageSize);
   const assignableUsers = isAdmin ? await getAssignableUsers() : [];
 
   return (
@@ -84,7 +52,14 @@ export default async function RequestsPage() {
           </Link>
         </Button>
       </div>
-      <RequestsListWrapper requests={requests} isAdmin={isAdmin} assignableUsers={assignableUsers} />
+      <RequestsListWrapper 
+        requests={requests} 
+        isAdmin={isAdmin} 
+        assignableUsers={assignableUsers} 
+        total={total}
+        page={page}
+        pageSize={pageSize}
+      />
     </div>
   )
 }

@@ -7,16 +7,12 @@ import { Plus, AlertTriangle } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/auth"
 import { getAssignableUsers } from "@/lib/actions/users"
-import IncidentsListClient from "./IncidentsListClient"
+import IncidentsListWrapper from "./IncidentsListWrapper";
+import { getIncidents } from '@/lib/actions/incidents';
 
-async function getIncidents() {
-  return prisma.incident.findMany({
-    include: {
-      assignedTo: true,
-      createdBy: true,
-    },
-    orderBy: { createdAt: "desc" },
-  })
+function parseIntOrDefault(val: any, def: number) {
+  const n = parseInt(val, 10);
+  return isNaN(n) ? def : n;
 }
 
 function getStatusBadge(status: string) {
@@ -47,20 +43,14 @@ function getPriorityBadge(priority: string) {
   }
 }
 
-async function IncidentsList({ isAdmin }: { isAdmin: boolean }) {
-  const incidents = await getIncidents()
-  const assignableUsersRaw = isAdmin ? await getAssignableUsers() : []
-  // Преобразуем assignableUsers к нужному формату { id, name }
+export default async function IncidentsPage() {
+  const user = await getCurrentUser();
+  const isAdmin = user && user.role === "ADMIN";
+  const assignableUsersRaw = isAdmin ? await getAssignableUsers() : [];
   const assignableUsers = assignableUsersRaw.map((user: { id: string; firstName: string; lastName: string }) => ({
     id: user.id,
     name: `${user.firstName} ${user.lastName}`,
-  }))
-  return <IncidentsListClient incidents={incidents} isAdmin={isAdmin} assignableUsers={assignableUsers} />
-}
-
-export default async function IncidentsPage() {
-  const user = await getCurrentUser()
-  const isAdmin = user && user.role === "ADMIN"
+  }));
 
   return (
     <div className="space-y-6">
@@ -76,9 +66,10 @@ export default async function IncidentsPage() {
           </Link>
         </Button>
       </div>
-      <Suspense fallback={<div>Загрузка...</div>}>
-        <IncidentsList isAdmin={isAdmin} />
-      </Suspense>
+      <IncidentsListWrapper 
+        isAdmin={isAdmin}
+        assignableUsers={assignableUsers}
+      />
     </div>
-  )
+  );
 }

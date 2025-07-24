@@ -17,7 +17,7 @@ const userSchema = z.object({
 });
 
 // Форма пользователя (создание/редактирование)
-export function UserForm({ initial, loading, onSubmit, isLDAP }: { initial: any, loading: boolean, onSubmit: (data: any) => Promise<any>, isLDAP?: boolean }) {
+export function UserForm({ initial, loading, onSubmit, isLDAP, canEditRole }: { initial: any, loading: boolean, onSubmit: (data: any) => Promise<any>, isLDAP?: boolean, canEditRole?: boolean }) {
   // Состояния формы и ошибок
   const [form, setForm] = useState(initial || {});
   const [error, setError] = useState("");
@@ -74,6 +74,21 @@ export function UserForm({ initial, loading, onSubmit, isLDAP }: { initial: any,
         <Label>Отдел</Label>
         <Input value={form.department || ""} onChange={e => handleChange("department", e.target.value)} readOnly={isLDAP} />
       </div>
+      {canEditRole && (
+        <div>
+          <Label>Роль</Label>
+          <select
+            className="border rounded px-2 py-1 w-full"
+            value={form.role || "USER"}
+            onChange={e => handleChange("role", e.target.value)}
+          >
+            <option value="USER">Пользователь</option>
+            <option value="TECHNICIAN">Техник</option>
+            <option value="MANAGER">Менеджер</option>
+            <option value="ADMIN">Администратор</option>
+          </select>
+        </div>
+      )}
       {!isLDAP && (
         <div>
           <Label>Пароль</Label>

@@ -6,37 +6,41 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { createNotification } from "./notifications";
 
-// Получить все изменения
-export async function getChanges() {
+// Получить все изменения с пагинацией
+export async function getChanges(page = 1, pageSize = 10) {
   try {
-    const changes = await prisma.change.findMany({
-      include: {
-        createdBy: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
+    const [changes, total] = await Promise.all([
+      prisma.change.findMany({
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        include: {
+          createdBy: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+          assignedTo: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
           },
         },
-        assignedTo: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-          },
+        orderBy: {
+          createdAt: "desc",
         },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    })
-
-    return changes
+      }),
+      prisma.change.count(),
+    ])
+    return { data: changes, total }
   } catch (error) {
     console.error("Error fetching changes:", error)
-    return []
+    return { data: [], total: 0 }
   }
 }
 

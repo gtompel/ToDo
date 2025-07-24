@@ -1,5 +1,4 @@
 // Импортируем необходимые компоненты и функции
-import { Suspense } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,6 +8,7 @@ import { prisma } from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/auth"
 import ChangesAdminActions from "./ChangesAdminActions"
 import { getAssignableUsers } from "@/lib/actions/users"
+import ChangesListWrapper from './ChangesListWrapper';
 
 // Получение всех изменений из базы данных
 async function getChanges() {
@@ -134,9 +134,9 @@ async function ChangesList({ isAdmin, assignees }: { isAdmin: boolean, assignees
 
 // Главная страница управления изменениями
 export default async function ChangesPage() {
-  const user = await getCurrentUser() // Получаем текущего пользователя
-  const isAdmin = user?.role === "ADMIN" // Проверяем, админ ли пользователь
-  const assignees = await getAssignableUsers() // Получаем список пользователей для назначения
+  const user = await getCurrentUser();
+  const isAdmin = user?.role === "ADMIN";
+  const assignees = await getAssignableUsers();
 
   return (
     <div className="space-y-6">
@@ -152,11 +152,7 @@ export default async function ChangesPage() {
           </Link>
         </Button>
       </div>
-
-      {/* Список изменений с поддержкой Suspense */}
-      <Suspense fallback={<div>Загрузка...</div>}>
-        <ChangesList isAdmin={isAdmin} assignees={assignees} />
-      </Suspense>
+      <ChangesListWrapper isAdmin={isAdmin} assignees={assignees} />
     </div>
-  )
+  );
 }

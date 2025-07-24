@@ -78,6 +78,7 @@ export async function PATCH(req: Request) {
       if (currentUser?.role === "ADMIN") {
         if (fields.status !== undefined) updateData.status = fields.status
         if (fields.isActive !== undefined) updateData.isActive = fields.isActive
+        if (fields.role !== undefined) updateData.role = fields.role
         // role менять только админ
       }
       if (Object.keys(updateData).length === 0) {

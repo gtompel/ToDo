@@ -6,37 +6,41 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { createNotification } from "./notifications";
 
-// Получить все запросы
-export async function getRequests() {
+// Получить все запросы с пагинацией
+export async function getRequests(page = 1, pageSize = 10) {
   try {
-    const requests = await prisma.request.findMany({
-      include: {
-        createdBy: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
+    const [requests, total] = await Promise.all([
+      prisma.request.findMany({
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        include: {
+          createdBy: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+          assignedTo: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
           },
         },
-        assignedTo: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-          },
+        orderBy: {
+          createdAt: "desc",
         },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    })
-
-    return requests
+      }),
+      prisma.request.count(),
+    ])
+    return { data: requests, total }
   } catch (error) {
     console.error("Error fetching requests:", error)
-    return []
+    return { data: [], total: 0 }
   }
 }
 

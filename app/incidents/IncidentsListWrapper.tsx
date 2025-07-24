@@ -1,33 +1,58 @@
 "use client";
 import dynamic from 'next/dynamic';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
-const RequestsListClient = dynamic(() => import('./RequestsListClient'), {
-  loading: () => <div className="flex items-center justify-center h-64"><div className="text-center"><span className="animate-spin mr-2">⏳</span>Загрузка таблицы заявок...</div></div>,
+const IncidentsListClient = dynamic(() => import('./IncidentsListClient'), {
+  loading: () => <div className="flex items-center justify-center h-64"><div className="text-center"><span className="animate-spin mr-2">⏳</span>Загрузка инцидентов...</div></div>,
 });
 
-export default function RequestsListWrapper({ requests, isAdmin, assignableUsers, total, page, pageSize }: any) {
+function parseIntOrDefault(val: any, def: number) {
+  const n = parseInt(val, 10);
+  return isNaN(n) ? def : n;
+}
+
+export default function IncidentsListWrapper({ isAdmin, assignableUsers }: any) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const page = parseIntOrDefault(searchParams.get('page'), 1);
+  const pageSize = parseIntOrDefault(searchParams.get('pageSize'), 10);
+
+  const [incidents, setIncidents] = useState<any[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    fetch(`/api/incidents?page=${page}&pageSize=${pageSize}`)
+      .then(res => res.json())
+      .then(({ data, total }) => {
+        setIncidents(data);
+        setTotal(total);
+        setLoading(false);
+      });
+  }, [page, pageSize]);
+
   const pageCount = Math.ceil(total / pageSize);
 
   const handlePageChange = (newPage: number) => {
-    router.push(`/requests?page=${newPage}&pageSize=${pageSize}`);
+    router.push(`/incidents?page=${newPage}&pageSize=${pageSize}`);
   };
   const handlePageSizeChange = (newSize: number) => {
-    router.push(`/requests?page=1&pageSize=${newSize}`);
+    router.push(`/incidents?page=1&pageSize=${newSize}`);
   };
 
   return (
     <div>
-      <RequestsListClient 
-        requests={requests} 
-        isAdmin={isAdmin} 
-        assignableUsers={assignableUsers} 
-        total={total}
-        page={page}
-        pageSize={pageSize}
-      />
+      {loading ? (
+        <div className="flex items-center justify-center h-64">Загрузка...</div>
+      ) : (
+        <IncidentsListClient 
+          incidents={incidents} 
+          isAdmin={isAdmin} 
+          assignableUsers={assignableUsers} 
+        />
+      )}
       <div className="flex items-center justify-between px-6 py-4 border-t bg-gray-50">
         <div className="text-sm text-gray-600">
           {total === 0 ? 'Нет записей' : `${(page - 1) * pageSize + 1}-${Math.min(page * pageSize, total)} из ${total} записей`}

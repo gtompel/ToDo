@@ -9,9 +9,9 @@ export default function EditUserPage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
   const router = useRouter();
-  const { user, loading, error, loadUser, updateUser } = useUser(id);
+  const { user, loading, error, refresh, updateUser } = useUser(id);
 
-  useEffect(() => { loadUser(); }, [loadUser]);
+  useEffect(() => { refresh(); }, [refresh]);
 
   if (loading && !user) return <div className="p-8 text-center text-muted-foreground">Загрузка...</div>;
   if (error && !user) return <div className="p-8 text-center text-red-500">{error}</div>;

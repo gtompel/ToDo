@@ -4,6 +4,9 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Users, Edit, MoreHorizontal, Phone, BadgeIcon as IdCard } from "lucide-react";
 import { useState } from 'react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { toast } from '@/components/ui/use-toast';
 
 interface User {
   id: string;
@@ -31,11 +34,53 @@ function getRoleLabel(role: string) {
   }
 }
 
+const ROLES = [
+  { value: 'USER', label: 'Пользователь' },
+  { value: 'TECHNICIAN', label: 'Техник' },
+  { value: 'MANAGER', label: 'Менеджер' },
+  { value: 'ADMIN', label: 'Администратор' },
+];
+
 export default function UsersTableClient({ users }: { users: User[] }) {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const pageCount = Math.ceil(users.length / pageSize);
   const pagedUsers = users.slice((page - 1) * pageSize, page * pageSize);
+
+  // Состояния для модала изменения роли
+  const [roleModalUser, setRoleModalUser] = useState<User | null>(null);
+  const [newRole, setNewRole] = useState('USER');
+  const [savingRole, setSavingRole] = useState(false);
+
+  const handleOpenRoleModal = (user: User) => {
+    setRoleModalUser(user);
+    setNewRole(user.role);
+  };
+  const handleCloseRoleModal = () => {
+    setRoleModalUser(null);
+  };
+  const handleSaveRole = async () => {
+    if (!roleModalUser) return;
+    setSavingRole(true);
+    try {
+      const res = await fetch('/api/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: roleModalUser.id, role: newRole, action: 'update' }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || 'Ошибка обновления роли');
+      toast({ title: 'Роль обновлена', description: `Роль пользователя изменена на ${ROLES.find(r => r.value === newRole)?.label}` });
+      setRoleModalUser(null);
+      // Можно добавить обновление данных через SWR или refetch
+      window.location.reload();
+    } catch (e: any) {
+      toast({ title: 'Ошибка', description: e.message, variant: 'destructive' });
+    } finally {
+      setSavingRole(false);
+    }
+  };
+
   return (
     <div className="overflow-x-auto">
       <Table>
@@ -104,9 +149,18 @@ export default function UsersTableClient({ users }: { users: User[] }) {
                       <Edit className="w-4 h-4" />
                     </Link>
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600">
-                    <MoreHorizontal className="w-4 h-4" />
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600">
+                        <MoreHorizontal className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleOpenRoleModal(user)}>
+                        Изменить роль
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </TableCell>
             </TableRow>
@@ -132,6 +186,35 @@ export default function UsersTableClient({ users }: { users: User[] }) {
           <span className="text-sm text-gray-600">/ стр.</span>
         </div>
       </div>
+      {/* Модал изменения роли */}
+      <Dialog open={!!roleModalUser} onOpenChange={open => !open && handleCloseRoleModal()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Изменить роль пользователя</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="block mb-1 text-sm">Роль</label>
+              <select
+                className="border rounded px-2 py-1 w-full"
+                value={newRole}
+                onChange={e => setNewRole(e.target.value)}
+                disabled={savingRole}
+              >
+                {ROLES.map(r => (
+                  <option key={r.value} value={r.value}>{r.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleSaveRole} disabled={savingRole}>
+              {savingRole ? 'Сохранение...' : 'Сохранить'}
+            </Button>
+            <Button variant="ghost" onClick={handleCloseRoleModal} disabled={savingRole}>Отмена</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 } 
