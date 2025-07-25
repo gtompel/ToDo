@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { jwtVerify } from 'jose'
 
+export const runtime = 'nodejs';
+
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'dev-secret')
 
 export async function GET(req: NextRequest) {

@@ -1,14 +1,14 @@
-import { Suspense } from "react"
+
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Plus, AlertTriangle } from "lucide-react"
-import { prisma } from "@/lib/prisma"
+
 import { getCurrentUser } from "@/lib/auth"
 import { getAssignableUsers } from "@/lib/actions/users"
 import IncidentsListWrapper from "./IncidentsListWrapper";
-import { getIncidents } from '@/lib/actions/incidents';
+
 
 function parseIntOrDefault(val: any, def: number) {
   const n = parseInt(val, 10);

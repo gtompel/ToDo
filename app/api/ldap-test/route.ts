@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 // @ts-ignore
 import ActiveDirectory from 'activedirectory2'
 
+export const runtime = 'nodejs';
+
 export async function POST(req: any) {
   const { host, port, user, password, ssl, baseDN } = await req.json();
   const url = `${ssl ? 'ldaps' : 'ldap'}://${host}:${port}`;

@@ -6,6 +6,8 @@ import ActiveDirectory from 'activedirectory2'
 import jwt from 'jsonwebtoken'
 import { createToken } from '@/lib/auth'
 
+export const runtime = 'nodejs';
+
 export async function POST(req: any) {
   const { login, password } = await req.json()
   const all = await prisma.systemSettings.findMany()

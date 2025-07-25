@@ -1,22 +1,10 @@
 
-import { Suspense } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Plus, HelpCircle } from "lucide-react"
-import { prisma } from "@/lib/prisma"
+import { Plus } from "lucide-react"
 import { getCurrentUser } from "@/lib/auth"
-import { updateRequestStatus, updateRequestPriority, deleteRequestById, assignRequestToUser } from "@/lib/actions/requests"
-import { useTransition } from "react"
 import { getAssignableUsers } from "@/lib/actions/users"
-import { ChevronDown, ChevronRight } from "lucide-react"
-import RequestsListWrapper from './RequestsListWrapper';
-
-import { getStatusBadge, getPriorityBadge, renderRequestDetails, formatRequestId, STATUS_OPTIONS, PRIORITY_OPTIONS } from "./RequestsListHelpers"
-// Удаляю обычный импорт RequestsListClient
-// const RequestsListClient = dynamic(() => import('./RequestsListClient'), { loading: () => <div>Загрузка таблицы заявок...</div>, ssr: false });
-// Удаляю все упоминания dynamic, RequestsListClient и ssr: false
+import RequestsListWrapper from './RequestsListWrapper'
 
 import { getRequests } from '@/lib/actions/requests';
 import { cookies } from 'next/headers';
