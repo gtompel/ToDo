@@ -20,7 +20,7 @@ export default function WorkstationForm({ initial, onSuccess }: { initial?: any,
   const [error, setError] = useState("")
 
   useEffect(() => {
-    fetch("/api/users").then(res => res.json()).then(data => setUsers(data.users || []))
+    fetch("/api/users?role=USER").then(res => res.json()).then(data => setUsers(data.users || []))
   }, [])
 
   const handleChange = (e: any) => {

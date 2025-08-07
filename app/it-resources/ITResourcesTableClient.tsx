@@ -7,6 +7,7 @@ import ITResourceForm from "./ITResourceForm"
 import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogDescription, DialogHeader, DialogFooter } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip"
 import { useToast } from "@/components/ui/use-toast"
+import { useCurrentUser } from "@/hooks/use-user-context"
 
 export default function ITResourcesTable({ resources: initialResources }: { resources: any[] }) {
   const [resources, setResources] = useState(initialResources)
@@ -14,6 +15,7 @@ export default function ITResourcesTable({ resources: initialResources }: { reso
   const [editResource, setEditResource] = useState<any>(null)
   const [viewResource, setViewResource] = useState<any>(null) // новое состояние для просмотра
   const { toast } = useToast()
+  const user = useCurrentUser();
 
   const fetchResources = async () => {
     const res = await fetch("/api/it-resources")
@@ -65,10 +67,8 @@ export default function ITResourcesTable({ resources: initialResources }: { reso
           )}
         </DialogContent>
       </Dialog>
+      {/* Модалка создания ресурса */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogTrigger asChild>
-          <Button onClick={() => setShowCreate(true)}><Plus className="w-4 h-4 mr-2" />Добавить ресурс</Button>
-        </DialogTrigger>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Добавить ИТ-ресурс</DialogTitle>
@@ -81,7 +81,9 @@ export default function ITResourcesTable({ resources: initialResources }: { reso
         <h1 className="text-3xl font-bold">ИТ-ресурсы</h1>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => window.location.reload()}><RefreshCw className="w-4 h-4 mr-2" />Обновить</Button>
-          <Button><Plus className="w-4 h-4 mr-2" />Добавить ресурс</Button>
+          {(user?.role === "ADMIN" || user?.role === "TECHNICIAN") && (
+            <Button onClick={() => setShowCreate(true)}><Plus className="w-4 h-4 mr-2" />Добавить ресурс</Button>
+          )}
         </div>
       </div>
       <div className="mb-4 flex items-center gap-2">
@@ -118,7 +120,9 @@ export default function ITResourcesTable({ resources: initialResources }: { reso
                 <td className="px-4 py-2 flex gap-2">
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <button aria-label="Редактировать" className="mr-2 focus-visible:ring-2 focus-visible:ring-primary" onClick={() => setEditResource(r)}><Edit className="w-4 h-4" /></button>
+                      {(user?.role === "ADMIN" || user?.role === "TECHNICIAN") && (
+                        <button aria-label="Редактировать" className="mr-2 focus-visible:ring-2 focus-visible:ring-primary" onClick={() => setEditResource(r)}><Edit className="w-4 h-4" /></button>
+                      )}
                     </TooltipTrigger>
                     <TooltipContent>Редактировать</TooltipContent>
                   </Tooltip>
@@ -132,7 +136,9 @@ export default function ITResourcesTable({ resources: initialResources }: { reso
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <button aria-label="Удалить" className="text-red-500 focus-visible:ring-2 focus-visible:ring-primary" onClick={() => handleDelete(r.id)}><Trash2 className="w-4 h-4" /></button>
+                      {user?.role === "ADMIN" && (
+                        <button aria-label="Удалить" className="text-red-500 focus-visible:ring-2 focus-visible:ring-primary" onClick={() => handleDelete(r.id)}><Trash2 className="w-4 h-4" /></button>
+                      )}
                     </TooltipTrigger>
                     <TooltipContent>Удалить</TooltipContent>
                   </Tooltip>

@@ -70,6 +70,13 @@ export default function Sidebar() {
     })
   }
 
+  const filteredGroups = navigationGroups.filter(group => {
+    if (group.title === "Пользователи и настройки") {
+      return userRole === "ADMIN"
+    }
+    return true
+  })
+
   if (userRole === null) {
     // Можно вернуть скелетон/заглушку или null
     return <div className="w-64 bg-sidebar border-r" />
@@ -88,7 +95,7 @@ export default function Sidebar() {
         </div>
         <div className="flex flex-1 flex-col pt-2 pb-4 overflow-y-auto">
           <nav className="mt-2 flex-1 px-2 space-y-1">
-            {navigationGroups.map(group => {
+            {filteredGroups.map(group => {
               const isOpen = effectiveCollapsed ? false : openGroups.has(group.title)
               return (
                 <div key={group.title} className="mb-2">

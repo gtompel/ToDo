@@ -192,7 +192,7 @@ export default function NewIncidentPage() {
           // Валидация
           const errors: {[key: string]: string} = {}
           for (const field of selectedTemplate.fields) {
-            if (field.required && !formData[field.name]) {
+            if (field.required && !(formData as Record<string, any>)[field.name]) {
               errors[field.name] = "Обязательное поле"
             }
           }
@@ -225,7 +225,7 @@ export default function NewIncidentPage() {
                 {field.type === "text" && (
                   <Input
                     id={field.name}
-                    value={formData[field.name] ?? ""}
+                    value={(formData as Record<string, any>)[field.name] ?? ""}
                     onChange={e => handleInputChange(field.name, e.target.value)}
                     required={field.required}
                     placeholder={field.description}
@@ -236,7 +236,7 @@ export default function NewIncidentPage() {
                   <Input
                     id={field.name}
                     type="number"
-                    value={formData[field.name] ?? ""}
+                    value={(formData as Record<string, any>)[field.name] ?? ""}
                     onChange={e => handleInputChange(field.name, e.target.value)}
                     required={field.required}
                     placeholder={field.description}
@@ -247,7 +247,7 @@ export default function NewIncidentPage() {
                   <Input
                     id={field.name}
                     type="date"
-                    value={formData[field.name] ?? ""}
+                    value={(formData as Record<string, any>)[field.name] ?? ""}
                     onChange={e => handleInputChange(field.name, e.target.value)}
                     required={field.required}
                     className={formErrors[field.name] ? "border-red-500" : ""}
@@ -257,7 +257,7 @@ export default function NewIncidentPage() {
                   <Input
                     id={field.name}
                     type="email"
-                    value={formData[field.name] ?? ""}
+                    value={(formData as Record<string, any>)[field.name] ?? ""}
                     onChange={e => handleInputChange(field.name, e.target.value)}
                     required={field.required}
                     placeholder={field.description}
@@ -268,7 +268,7 @@ export default function NewIncidentPage() {
                   <Input
                     id={field.name}
                     type="password"
-                    value={formData[field.name] ?? ""}
+                    value={(formData as Record<string, any>)[field.name] ?? ""}
                     onChange={e => handleInputChange(field.name, e.target.value)}
                     required={field.required}
                     placeholder={field.description}
@@ -279,7 +279,7 @@ export default function NewIncidentPage() {
                   <Input
                     id={field.name}
                     type="tel"
-                    value={formData[field.name] ?? ""}
+                    value={(formData as Record<string, any>)[field.name] ?? ""}
                     onChange={e => handleInputChange(field.name, e.target.value)}
                     required={field.required}
                     placeholder={field.description}
@@ -299,7 +299,7 @@ export default function NewIncidentPage() {
                   <Input
                     id={field.name}
                     type="url"
-                    value={formData[field.name] ?? ""}
+                    value={(formData as Record<string, any>)[field.name] ?? ""}
                     onChange={e => handleInputChange(field.name, e.target.value)}
                     required={field.required}
                     placeholder={field.description}
@@ -310,7 +310,7 @@ export default function NewIncidentPage() {
                   <Input
                     id={field.name}
                     type="color"
-                    value={formData[field.name] ?? "#000000"}
+                    value={(formData as Record<string, any>)[field.name] ?? "#000000"}
                     onChange={e => handleInputChange(field.name, e.target.value)}
                     required={field.required}
                     className={formErrors[field.name] ? "border-red-500" : ""}
@@ -320,7 +320,7 @@ export default function NewIncidentPage() {
                   <Input
                     id={field.name}
                     type="time"
-                    value={formData[field.name] ?? ""}
+                    value={(formData as Record<string, any>)[field.name] ?? ""}
                     onChange={e => handleInputChange(field.name, e.target.value)}
                     required={field.required}
                     className={formErrors[field.name] ? "border-red-500" : ""}
@@ -333,7 +333,7 @@ export default function NewIncidentPage() {
                     min={field.min ?? 0}
                     max={field.max ?? 100}
                     step={field.step ?? 1}
-                    value={formData[field.name] ?? field.default ?? 0}
+                    value={(formData as Record<string, any>)[field.name] ?? field.default ?? 0}
                     onChange={e => handleInputChange(field.name, e.target.value)}
                     required={field.required}
                     className={formErrors[field.name] ? "border-red-500" : ""}
@@ -342,7 +342,7 @@ export default function NewIncidentPage() {
                 {field.type === "textarea" && (
                   <Textarea
                     id={field.name}
-                    value={formData[field.name] ?? ""}
+                    value={(formData as Record<string, any>)[field.name] ?? ""}
                     onChange={e => handleInputChange(field.name, e.target.value)}
                     required={field.required}
                     placeholder={field.description}
@@ -350,7 +350,7 @@ export default function NewIncidentPage() {
                   />
                 )}
                 {field.type === "select" && (
-                  <Select value={formData[field.name] ?? ""} onValueChange={val => handleInputChange(field.name, val)}>
+                  <Select value={(formData as Record<string, any>)[field.name] ?? ""} onValueChange={val => handleInputChange(field.name, val)}>
                     <SelectTrigger className={formErrors[field.name] ? "border-red-500" : ""}>
                       <SelectValue placeholder={field.description || "Выберите вариант"} />
                     </SelectTrigger>
@@ -366,7 +366,7 @@ export default function NewIncidentPage() {
                   <div className="flex items-center gap-2">
                     <Checkbox
                       id={field.name}
-                      checked={!!formData[field.name]}
+                      checked={!!(formData as Record<string, any>)[field.name]}
                       onCheckedChange={val => handleInputChange(field.name, !!val)}
                     />
                     <Label htmlFor={field.name}>{field.description}</Label>

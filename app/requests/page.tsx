@@ -17,6 +17,7 @@ function parseIntOrDefault(val: any, def: number) {
 }
 
 export default async function RequestsPage({ searchParams }: { searchParams: any }) {
+  searchParams = await searchParams;
   const user = await getCurrentUser()
   const isAdmin = user && (user.role === "ADMIN" || user.role === "MANAGER")
 

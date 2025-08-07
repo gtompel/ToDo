@@ -87,7 +87,7 @@ export async function createArticle(formData: FormData) {
         tags: tagsArray,
         status: (status as any) || "DRAFT",
         authorId,
-        publishedAt: status === "PUBLISHED" ? new Date() : null,
+        createdById: authorId,
       },
     })
 
@@ -117,7 +117,6 @@ export async function updateArticle(id: string, formData: FormData) {
         category: category || "Общее",
         tags: tagsArray,
         status: status as any,
-        publishedAt: status === "PUBLISHED" ? new Date() : null,
       },
     })
 

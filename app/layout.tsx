@@ -28,7 +28,7 @@ export default async function RootLayout({ children, }: { children: React.ReactN
     return (
       <html lang="ru" suppressHydrationWarning>
         <body className={"font-sans bg-background text-foreground"}>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <ThemeProvider attribute="class" defaultTheme="rosatom" enableSystem>
             {children}
           </ThemeProvider>
         </body>
@@ -40,7 +40,7 @@ export default async function RootLayout({ children, }: { children: React.ReactN
   return (
     <html lang="ru" suppressHydrationWarning>
       <body className={jetbrains.className + " bg-background text-foreground"}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="rosatom" enableSystem>
           <UserProvider>
             <AppShell>{children}</AppShell>
           </UserProvider>

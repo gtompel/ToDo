@@ -278,9 +278,8 @@ export default function NewArticlePage() {
                     value={formData.category}
                     onValueChange={(value) => handleInputChange("category", value)}
                     defaultValue=""
-                    className={error && !formData.category ? "border-red-500" : ""}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className={error && !formData.category ? "border-red-500" : ""}>
                       <SelectValue placeholder="Выберите категорию" />
                     </SelectTrigger>
                     <SelectContent>

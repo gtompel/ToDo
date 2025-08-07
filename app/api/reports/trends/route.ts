@@ -39,7 +39,7 @@ export async function GET(req: Request) {
   }
 
   const createdTrend = countByDay(incidentsCreated, 'createdAt')
-  const closedTrend = countByDay(incidentsClosed, 'resolvedAt')
+  const closedTrend = countByDay((incidentsClosed.filter(i => i.resolvedAt !== null) as { resolvedAt: Date }[]), 'resolvedAt')
 
   // Группировка по дате (YYYY-MM-DD)
   const incidents = await prisma.incident.findMany({

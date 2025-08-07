@@ -28,7 +28,7 @@ export default function ITResourceForm({ initial, onSuccess, onCancel }: { initi
 
   const validate = () => {
     for (const field of requiredFields) {
-      if (!form[field]) return false
+      if (!(form as Record<string, any>)[field]) return false
     }
     return true
   }

@@ -9,7 +9,7 @@ export async function GET(req: Request) {
   const roles = role.split(",") // поддержка нескольких ролей через запятую
 
   // Приводим roles к типу Role[]
-  const rolesTyped = roles as unknown as ("TECHNICIAN" | "ADMIN" | "MANAGER")[]
+  const rolesTyped = roles as unknown as ("USER")[]
 
   // Используем rolesTyped для корректного типа в запросе
   const users = await prisma.user.findMany({

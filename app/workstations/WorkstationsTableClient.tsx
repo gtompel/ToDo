@@ -7,12 +7,14 @@ import WorkstationForm from "./WorkstationForm"
 import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogDescription, DialogHeader } from "@/components/ui/dialog"
 import { useToast } from "@/components/ui/use-toast"
 import Link from "next/link"
+import { useCurrentUser } from "@/hooks/use-user-context"
 
 export default function WorkstationsTable({ workstations }: { workstations: any[] }) {
   const [showCreate, setShowCreate] = useState(false)
   const [editWorkstation, setEditWorkstation] = useState<any>(null)
   const [workstationsState, setWorkstationsState] = useState(workstations)
   const { toast } = useToast()
+  const user = useCurrentUser();
 
   const fetchWorkstations = async () => {
     const res = await fetch("/api/workstations")
@@ -33,22 +35,22 @@ export default function WorkstationsTable({ workstations }: { workstations: any[
 
   return (
     <div className="space-y-6">
+      <Dialog open={showCreate} onOpenChange={setShowCreate}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Добавить рабочую станцию</DialogTitle>
+            <DialogDescription>Заполните все обязательные поля</DialogDescription>
+          </DialogHeader>
+          <WorkstationForm onSuccess={() => { setShowCreate(false); fetchWorkstations() }} />
+        </DialogContent>
+      </Dialog>
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Рабочие станции</h1>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => window.location.reload()}><RefreshCw className="w-4 h-4 mr-2" />Обновить</Button>
-          <Dialog open={showCreate} onOpenChange={setShowCreate}>
-            <DialogTrigger asChild>
-              <Button onClick={() => setShowCreate(true)}><Plus className="w-4 h-4 mr-2" />Добавить станцию</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Добавить рабочую станцию</DialogTitle>
-                <DialogDescription>Заполните все обязательные поля</DialogDescription>
-              </DialogHeader>
-              <WorkstationForm onSuccess={() => { setShowCreate(false); fetchWorkstations() }} />
-            </DialogContent>
-          </Dialog>
+          {(user?.role === "ADMIN" || user?.role === "TECHNICIAN") && (
+            <Button onClick={() => setShowCreate(true)}><Plus className="w-4 h-4 mr-2" />Добавить станцию</Button>
+          )}
           <Dialog open={!!editWorkstation} onOpenChange={v => { if (!v) setEditWorkstation(null) }}>
             <DialogContent>
               <DialogHeader>
@@ -90,11 +92,15 @@ export default function WorkstationsTable({ workstations }: { workstations: any[
                 <td className="px-3 py-2">{w.room || "-"}</td>
                 <td className="px-3 py-2">{w.department || "-"}</td>
                 <td className="px-3 py-2 flex gap-2">
-                  <button title="Редактировать" onClick={() => setEditWorkstation(w)}><Edit className="w-4 h-4" /></button>
+                  {(user?.role === "ADMIN" || user?.role === "TECHNICIAN") && (
+                    <button title="Редактировать" onClick={() => setEditWorkstation(w)}><Edit className="w-4 h-4" /></button>
+                  )}
                   <Link href={`/workstations/${w.id}`} title="Подробнее" prefetch={false}>
                     <Info className="w-4 h-4 text-blue-600 hover:text-blue-800" />
                   </Link>
-                  <button title="Удалить" onClick={() => handleDelete(w.id)}><Trash2 className="w-4 h-4 text-red-500" /></button>
+                  {user?.role === "ADMIN" && (
+                    <button title="Удалить" onClick={() => handleDelete(w.id)}><Trash2 className="w-4 h-4 text-red-500" /></button>
+                  )}
                 </td>
               </tr>
             ))}
