@@ -21,6 +21,22 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
         lastLogin: true,
         createdAt: true,
         updatedAt: true,
+        assignedIncidents: {
+          select: {
+            id: true,
+            title: true,
+            priority: true,
+            status: true,
+          },
+        },
+        assignedRequests: {
+          select: {
+            id: true,
+            title: true,
+            priority: true,
+            status: true,
+          },
+        },
       },
     });
     if (!user) return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });

@@ -5,7 +5,18 @@ import { prisma } from "@/lib/prisma"
 import { hashPassword, verifyPassword, createToken } from "@/lib/auth"
 import { redirect } from "next/navigation"
 
-export async function loginAction(formData: FormData) {
+export async function logUserActivity({ userId, action, status, ip }: { userId: string, action: string, status: string, ip?: string }) {
+  try {
+    await prisma.activityLog.create({
+      data: { userId, action, status, ip }
+    })
+    await prisma.user.update({ where: { id: userId }, data: { lastActivity: new Date() } })
+  } catch (e) {
+    // Не критично, если не удалось залогировать
+  }
+}
+
+export async function loginAction(formData: FormData, ip?: string) {
   const email = formData.get("email") as string
   const password = formData.get("password") as string
 
@@ -15,12 +26,22 @@ export async function loginAction(formData: FormData) {
 
   try {
     const user = await prisma.user.findUnique({ where: { email } })
-    if (!user) return { error: "Неверный email или пароль" }
+    if (!user) {
+      // Логируем неудачный вход
+      await logUserActivity({ userId: "unknown", action: "Попытка входа (неизвестный email)", status: "error", ip })
+      return { error: "Неверный email или пароль" }
+    }
 
     const isValidPassword = await verifyPassword(password, user.password)
-    if (!isValidPassword) return { error: "Неверный email или пароль" }
+    if (!isValidPassword) {
+      await logUserActivity({ userId: user.id, action: "Попытка входа (неверный пароль)", status: "error", ip })
+      return { error: "Неверный email или пароль" }
+    }
 
-    if (!user.isActive) return { error: "Аккаунт заблокирован" }
+    if (!user.isActive) {
+      await logUserActivity({ userId: user.id, action: "Попытка входа (заблокирован)", status: "error", ip })
+      return { error: "Аккаунт заблокирован" }
+    }
 
     const token = await createToken(user.id)
     ;(await cookies()).set("auth-token", token, {
@@ -29,6 +50,8 @@ export async function loginAction(formData: FormData) {
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 7, // 7 days
     })
+    await prisma.user.update({ where: { id: user.id }, data: { lastLogin: new Date() } })
+    await logUserActivity({ userId: user.id, action: "Успешный вход в систему", status: "success", ip })
     return { success: true }
   } catch (error) {
     console.error("Login error:", error)
@@ -79,4 +102,11 @@ export async function logoutAction() {
 
   cookieStore.delete("auth-token")
   redirect("/login") // редирект на страницу входа
+}
+
+export async function changeUserPassword(userId: string, newPassword: string) {
+  const hashed = await hashPassword(newPassword)
+  await prisma.user.update({ where: { id: userId }, data: { password: hashed, passwordLastChanged: new Date() } })
+  await logUserActivity({ userId, action: "Смена пароля", status: "success" })
+  return { success: true }
 }

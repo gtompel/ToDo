@@ -25,6 +25,7 @@ import { useParams } from "next/navigation"
 import { useState as useReactState } from "react"
 import { UserProfileCard } from "@/components/user-profile-card";
 import { UserActivityCard } from "@/components/user-activity-card";
+import { useCurrentUser } from "@/hooks/use-user-context"
 
 export default function UserProfilePage() {
   const params = useParams<{ id: string }>()
@@ -35,6 +36,8 @@ export default function UserProfilePage() {
   const [actionLoading, setActionLoading] = useReactState(false)
   const [actionError, setActionError] = useReactState("")
   const [actionSuccess, setActionSuccess] = useReactState("")
+  const [activityLog, setActivityLog] = useState<any[]>([])
+  const currentUser = useCurrentUser();
 
   useEffect(() => {
     async function loadUser() {
@@ -52,6 +55,19 @@ export default function UserProfilePage() {
       }
     }
     loadUser()
+  }, [id])
+
+  useEffect(() => {
+    async function loadActivity() {
+      try {
+        const res = await fetch(`/api/users/${id}/activity`)
+        if (res.ok) {
+          const data = await res.json()
+          setActivityLog(data.logs || [])
+        }
+      } catch {}
+    }
+    if (id) loadActivity()
   }, [id])
 
   const handleUserAction = async (action: string) => {
@@ -95,42 +111,8 @@ export default function UserProfilePage() {
   const fullName = [user.lastName, user.firstName, user.middleName].filter(Boolean).join(" ")
   const initials = [user.lastName, user.firstName, user.middleName].filter(Boolean).map((n: string) => n[0]).join("")
 
-  const activityLog = [
-    {
-      id: 1,
-      action: "Авторизация в системе",
-      timestamp: "2024-01-15 16:45",
-      ip: "192.168.1.100",
-      status: "success",
-    },
-    {
-      id: 2,
-      action: "Создание инцидента INC-045",
-      timestamp: "2024-01-15 15:30",
-      ip: "192.168.1.100",
-      status: "success",
-    },
-    {
-      id: 3,
-      action: "Обновление статьи KB-012",
-      timestamp: "2024-01-15 14:15",
-      ip: "192.168.1.100",
-      status: "success",
-    },
-    {
-      id: 4,
-      action: "Неудачная попытка входа",
-      timestamp: "2024-01-14 09:20",
-      ip: "192.168.1.105",
-      status: "error",
-    },
-  ]
-
-  const assignedItems = [
-    { type: "incident", id: "INC-023", title: "Проблемы с почтовым сервером", priority: "Высокий", status: "В работе" },
-    { type: "incident", id: "INC-028", title: "Медленная работа сети", priority: "Средний", status: "Назначен" },
-    { type: "request", id: "REQ-015", title: "Установка ПО", priority: "Низкий", status: "В работе" },
-  ]
+  const assignedIncidents = user.assignedIncidents || [];
+  const assignedRequests = user.assignedRequests || [];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -173,21 +155,23 @@ export default function UserProfilePage() {
         </div>
         <div className="flex gap-2">
           {/* Кнопки управления пользователем */}
-          {user.status === "active" ? (
+          {currentUser?.role === "ADMIN" && user.status === "active" ? (
             <Button variant="outline" disabled={actionLoading} onClick={() => handleUserAction("block")}> 
               <UserX className="w-4 h-4 mr-2" />
               Заблокировать
             </Button>
-          ) : (
+          ) : currentUser?.role === "ADMIN" && (
             <Button variant="outline" disabled={actionLoading} onClick={() => handleUserAction("activate")}> 
               <UserCheck className="w-4 h-4 mr-2" />
               Активировать
             </Button>
           )}
-          <Button variant="outline" disabled={actionLoading} onClick={() => handleUserAction("reset-password")}> 
-            <Settings className="w-4 h-4 mr-2" />
-            Сбросить пароль
-          </Button>
+          {currentUser?.role === "ADMIN" && (
+            <Button variant="outline" disabled={actionLoading} onClick={() => handleUserAction("reset-password")}> 
+              <Settings className="w-4 h-4 mr-2" />
+              Сбросить пароль
+            </Button>
+          )}
           <Button asChild>
             <Link href={`/users/${user.id}/edit`}>
               <Edit className="w-4 h-4 mr-2" />
@@ -273,33 +257,55 @@ export default function UserProfilePage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {assignedItems.map((item, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                    {assignedIncidents.map((item, index) => (
+                      <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg">
                         <div className="flex items-center gap-3">
-                          <Badge variant="outline" className="text-xs">
-                            {item.type === "incident" ? "INC" : "REQ"}
-                          </Badge>
+                          <Badge variant="outline" className="text-xs">INC</Badge>
                           <div>
                             <div className="font-medium">{item.id}</div>
                             <div className="text-sm text-muted-foreground">{item.title}</div>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge
-                            className={
-                              item.priority === "Высокий"
-                                ? "bg-red-100 text-red-800"
-                                : item.priority === "Средний"
-                                  ? "bg-yellow-100 text-yellow-800"
-                                  : "bg-green-100 text-green-800"
-                            }
-                          >
-                            {item.priority}
+                          <Badge className={
+                            item.priority === "HIGH"
+                              ? "bg-red-100 text-red-800"
+                              : item.priority === "MEDIUM"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : "bg-green-100 text-green-800"
+                          }>
+                            {item.priority === "HIGH" ? "Высокий" : item.priority === "MEDIUM" ? "Средний" : "Низкий"}
                           </Badge>
                           <Badge variant="outline">{item.status}</Badge>
                         </div>
                       </div>
                     ))}
+                    {assignedRequests.map((item, index) => (
+                      <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <Badge variant="outline" className="text-xs">REQ</Badge>
+                          <div>
+                            <div className="font-medium">{item.id}</div>
+                            <div className="text-sm text-muted-foreground">{item.title}</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge className={
+                            item.priority === "HIGH"
+                              ? "bg-red-100 text-red-800"
+                              : item.priority === "MEDIUM"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : "bg-green-100 text-green-800"
+                          }>
+                            {item.priority === "HIGH" ? "Высокий" : item.priority === "MEDIUM" ? "Средний" : "Низкий"}
+                          </Badge>
+                          <Badge variant="outline">{item.status}</Badge>
+                        </div>
+                      </div>
+                    ))}
+                    {assignedIncidents.length === 0 && assignedRequests.length === 0 && (
+                      <div className="text-muted-foreground text-sm">Нет назначенных задач</div>
+                    )}
                   </div>
                 </CardContent>
               </Card>

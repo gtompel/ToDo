@@ -37,6 +37,7 @@ model User {
   requests            Request[]      @relation("CreatedBy")
   sessions            Session[]
   comments            Comment[]
+  activityLogs        ActivityLog[]
 
   @@map("users")
 }
@@ -205,6 +206,18 @@ model Comment {
   userId    String
   article   Article  @relation(fields: [articleId], references: [id])
   user      User     @relation(fields: [userId], references: [id])
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  status    String
+  ip        String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  
+  @@index([userId])
 }
 
 enum Role {

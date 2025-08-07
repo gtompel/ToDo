@@ -4,6 +4,7 @@
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { createNotification } from "./notifications";
+import { logUserActivity } from "./auth"
 
 // Получить все инциденты с пагинацией
 export async function getIncidents(page = 1, pageSize = 10) {
@@ -75,7 +76,7 @@ export async function getIncident(id: string) {
 }
 
 // Создать новый инцидент
-export async function createIncident(formData: FormData, userId: string) {
+export async function createIncident(formData: FormData, userId: string, ip?: string) {
   // Получение данных из формы
   const title = formData.get("title") as string
   const description = formData.get("description") as string
@@ -107,15 +108,17 @@ export async function createIncident(formData: FormData, userId: string) {
         attachments,
       },
     })
+    await logUserActivity({ userId, action: `Создание инцидента: ${title}`, status: "success", ip })
     return { success: true }
   } catch (error: any) {
+    await logUserActivity({ userId, action: `Ошибка создания инцидента: ${title}`, status: "error", ip })
     console.error("Error creating incident:", error)
     return { error: "Ошибка при создании инцидента" }
   }
 }
 
 // Обновить инцидент
-export async function updateIncident(id: string, formData: FormData) {
+export async function updateIncident(id: string, formData: FormData, userId?: string, ip?: string) {
   const title = formData.get("title") as string
   const description = formData.get("description") as string
   const status = formData.get("status") as string
@@ -136,10 +139,11 @@ export async function updateIncident(id: string, formData: FormData) {
         resolvedAt: status === "RESOLVED" ? new Date() : null,
       },
     })
-
+    if (userId) await logUserActivity({ userId, action: `Обновление инцидента: ${title}`, status: "success", ip })
     revalidatePath("/incidents")
     revalidatePath(`/incidents/${id}`)
   } catch (error) {
+    if (userId) await logUserActivity({ userId, action: `Ошибка обновления инцидента: ${id}`, status: "error", ip })
     console.error("Error updating incident:", error)
     return { error: "Ошибка при обновлении инцидента" }
   }
@@ -192,12 +196,14 @@ export async function assignIncidentToUser(id: string, userId: string) {
 }
 
 // Удалить инцидент по id
-export async function deleteIncidentById(id: string) {
+export async function deleteIncidentById(id: string, userId?: string, ip?: string) {
   if (!id) return { error: 'Не передан id' }
   try {
     await prisma.incident.delete({ where: { id } })
+    if (userId) await logUserActivity({ userId, action: `Удаление инцидента: ${id}`, status: "success", ip })
     return { success: true }
   } catch (e: any) {
+    if (userId) await logUserActivity({ userId, action: `Ошибка удаления инцидента: ${id}`, status: "error", ip })
     return { error: e.message || 'Ошибка удаления инцидента' }
   }
 }

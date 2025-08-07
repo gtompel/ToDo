@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import ActiveDirectory from 'activedirectory2'
 import jwt from 'jsonwebtoken'
 import { createToken } from '@/lib/auth'
+import { logUserActivity } from '@/lib/actions/auth'
 
 export const runtime = 'nodejs';
 
@@ -56,10 +57,12 @@ export async function POST(req: any) {
   return new Promise((resolve) => {
     ad.authenticate(loginUPN, password, async (err: any, auth: boolean) => {
       if (err) {
+        await prisma.activityLog.create({ data: { userId: 'unknown', action: `LDAP ошибка: ${err.message}`, status: 'error', ip: req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '' } })
         diagnostics.steps.push({ step: 'adAuthError', error: err.message, details: err });
         return resolve(NextResponse.json({ success: false, error: 'Ошибка авторизации: ' + err.message, diagnostics }));
       }
       if (!auth) {
+        await prisma.activityLog.create({ data: { userId: 'unknown', action: 'LDAP: неверный логин или пароль', status: 'error', ip: req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '' } })
         diagnostics.steps.push({ step: 'adAuthFail', loginUPN });
         return resolve(NextResponse.json({ success: false, error: 'Неверный логин или пароль', diagnostics }));
       }
@@ -139,6 +142,7 @@ export async function POST(req: any) {
           });
           diagnostics.steps.push({ step: 'userFound', userId: user.id });
         }
+        await prisma.activityLog.create({ data: { userId: user.id, action: 'Успешный вход через LDAP', status: 'success', ip: req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '' } })
         diagnostics.steps.push({ step: 'loginLog', userId: user.id, date: new Date().toISOString() });
         // --- Унификация сессии и токена ---
         const token = await createToken(user.id)
