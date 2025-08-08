@@ -465,29 +465,7 @@ export default function ReportsPage() {
             </Card>
           </div>
 
-          {/* SLA метрики */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Соблюдение SLA</CardTitle>
-              <CardDescription>Показатели выполнения соглашений об уровне обслуживания</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="text-center p-4 border rounded-lg">
-                  <div className="text-2xl font-bold text-green-600">94%</div>
-                  <p className="text-sm text-muted-foreground">Инциденты в SLA</p>
-                </div>
-                <div className="text-center p-4 border rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">92%</div>
-                  <p className="text-sm text-muted-foreground">Запросы в SLA</p>
-                </div>
-                <div className="text-center p-4 border rounded-lg">
-                  <div className="text-2xl font-bold text-purple-600">96%</div>
-                  <p className="text-sm text-muted-foreground">Первый отклик в SLA</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Блок SLA убран по требованию */}
         </TabsContent>
 
         <TabsContent value="incidents" className="space-y-4">

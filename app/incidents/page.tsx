@@ -47,9 +47,11 @@ export default async function IncidentsPage() {
   const user = await getCurrentUser();
   const isAdmin = user && user.role === "ADMIN";
   const assignableUsersRaw = isAdmin ? await getAssignableUsers() : [];
-  const assignableUsers = assignableUsersRaw.map((user: { id: string; firstName: string; lastName: string }) => ({
+  const assignableUsers = assignableUsersRaw.map((user: { id: string; firstName: string; lastName: string; email?: string }) => ({
     id: user.id,
-    name: `${user.firstName} ${user.lastName}`,
+    firstName: user.firstName || "",
+    lastName: user.lastName || "",
+    email: user.email || "",
   }));
 
   return (

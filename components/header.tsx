@@ -41,7 +41,22 @@ export default function Header({ onBurgerClick }: { onBurgerClick?: () => void }
     return () => clearTimeout(timeout)
   }, [search])
 
-  if (!user) return null
+  if (!user) {
+    return (
+      <header className="border-b bg-primary text-primary-foreground relative">
+        <div className="flex h-16 items-center px-4 gap-4">
+          <div className="flex-1 flex items-center gap-3">
+            <div className="h-9 w-9 rounded bg-white/20 animate-pulse" />
+            <div className="h-4 w-64 rounded bg-white/20 animate-pulse" />
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="h-6 w-6 rounded bg-white/20 animate-pulse" />
+            <div className="h-8 w-8 rounded-full bg-white/20 animate-pulse" />
+          </div>
+        </div>
+      </header>
+    )
+  }
   const userInitials = `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
   return (
     <header className="border-b bg-primary text-primary-foreground relative">

@@ -9,6 +9,7 @@ import { getCurrentUser } from "@/lib/auth"
 import Header from "@/components/header"
 import Sidebar from "@/components/sidebar"
 import { ThemeProvider } from "@/components/theme-provider"
+import { Toaster } from "@/components/ui/toaster"
 import AppShell from "./AppShell"
 import { UserProvider } from "@/hooks/use-user-context";
 
@@ -30,6 +31,7 @@ export default async function RootLayout({ children, }: { children: React.ReactN
         <body className={"font-sans bg-background text-foreground"}>
           <ThemeProvider attribute="class" defaultTheme="rosatom" enableSystem>
             {children}
+            <Toaster />
           </ThemeProvider>
         </body>
       </html>
@@ -39,11 +41,12 @@ export default async function RootLayout({ children, }: { children: React.ReactN
   // Если пользователь авторизован — рендерим layout
   return (
     <html lang="ru" suppressHydrationWarning>
-      <body className={jetbrains.className + " bg-background text-foreground"}>
+        <body className={jetbrains.className + " bg-background text-foreground"}>
         <ThemeProvider attribute="class" defaultTheme="rosatom" enableSystem>
           <UserProvider>
             <AppShell>{children}</AppShell>
           </UserProvider>
+            <Toaster />
         </ThemeProvider>
       </body>
     </html>

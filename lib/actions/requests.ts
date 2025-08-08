@@ -83,6 +83,7 @@ export async function createRequest(formData: FormData, userId?: string) {
   const description = formData.get("description") as string
   const priority = formData.get("priority") as string
   const assignedToId = formData.get("assigneeId") as string
+  const acknowledgmentFile = formData.get("acknowledgmentFile") as unknown as File | null
 
   // Проверка обязательных полей
   if (!title || !description || !userId) {
@@ -98,6 +99,7 @@ export async function createRequest(formData: FormData, userId?: string) {
         priority: priority as any,
         createdById: userId,
         assignedToId: assignedToId || null,
+        acknowledgmentFile: (acknowledgmentFile && typeof (acknowledgmentFile as any).name === 'string') ? (acknowledgmentFile as any).name : null,
       },
     })
 

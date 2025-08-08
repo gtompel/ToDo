@@ -53,7 +53,7 @@ export default function LoginForm({ initialError }: { initialError?: string }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} method="post" className="space-y-4">
       {error && <div className="text-red-500 text-sm mb-2">{error}</div>}
       <div className="flex gap-4 mb-2">
         <label className="flex items-center gap-1">
@@ -68,12 +68,12 @@ export default function LoginForm({ initialError }: { initialError?: string }) {
       {authType === 'local' ? (
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
-          <Input id="email" name="email" type="email" placeholder="admin@example.com" required={authType === 'local'} />
+          <Input id="email" name="email" type="email" placeholder="admin@example.com" autoComplete="email" required={authType === 'local'} autoFocus={authType === 'local'} />
         </div>
       ) : (
         <div className="space-y-2">
           <Label htmlFor="login">Логин или email</Label>
-          <Input id="login" name="login" type="text" autoComplete="username" placeholder="user или user@OIT.INT" required disabled={loading} />
+          <Input id="login" name="login" type="text" autoComplete="username" placeholder="user или user@OIT.INT" required disabled={loading} autoFocus={authType === 'ldap'} />
         </div>
       )}
       <div className="space-y-2 relative">
@@ -83,6 +83,7 @@ export default function LoginForm({ initialError }: { initialError?: string }) {
           name="password"
           type={showPassword ? "text" : "password"}
           placeholder="password"
+          autoComplete="current-password"
           required
         />
         <button
@@ -95,7 +96,7 @@ export default function LoginForm({ initialError }: { initialError?: string }) {
           {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
         </button>
       </div>
-      <Button type="submit" className="w-full" disabled={loading}>
+      <Button type="submit" className="w-full" disabled={loading} aria-disabled={loading} aria-busy={loading}>
         {loading ? "Вход..." : "Войти"}
       </Button>
     </form>

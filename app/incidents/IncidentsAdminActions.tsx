@@ -3,7 +3,9 @@
 import { useState, useTransition, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { toast } from "@/components/ui/use-toast"
+import { useConfirm } from "@/components/ui/confirm-dialog"
 import { fetchWithTimeout } from "@/lib/utils"
+// Редактирование выполняется из кнопки-карандаша в списке; здесь не нужен отдельный диалог
 
 // Варианты статусов для инцидентов
 const STATUS_OPTIONS = [
@@ -22,7 +24,7 @@ const PRIORITY_OPTIONS = [
 ]
 
 // Компонент для административных действий над инцидентом
-export default function IncidentsAdminActions({ incident, assignees }: { incident: any, assignees: Array<{id: string, firstName: string, lastName: string, email: string}> }) {
+export default function IncidentsAdminActions({ incident, assignees, onUpdated, onDeleted }: { incident: any, assignees: Array<{id: string, firstName: string, lastName: string, email: string}>, onUpdated?: (patch: any) => void, onDeleted?: () => void }) {
   // Состояния для управления формой
   const [isPending, startTransition] = useTransition()
   const [status, setStatus] = useState(incident.status) // Текущий статус
@@ -30,6 +32,8 @@ export default function IncidentsAdminActions({ incident, assignees }: { inciden
   const [loading, setLoading] = useState(false) // Флаг загрузки
   const actionRef = useRef<HTMLInputElement>(null) // Ссылка на скрытое поле action
   const [priority, setPriority] = useState(incident.priority) // Текущий приоритет
+  const { confirm, dialog } = useConfirm()
+  // Диалог редактирования убран, чтобы не дублировать кнопку редактирования
 
   // Обработка административных действий (смена статуса, приоритета, назначение, удаление)
   const handleAdminAction = async (action: string, value?: string) => {
@@ -47,7 +51,7 @@ export default function IncidentsAdminActions({ incident, assignees }: { inciden
         data = await res.json()
         if (!res.ok || data.error) throw new Error(data.error || "Ошибка смены статуса")
         toast({ title: "Статус изменён", description: "Инцидент обновлён" })
-        window.location.reload()
+        onUpdated?.({ status: value || status })
       // Смена приоритета
       } else if (action === "priority") {
         setPriority(value || priority)
@@ -59,7 +63,7 @@ export default function IncidentsAdminActions({ incident, assignees }: { inciden
         data = await res.json()
         if (!res.ok || data.error) throw new Error(data.error || "Ошибка смены приоритета")
         toast({ title: "Приоритет изменён", description: "Инцидент обновлён" })
-        window.location.reload()
+        onUpdated?.({ priority: value || priority })
       // Назначение исполнителя
       } else if (action === "assign") {
         setAssignee(value || assignee)
@@ -71,10 +75,13 @@ export default function IncidentsAdminActions({ incident, assignees }: { inciden
         data = await res.json()
         if (!res.ok || data.error) throw new Error(data.error || "Ошибка назначения")
         toast({ title: "Исполнитель назначен" })
-        window.location.reload()
+        const userId = value || assignee
+        const user = assignees.find(u => u.id === userId)
+        onUpdated?.({ assignedToId: userId, assignedTo: user ? { firstName: user.firstName, lastName: user.lastName, email: user.email, id: user.id } : undefined })
       // Удаление инцидента
       } else if (action === "delete") {
-        if (confirm("Удалить инцидент?")) {
+        const ok = await confirm({ title: "Удалить инцидент?" })
+        if (ok) {
           res = await fetchWithTimeout("/api/incidents/delete", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -83,7 +90,7 @@ export default function IncidentsAdminActions({ incident, assignees }: { inciden
           data = await res.json()
           if (!res.ok || data.error) throw new Error(data.error || "Ошибка удаления")
           toast({ title: "Инцидент удалён" })
-          window.location.reload()
+          onDeleted?.()
         }
       }
     } catch (e: any) {
@@ -111,6 +118,8 @@ export default function IncidentsAdminActions({ incident, assignees }: { inciden
         await handleAdminAction("delete")
       }
     }}>
+      {dialog}
+      {/* Кнопка редактирования перенесена в заголовок карточки (иконка карандаша) */}
       {/* Смена статуса */}
       <label>
         Статус:

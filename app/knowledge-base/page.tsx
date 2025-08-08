@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -21,6 +21,25 @@ export default function KnowledgeBasePage() {
   const [error, setError] = useState("")
   const [tab, setTab] = useState("articles")
   const [statusFilter, setStatusFilter] = useState("all")
+
+  // Реальные метрики на основе полученных статей
+  const totalViews = useMemo(() => articles.reduce((sum, a) => sum + (a.views || 0), 0), [articles])
+  const avgRating = useMemo(() => {
+    if (articles.length === 0) return "-"
+    const total = articles.reduce((sum, a) => sum + (a.rating || 0), 0)
+    return (total / articles.length).toFixed(1)
+  }, [articles])
+  const activeAuthorsThisMonth = useMemo(() => {
+    const now = new Date()
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    const authorIds = new Set(
+      articles
+        .filter((a) => new Date(a.updatedAt || a.updated) >= startOfMonth)
+        .map((a) => a.authorId)
+        .filter(Boolean)
+    )
+    return authorIds.size
+  }, [articles])
 
   useEffect(() => {
     setLoading(true)
@@ -107,7 +126,7 @@ export default function KnowledgeBasePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{articles.length}</div>
-            <p className="text-xs text-muted-foreground">+3 за неделю</p>
+            {/* Убрали моковую подпись */}
           </CardContent>
         </Card>
         <Card>
@@ -116,8 +135,7 @@ export default function KnowledgeBasePage() {
             <Eye className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{articles.reduce((sum, a) => sum + (a.views || 0), 0)}</div>
-            <p className="text-xs text-muted-foreground">+12% за месяц</p>
+            <div className="text-2xl font-bold">{totalViews}</div>
           </CardContent>
         </Card>
         <Card>
@@ -127,7 +145,7 @@ export default function KnowledgeBasePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {(articles.reduce((sum, a) => sum + (a.rating || 0), 0) / articles.length).toFixed(1)}
+              {avgRating}
             </div>
             <p className="text-xs text-muted-foreground">из 5.0</p>
           </CardContent>
@@ -138,7 +156,7 @@ export default function KnowledgeBasePage() {
             <TrendingUp className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">8</div>
+            <div className="text-2xl font-bold">{activeAuthorsThisMonth}</div>
             <p className="text-xs text-muted-foreground">в этом месяце</p>
           </CardContent>
         </Card>

@@ -13,6 +13,7 @@ import { useRef } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
+import { useConfirm } from "@/components/ui/confirm-dialog"
 import { Switch } from "@/components/ui/switch"
 import { addDays, startOfDay, subDays, isAfter } from "date-fns"
 
@@ -45,6 +46,7 @@ export default function NotificationsCenterPage() {
   const [usersList, setUsersList] = useState<any[]>([])
   const [usersLoading, setUsersLoading] = useState(false)
   const { toast } = useToast()
+  const { confirm, dialog } = useConfirm()
   const userSelectRef = useRef<HTMLSelectElement>(null)
   const [createError, setCreateError] = useState("")
   const [userSearch, setUserSearch] = useState("")
@@ -252,7 +254,8 @@ export default function NotificationsCenterPage() {
   const clearSelection = () => setSelected([])
 
   const deleteSelected = async () => {
-    if (!window.confirm("Удалить выбранные уведомления?")) return
+    const ok = await confirm({ title: "Удалить выбранные уведомления?" })
+    if (!ok) return
     await fetch("/api/notifications", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -273,6 +276,7 @@ export default function NotificationsCenterPage() {
 
   return (
     <div className="max-w-5xl mx-auto py-8">
+      {dialog}
       {/* Фильтр по периоду */}
       <div className="flex gap-2 mb-4">
         <Button size="sm" variant={period === 'all' ? 'default' : 'outline'} onClick={() => setPeriod('all')}>Все</Button>

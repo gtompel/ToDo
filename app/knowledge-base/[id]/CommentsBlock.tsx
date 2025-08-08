@@ -4,12 +4,14 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { useCurrentUser } from "@/hooks/use-user"
 import { useToast } from "@/components/ui/use-toast"
+import { useConfirm } from "@/components/ui/confirm-dialog"
 
 export default function CommentsBlock({ article, comments }: { article: any, comments: any[] }) {
   const { user: currentUser } = useCurrentUser()
   const [comment, setComment] = useState("")
   const { toast } = useToast()
   const [localComments, setLocalComments] = useState<any[]>(comments)
+  const { confirm, dialog } = useConfirm()
   const [pending, setPending] = useState(false)
 
   // Добавление комментария (optimistic UI)
@@ -49,7 +51,8 @@ export default function CommentsBlock({ article, comments }: { article: any, com
 
   // Удаление комментария (только для админа)
   const handleDeleteComment = async (commentId: string) => {
-    if (!confirm("Удалить комментарий?")) return
+    const ok = await confirm({ title: "Удалить комментарий?" })
+    if (!ok) return
     const prev = localComments
     setLocalComments((prev) => prev.filter((c) => c.id !== commentId))
     try {
@@ -73,6 +76,7 @@ export default function CommentsBlock({ article, comments }: { article: any, com
 
   return (
     <>
+      {dialog}
       {/* Форма добавления комментария */}
       {currentUser ? (
         <div className="space-y-4">

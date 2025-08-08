@@ -26,3 +26,19 @@ export async function fetchWithTimeout(resource: RequestInfo, options: any = {})
     clearTimeout(id)
   }
 }
+
+// Простой in-memory rate limit (для одного инстанса)
+// Для production используйте Redis/Upstash. Ключом может быть IP или login+IP.
+const rateBuckets = new Map<string, { count: number; resetAt: number }>()
+
+export function isRateLimited(key: string, limit: number, windowMs: number): boolean {
+  const now = Date.now()
+  const bucket = rateBuckets.get(key)
+  if (!bucket || now > bucket.resetAt) {
+    rateBuckets.set(key, { count: 1, resetAt: now + windowMs })
+    return false
+  }
+  bucket.count += 1
+  if (bucket.count > limit) return true
+  return false
+}

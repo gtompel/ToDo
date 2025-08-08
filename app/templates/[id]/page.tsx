@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import Link from "next/link"
+import { useConfirm } from "@/components/ui/confirm-dialog"
 
 export default function TemplateViewPage() {
   const router = useRouter()
@@ -30,8 +31,10 @@ export default function TemplateViewPage() {
     fetch("/api/users/me").then(res => res.json()).then(data => setUserRole(data?.user?.role || ""))
   }, [id])
 
+  const { confirm, dialog } = useConfirm()
   const handleDelete = async () => {
-    if (!confirm("Удалить шаблон?")) return
+    const ok = await confirm({ title: "Удалить шаблон?" })
+    if (!ok) return
     await fetch(`/api/templates/${id}`, { method: "DELETE" })
     router.push("/templates")
   }
@@ -42,6 +45,7 @@ export default function TemplateViewPage() {
 
   return (
     <div className="max-w-2xl mx-auto py-8">
+      {dialog}
       <h1 className="text-2xl font-bold mb-4">Шаблон: {template?.name}</h1>
       <div className="mb-4 text-gray-600">{template?.description}</div>
       <Card>

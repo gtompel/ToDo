@@ -2,7 +2,7 @@
 import { useState } from "react"
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { LogOut } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function LogoutButton() {
   const { toast } = useToast()

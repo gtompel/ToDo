@@ -6,14 +6,17 @@ import { Plus, RefreshCw, Edit, Trash2, Info } from "lucide-react"
 import WorkstationForm from "./WorkstationForm"
 import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogDescription, DialogHeader } from "@/components/ui/dialog"
 import { useToast } from "@/components/ui/use-toast"
-import Link from "next/link"
+import { useConfirm } from "@/components/ui/confirm-dialog"
+// import Link from "next/link"
 import { useCurrentUser } from "@/hooks/use-user-context"
 
 export default function WorkstationsTable({ workstations }: { workstations: any[] }) {
   const [showCreate, setShowCreate] = useState(false)
   const [editWorkstation, setEditWorkstation] = useState<any>(null)
+  const [viewWorkstation, setViewWorkstation] = useState<any>(null)
   const [workstationsState, setWorkstationsState] = useState(workstations)
   const { toast } = useToast()
+  const { confirm, dialog } = useConfirm()
   const user = useCurrentUser();
 
   const fetchWorkstations = async () => {
@@ -23,7 +26,8 @@ export default function WorkstationsTable({ workstations }: { workstations: any[
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Удалить рабочую станцию?")) return
+    const ok = await confirm({ title: "Удалить рабочую станцию?" })
+    if (!ok) return
     try {
       await fetch(`/api/workstations/${id}`, { method: "DELETE" })
       toast({ title: "Станция удалена" })
@@ -35,6 +39,32 @@ export default function WorkstationsTable({ workstations }: { workstations: any[
 
   return (
     <div className="space-y-6">
+      {dialog}
+      {/* Просмотр подробной информации */}
+      <Dialog open={!!viewWorkstation} onOpenChange={v => { if (!v) setViewWorkstation(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Информация о рабочей станции</DialogTitle>
+            <DialogDescription />
+          </DialogHeader>
+          {viewWorkstation && (
+            <div className="space-y-2 text-sm">
+              <div><b>Имя компьютера:</b> {viewWorkstation.name}</div>
+              <div><b>IP-адрес:</b> {viewWorkstation.ip || '-'}</div>
+              <div><b>Тип:</b> {viewWorkstation.type || '-'}</div>
+              <div><b>Пользователь:</b> {viewWorkstation.user ? `${viewWorkstation.user.firstName} ${viewWorkstation.user.lastName}` : '-'}</div>
+              <div><b>Кабинет:</b> {viewWorkstation.room || '-'}</div>
+              <div><b>Отдел:</b> {viewWorkstation.department || '-'}</div>
+              <div><b>Описание:</b> {viewWorkstation.description || '-'}</div>
+              <div><b>Статус:</b> {viewWorkstation.status || '-'}</div>
+              <div className="text-xs text-muted-foreground pt-2">
+                <div><b>Создано:</b> {viewWorkstation.createdAt ? new Date(viewWorkstation.createdAt).toLocaleString('ru-RU') : '-'}</div>
+                <div><b>Обновлено:</b> {viewWorkstation.updatedAt ? new Date(viewWorkstation.updatedAt).toLocaleString('ru-RU') : '-'}</div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent>
           <DialogHeader>
@@ -50,6 +80,20 @@ export default function WorkstationsTable({ workstations }: { workstations: any[
           <Button variant="outline" onClick={() => window.location.reload()}><RefreshCw className="w-4 h-4 mr-2" />Обновить</Button>
           {(user?.role === "ADMIN" || user?.role === "TECHNICIAN") && (
             <Button onClick={() => setShowCreate(true)}><Plus className="w-4 h-4 mr-2" />Добавить станцию</Button>
+          )}
+          {user?.role === 'ADMIN' && (
+            <Button variant="outline" onClick={() => {
+              const rows = workstationsState.map(w => [w.name, w.ip||'', w.type||'', w.user ? `${w.user.firstName} ${w.user.lastName}` : '', w.room||'', w.department||''])
+              const header = ['Имя компьютера','IP-адрес','Тип','Пользователь','Кабинет','Отдел']
+              const content = [header, ...rows].map(line => line.join('\t')).join('\n')
+              const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
+              const url = URL.createObjectURL(blob)
+              const a = document.createElement('a')
+              a.href = url
+              a.download = 'workstations.odt'
+              a.click()
+              URL.revokeObjectURL(url)
+            }}>Выгрузить .odt</Button>
           )}
           <Dialog open={!!editWorkstation} onOpenChange={v => { if (!v) setEditWorkstation(null) }}>
             <DialogContent>
@@ -95,9 +139,9 @@ export default function WorkstationsTable({ workstations }: { workstations: any[
                   {(user?.role === "ADMIN" || user?.role === "TECHNICIAN") && (
                     <button title="Редактировать" onClick={() => setEditWorkstation(w)}><Edit className="w-4 h-4" /></button>
                   )}
-                  <Link href={`/workstations/${w.id}`} title="Подробнее" prefetch={false}>
+                  <button title="Подробнее" onClick={() => setViewWorkstation(w)}>
                     <Info className="w-4 h-4 text-blue-600 hover:text-blue-800" />
-                  </Link>
+                  </button>
                   {user?.role === "ADMIN" && (
                     <button title="Удалить" onClick={() => handleDelete(w.id)}><Trash2 className="w-4 h-4 text-red-500" /></button>
                   )}

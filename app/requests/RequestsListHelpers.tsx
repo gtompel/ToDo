@@ -68,6 +68,16 @@ export function renderRequestDetails(description: string) {
             {!data.needsEMVS && !data.needsSKZI && !data.needsRosatomAccess && <span>нет</span>}
           </td></tr>
           {data.additionalInfo && <tr><td className="font-medium pr-2">Доп. информация:</td><td>{data.additionalInfo}</td></tr>}
+          {data.acknowledgmentFile && (
+            <tr>
+              <td className="font-medium pr-2">Лист ознакомления:</td>
+              <td>
+                <a href={data.acknowledgmentFile} target="_blank" className="underline text-blue-700" rel="noreferrer">
+                  {String(data.acknowledgmentFile).split('/').pop()}
+                </a>
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
     </div>

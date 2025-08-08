@@ -7,13 +7,55 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    unoptimized: true,
+    unoptimized: process.env.NODE_ENV !== 'production',
   },
   allowedDevOrigins: [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://172.16.10.245:3000"
   ],
+  async headers() {
+    const isProd = process.env.NODE_ENV === 'production'
+    const headers = []
+    if (!isProd) {
+      headers.push(
+        {
+          source: "/__nextjs_font/:path*",
+          headers: [
+            { key: "Access-Control-Allow-Origin", value: "*" },
+            { key: "Cache-Control", value: "public, max-age=0, must-revalidate" },
+          ],
+        },
+        {
+          source: "/_next/:path*",
+          headers: [
+            { key: "Access-Control-Allow-Origin", value: "*" },
+          ],
+        },
+      )
+    }
+    // Security headers (prod)
+    headers.push({
+      source: "/(.*)",
+      headers: [
+        ...(isProd ? [{ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" }] : []),
+        { key: "X-Content-Type-Options", value: "nosniff" },
+        { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+        { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+        { key: "X-Frame-Options", value: "SAMEORIGIN" },
+      ],
+    })
+    return headers
+  },
+  webpack: (config, { isServer }) => {
+    // dtrace-provider — опциональная зависимость ldapjs; отключаем её, чтобы не падала сборка
+    config.resolve = config.resolve || {}
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      'dtrace-provider': false,
+    }
+    return config
+  },
 }
 
 export default nextConfig

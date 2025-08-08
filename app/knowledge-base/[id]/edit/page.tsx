@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import Link from "next/link"
 import ReactMarkdown from "react-markdown"
 import { useToast } from "@/components/ui/use-toast"
+import { useConfirm } from "@/components/ui/confirm-dialog"
 
 export default function EditArticlePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = usePromise(params)
@@ -21,6 +22,7 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
   const [deleteError, setDeleteError] = useState("")
   const [previewMode, setPreviewMode] = useState(false)
   const { toast } = useToast()
+  const { confirm, dialog } = useConfirm()
 
   useEffect(() => {
     setLoading(true)
@@ -74,7 +76,8 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
   }
 
   const handleDelete = async () => {
-    if (!confirm("Удалить статью?")) return
+    const ok = await confirm({ title: "Удалить статью?" })
+    if (!ok) return
     setDeleteError("")
     setSaving(true)
     try {
@@ -102,6 +105,7 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
 
   return (
     <div className="space-y-6">
+      {dialog}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
           <Link href={`/knowledge-base/${id}`}>

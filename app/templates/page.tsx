@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useCurrentUser } from "@/hooks/use-user-context"
+import { useConfirm } from "@/components/ui/confirm-dialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -101,6 +102,7 @@ export default function TemplatesAdminPage() {
   })
   const [error, setError] = useState("")
   const user = useCurrentUser();
+  const { confirm, dialog } = useConfirm()
   const userRole = user?.role || "";
 
   // Для визуального редактора полей
@@ -137,7 +139,8 @@ export default function TemplatesAdminPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Удалить шаблон?")) return
+    const ok = await confirm({ title: "Удалить шаблон?" })
+    if (!ok) return
     await fetch(`/api/templates/${id}`, { method: "DELETE" })
     fetchTemplates()
   }
@@ -191,6 +194,7 @@ export default function TemplatesAdminPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
+      {dialog}
       <div className="container mx-auto px-4 max-w-4xl">
         {showForm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">

@@ -94,15 +94,21 @@ export async function createIncident(formData: FormData, userId: string, ip?: st
   }
 
   try {
+    // Определяем роль автора для бизнес-правил
+    const creator = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } })
+    const isSimpleUser = creator?.role === 'USER'
+    // Если создатель — обычный USER: принудительно ставим LOW и без назначенного исполнителя
+    const effectivePriority = (isSimpleUser ? 'LOW' : (priority || 'LOW')) as any
+    const effectiveAssigneeId = isSimpleUser ? null : (assignedToId || null)
     // Создание инцидента в базе данных
     await prisma.incident.create({
       data: {
         title,
         description,
-        priority: priority as any,
+        priority: effectivePriority,
         category,
         createdById: userId,
-        assignedToId: assignedToId || null,
+        assignedToId: effectiveAssigneeId,
         preActions,
         expectedResult,
         attachments,

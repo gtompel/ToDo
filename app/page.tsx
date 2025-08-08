@@ -3,11 +3,13 @@ import { Badge } from "@/components/ui/badge"
 import { AlertTriangle, HelpCircle, GitBranch } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 
+export const revalidate = 60
+
 // Главная страница (дашборд)
 // Получение статистики для дашборда
 async function getDashboardStats() {
   // Получаем статистику по инцидентам, запросам и изменениям
-  const [totalIncidents, openIncidents, totalRequests, openRequests, totalChanges, pendingChanges] = await Promise.all([
+  const [totalIncidents, openIncidents, totalRequests, openRequests, totalChanges, pendingChanges] = await prisma.$transaction([
     prisma.incident.count(),
     prisma.incident.count({ where: { status: "OPEN" } }),
     prisma.request.count(),
@@ -149,8 +151,8 @@ export default async function Dashboard() {
                   <div key={incident.id} className="flex items-center justify-between p-3 border rounded-lg">
                     <div className="flex-1">
                       <h4 className="font-medium">{incident.title}</h4>
-                      <p className="text-sm text-gray-600">Создал: {incident.createdBy.name}</p>
-                      <p className="text-sm text-gray-600">Назначен: {incident.assignedTo?.name || "Не назначен"}</p>
+                      <p className="text-sm text-gray-600">Создал: {(incident.createdBy?.firstName || "") + " " + (incident.createdBy?.lastName || "")}</p>
+                      <p className="text-sm text-gray-600">Назначен: {(() => { const a = incident.assignedTo; if (!a) return "Не назначен"; const name = `${a.firstName || ""} ${a.lastName || ""}`.trim(); return name || a.email || "Не назначен"; })()}</p>
                     </div>
                     <div className="flex flex-col gap-1">
                       {getStatusBadge(incident.status)}
@@ -178,8 +180,8 @@ export default async function Dashboard() {
                   <div key={request.id} className="flex items-center justify-between p-3 border rounded-lg">
                     <div className="flex-1">
                       <h4 className="font-medium">{request.title}</h4>
-                      <p className="text-sm text-gray-600">Создал: {request.createdBy.name}</p>
-                      <p className="text-sm text-gray-600">Назначен: {request.assignedTo?.name || "Не назначен"}</p>
+                      <p className="text-sm text-gray-600">Создал: {(request.createdBy?.firstName || "") + " " + (request.createdBy?.lastName || "")}</p>
+                      <p className="text-sm text-gray-600">Назначен: {(() => { const a = request.assignedTo; if (!a) return "Не назначен"; const name = `${a.firstName || ""} ${a.lastName || ""}`.trim(); return name || a.email || "Не назначен"; })()}</p>
                     </div>
                     <div className="flex flex-col gap-1">
                       {getStatusBadge(request.status)}

@@ -6,11 +6,29 @@ import ActiveDirectory from 'activedirectory2'
 import jwt from 'jsonwebtoken'
 import { createToken } from '@/lib/auth'
 import { logUserActivity } from '@/lib/actions/auth'
+import { isRateLimited } from '@/lib/utils'
 
 export const runtime = 'nodejs';
 
 export async function POST(req: any) {
   const { login, password } = await req.json()
+  // CSRF: Origin/Host проверка
+  try {
+    const origin = req.headers.get?.('origin') || req.headers['origin'] || ''
+    const host = req.headers.get?.('host') || req.headers['host'] || ''
+    const allowedEnv = (process.env.ALLOWED_ORIGINS || '').split(',').map((s: string) => s.trim()).filter(Boolean)
+    const derived = [`http://${host}`, `https://${host}`]
+    const isAllowed = origin === '' || allowedEnv.includes(origin) || derived.includes(origin)
+    if (!isAllowed) {
+      return NextResponse.json({ success: false, error: 'Недопустимый источник запроса' }, { status: 403 })
+    }
+  } catch {}
+  // Rate limit: 5 попыток за 10 минут на ключ login+ip
+  const ip = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown'
+  const key = `ldap:${login}:${ip}`
+  if (isRateLimited(key, 5, 10 * 60 * 1000)) {
+    return NextResponse.json({ success: false, error: 'Слишком много попыток. Попробуйте позже.' }, { status: 429 })
+  }
   const all = await prisma.systemSettings.findMany()
   const settings: any = {}
   for (const s of all) {
@@ -57,7 +75,8 @@ export async function POST(req: any) {
   return new Promise((resolve) => {
     ad.authenticate(loginUPN, password, async (err: any, auth: boolean) => {
       if (err) {
-        await prisma.activityLog.create({ data: { userId: 'unknown', action: `LDAP ошибка: ${err.message}`, status: 'error', ip: req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '' } })
+        const safeMsg = (err?.message || '').replace(/\u0000/g, '')
+        await prisma.activityLog.create({ data: { userId: 'unknown', action: `LDAP ошибка: ${safeMsg}`.slice(0, 1000), status: 'error', ip: req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '' } })
         diagnostics.steps.push({ step: 'adAuthError', error: err.message, details: err });
         return resolve(NextResponse.json({ success: false, error: 'Ошибка авторизации: ' + err.message, diagnostics }));
       }
@@ -150,7 +169,7 @@ export async function POST(req: any) {
         const response = NextResponse.json({ success: true, diagnostics })
         response.cookies.set('auth-token', token, {
           httpOnly: true,
-          secure: false, // для локальной разработки
+          secure: process.env.NODE_ENV === 'production',
           sameSite: 'lax',
           maxAge: 60 * 60 * 24 * 7,
           path: '/',

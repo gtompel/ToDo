@@ -4,6 +4,9 @@ import { useState, useTransition, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { toast } from "@/components/ui/use-toast"
 import { fetchWithTimeout } from "@/lib/utils"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 
 // Варианты статусов для изменений
 const STATUS_OPTIONS = [
@@ -24,7 +27,7 @@ const PRIORITY_OPTIONS = [
 ]
 
 // Компонент для административных действий над изменением
-export default function ChangesAdminActions({ change, assignees }: { change: any, assignees: Array<{id: string, firstName: string, lastName: string, email: string}> }) {
+export default function ChangesAdminActions({ change, assignees, onUpdated }: { change: any, assignees: Array<{id: string, firstName: string, lastName: string, email: string}>, onUpdated?: (patch: any) => void }) {
   // Состояния для управления формой
   const [isPending, startTransition] = useTransition()
   const [status, setStatus] = useState(change.status) // Текущий статус
@@ -32,6 +35,10 @@ export default function ChangesAdminActions({ change, assignees }: { change: any
   const [loading, setLoading] = useState(false) // Флаг загрузки
   const actionRef = useRef<HTMLInputElement>(null) // Ссылка на скрытое поле action
   const [priority, setPriority] = useState(change.priority) // Текущий приоритет
+  const [editOpen, setEditOpen] = useState(false)
+  const [editTitle, setEditTitle] = useState(change.title || "")
+  const [editDescription, setEditDescription] = useState(change.description || "")
+  const [editCategory, setEditCategory] = useState(change.category || "")
 
   // Обработка административных действий (смена статуса, приоритета, назначение)
   const handleAdminAction = async (action: string, value?: string) => {
@@ -49,7 +56,7 @@ export default function ChangesAdminActions({ change, assignees }: { change: any
         data = await res.json()
         if (!res.ok || data.error) throw new Error(data.error || "Ошибка смены статуса")
         toast({ title: "Статус изменён", description: "Изменение обновлено" })
-        window.location.reload()
+        onUpdated?.({ status: value || status })
       // Смена приоритета
       } else if (action === "priority") {
         setPriority(value || priority)
@@ -61,7 +68,7 @@ export default function ChangesAdminActions({ change, assignees }: { change: any
         data = await res.json()
         if (!res.ok || data.error) throw new Error(data.error || "Ошибка смены приоритета")
         toast({ title: "Приоритет изменён", description: "Изменение обновлено" })
-        window.location.reload()
+        onUpdated?.({ priority: value || priority })
       // Назначение исполнителя
       } else if (action === "assign") {
         setAssignee(value || assignee)
@@ -73,7 +80,9 @@ export default function ChangesAdminActions({ change, assignees }: { change: any
         data = await res.json()
         if (!res.ok || data.error) throw new Error(data.error || "Ошибка назначения")
         toast({ title: "Исполнитель назначен" })
-        window.location.reload()
+        const userId = value || assignee
+        const user = assignees.find(u => u.id === userId)
+        onUpdated?.({ assignedToId: userId, assignedTo: user ? { id: user.id, firstName: user.firstName, lastName: user.lastName, email: user.email } : undefined })
       }
     } catch (e: any) {
       // Показываем ошибку через toast
@@ -118,6 +127,7 @@ export default function ChangesAdminActions({ change, assignees }: { change: any
       >
         {loading ? "..." : "Сменить"}
       </button>
+      <Button type="button" variant="outline" onClick={() => setEditOpen(true)}>Редактировать</Button>
       {/* Смена приоритета */}
       <label>
         Приоритет:
@@ -155,6 +165,46 @@ export default function ChangesAdminActions({ change, assignees }: { change: any
       >
         {loading ? "..." : "Назначить"}
       </button>
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Редактировать изменение</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs mb-1">Заголовок</label>
+              <Input value={editTitle} onChange={e => setEditTitle(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-xs mb-1">Описание</label>
+              <Textarea value={editDescription} onChange={e => setEditDescription(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-xs mb-1">Категория</label>
+              <Input value={editCategory} onChange={e => setEditCategory(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>Отмена</Button>
+            <Button onClick={async () => {
+              try {
+                const res = await fetchWithTimeout('/api/changes/update', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ id: change.id, title: editTitle, description: editDescription, category: editCategory, status, priority, assignedToId: assignee || null }),
+                })
+                const data = await res.json()
+                if (!res.ok || data.error) throw new Error(data.error || 'Ошибка обновления')
+                toast({ title: 'Изменение обновлено' })
+                onUpdated?.({ title: editTitle, description: editDescription, category: editCategory })
+                setEditOpen(false)
+              } catch (e: any) {
+                toast({ title: 'Ошибка', description: e.message, variant: 'destructive' })
+              }
+            }}>Сохранить</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </form>
   )
 } 

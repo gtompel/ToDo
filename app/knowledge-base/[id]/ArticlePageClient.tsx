@@ -11,6 +11,7 @@ import {
 import Link from "next/link"
 import { useCurrentUser } from "@/hooks/use-user"
 import { useToast } from "@/components/ui/use-toast"
+import { useConfirm } from "@/components/ui/confirm-dialog"
 import ReactMarkdown from "react-markdown"
 import dynamic from "next/dynamic"
 import { useRef, useEffect, useState } from "react"
@@ -25,6 +26,7 @@ export default function ArticlePageClient({ article, comments }: { article: any,
   const [comment, setComment] = useState("")
   const [isHelpful, setIsHelpful] = useState<boolean | null>(null)
   const { toast } = useToast()
+  const { confirm, dialog } = useConfirm()
   const commentsRef = useRef<HTMLDivElement>(null)
   const [showComments, setShowComments] = useState(false)
   const relatedRef = useRef<HTMLDivElement>(null)
@@ -118,7 +120,8 @@ export default function ArticlePageClient({ article, comments }: { article: any,
 
   // Удаление комментария (только для админа)
   const handleDeleteComment = async (commentId: string) => {
-    if (!confirm("Удалить комментарий?")) return
+    const ok = await confirm({ title: "Удалить комментарий?" })
+    if (!ok) return
     try {
       const res = await fetch(`/api/articles/${article.id}/comments`, {
         method: "DELETE",
@@ -138,6 +141,7 @@ export default function ArticlePageClient({ article, comments }: { article: any,
 
   return (
     <div className="space-y-6">
+      {dialog}
       {/* Breadcrumbs */}
       <Breadcrumb className="mb-4">
         <BreadcrumbList>

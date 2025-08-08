@@ -15,6 +15,9 @@ export async function POST(req: NextRequest) {
       userId: data.userId || null,
       ip: data.ip || null,
       status: data.status || "active",
+      type: data.type || null,
+      room: data.room || null,
+      department: data.department || null,
     },
   })
   return NextResponse.json({ workstation })

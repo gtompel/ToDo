@@ -3,6 +3,8 @@
 import { cookies } from "next/headers"
 import { prisma } from "@/lib/prisma"
 import { hashPassword, verifyPassword, createToken } from "@/lib/auth"
+import { isRateLimited } from "@/lib/utils"
+import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 
 export async function logUserActivity({ userId, action, status, ip }: { userId: string, action: string, status: string, ip?: string }) {
@@ -25,6 +27,24 @@ export async function loginAction(formData: FormData, ip?: string) {
   }
 
   try {
+    // CSRF: проверяем Origin/Host
+    try {
+      const hdrs = await headers()
+      const origin = hdrs.get("origin") || ""
+      const host = hdrs.get("host") || ""
+      const allowedEnv = (process.env.ALLOWED_ORIGINS || "").split(",").map(s => s.trim()).filter(Boolean)
+      const derived = [`http://${host}`, `https://${host}`]
+      const isAllowed = origin === "" || allowedEnv.includes(origin) || derived.includes(origin)
+      if (!isAllowed) {
+        return { error: "Недопустимый источник запроса" }
+      }
+    } catch {}
+
+    // Rate limit: 5 попыток за 10 минут на ключ email+ip
+    const key = `local:${email}:${ip || "unknown"}`
+    if (isRateLimited(key, 5, 10 * 60 * 1000)) {
+      return { error: "Слишком много попыток. Попробуйте позже." }
+    }
     const user = await prisma.user.findUnique({ where: { email } })
     if (!user) {
       // Логируем неудачный вход
@@ -32,7 +52,21 @@ export async function loginAction(formData: FormData, ip?: string) {
       return { error: "Неверный email или пароль" }
     }
 
-    const isValidPassword = await verifyPassword(password, user.password)
+    // Поддержка старых записей с открытым паролем: если не bcrypt-хэш, сравниваем как plaintext и сразу мигрируем на хэш
+    const isBcryptHash = typeof user.password === 'string' && user.password.startsWith('$2')
+    let isValidPassword = false
+    if (isBcryptHash) {
+      isValidPassword = await verifyPassword(password, user.password)
+    } else {
+      isValidPassword = user.password === password
+      if (isValidPassword) {
+        const newHashed = await hashPassword(password)
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { password: newHashed, passwordLastChanged: new Date() },
+        })
+      }
+    }
     if (!isValidPassword) {
       await logUserActivity({ userId: user.id, action: "Попытка входа (неверный пароль)", status: "error", ip })
       return { error: "Неверный email или пароль" }
@@ -49,6 +83,7 @@ export async function loginAction(formData: FormData, ip?: string) {
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: "/",
     })
     await prisma.user.update({ where: { id: user.id }, data: { lastLogin: new Date() } })
     await logUserActivity({ userId: user.id, action: "Успешный вход в систему", status: "success", ip })

@@ -14,6 +14,7 @@ import { ArrowLeft, Save } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { prisma } from "@/lib/prisma"
+import { toast } from "@/components/ui/use-toast"
 
 // Страница создания нового инцидента
 export default function NewIncidentPage() {
@@ -129,7 +130,7 @@ export default function NewIncidentPage() {
     const newErrors: {[key: string]: string} = {}
     if (!formData.title.trim()) newErrors.title = "Заполните краткое описание проблемы"
     if (!formData.description.trim()) newErrors.description = "Заполните подробное описание"
-    if (!formData.priority) newErrors.priority = "Выберите приоритет"
+    // Приоритет для USER ставим на сервере как LOW, поэтому на клиенте не требуем
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
       setFormError("Пожалуйста, заполните все обязательные поля")
@@ -140,7 +141,7 @@ export default function NewIncidentPage() {
     const data = new FormData()
     data.append("title", formData.title)
     data.append("description", formData.description)
-    data.append("priority", formData.priority)
+    data.append("priority", formData.priority || "")
     data.append("category", formData.category)
     data.append("assigneeId", formData.assignee)
     data.append("preActions", formData.preActions)
@@ -166,7 +167,8 @@ export default function NewIncidentPage() {
         attachments: [],
       })
       if (fileInputRef.current) fileInputRef.current.value = ""
-      router.push("/incidents")
+      toast({ title: "Инцидент создан", description: "Запись успешно добавлена" })
+      setTimeout(() => router.push("/incidents"), 1500)
     } else {
       let msg = "Ошибка при создании инцидента"
       try {
@@ -174,6 +176,7 @@ export default function NewIncidentPage() {
         if (data?.error) msg = data.error
       } catch {}
       setFormError(msg)
+      toast({ title: "Ошибка", description: msg, variant: "destructive" })
     }
   }
 
@@ -485,10 +488,10 @@ export default function NewIncidentPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="priority">Приоритет *</Label>
+                  <Label htmlFor="priority">Приоритет</Label>
                   <Select value={formData.priority} onValueChange={(value) => handleInputChange("priority", value)}>
-                    <SelectTrigger className={errors.priority ? "border-red-500 focus:border-red-500" : ""}>
-                      <SelectValue placeholder="Выберите приоритет" />
+                    <SelectTrigger>
+                      <SelectValue placeholder="(будет установлен администратором)" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="CRITICAL">Критический - Полная остановка работы</SelectItem>
@@ -497,7 +500,7 @@ export default function NewIncidentPage() {
                       <SelectItem value="LOW">Низкий - Минимальное влияние</SelectItem>
                     </SelectContent>
                   </Select>
-                  {errors.priority && <div className="text-red-500 text-xs mt-1">{errors.priority}</div>}
+                  <div className="text-xs text-gray-500">Если вы — пользователь, система установит Низкий; администратор поменяет при необходимости.</div>
                 </div>
 
                 <div className="space-y-2">
@@ -526,21 +529,22 @@ export default function NewIncidentPage() {
               <CardDescription>Кто будет работать над инцидентом</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="assignee">Исполнитель</Label>
-                <Select value={formData.assignee} onValueChange={(value) => handleInputChange("assignee", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Выберите исполнителя" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {assignees.map((user) => (
-                      <SelectItem key={user.id} value={user.id}>
-                        {user.name} — {user.position} ({user.email})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="assignee">Исполнитель</Label>
+                  <Select value={formData.assignee} onValueChange={(value) => handleInputChange("assignee", value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="(назначит администратор)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {assignees.map((user) => (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.name} — {user.position} ({user.email})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <div className="text-xs text-gray-500">Администратор назначит исполнителя после создания.</div>
+                </div>
 
               <div className="space-y-2">
                 <Label htmlFor="reporter">Заявитель</Label>
