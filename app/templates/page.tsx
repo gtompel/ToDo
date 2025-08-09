@@ -193,9 +193,8 @@ export default function TemplatesAdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="space-y-6">
       {dialog}
-      <div className="container mx-auto px-4 max-w-4xl">
         {showForm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
             <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full p-6 relative overflow-y-auto max-h-[90vh]">
@@ -384,7 +383,6 @@ export default function TemplatesAdminPage() {
             )}
           </CardContent>
         </Card>
-      </div>
     </div>
   )
 } 

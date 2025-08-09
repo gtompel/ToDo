@@ -80,6 +80,16 @@ export default function RequestsListClient({ requests, isAdmin, assignableUsers,
 
   const toggle = (id: string) => setOpen(open => open.includes(id) ? open.filter(i => i !== id) : [...open, id])
 
+  // Получаем уникальные отделы (HOOK должен быть до любых ранних return)
+  const departments = useMemo(() => {
+    const set = new Set<string>()
+    requestsState.forEach((r: any) => {
+      const dep = r.createdBy?.department || r.assignedTo?.department
+      if (dep) set.add(dep)
+    })
+    return Array.from(set)
+  }, [requestsState])
+
   function RequestsFilterPanel({ departments, filter, setFilter }: any) {
     return (
       <div className="flex flex-wrap gap-4 mb-4 items-end">
@@ -432,16 +442,6 @@ export default function RequestsListClient({ requests, isAdmin, assignableUsers,
       </div>
     );
   }
-
-  // Получаем уникальные отделы
-  const departments = useMemo(() => {
-    const set = new Set<string>()
-    requestsState.forEach((r: any) => {
-      const dep = r.createdBy?.department || r.assignedTo?.department
-      if (dep) set.add(dep)
-    })
-    return Array.from(set)
-  }, [requestsState])
 
   return (
     <>

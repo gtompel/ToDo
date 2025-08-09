@@ -281,10 +281,28 @@
    npm run dev
    ```
 
-### Пример .env
+### Полный пример .env
+Обязательные:
 ```
 DATABASE_URL=postgresql://user:password@localhost:5432/dbname
 JWT_SECRET=your-secret-key
+NODE_ENV=development
+```
+
+Рекомендуемые (безопасность и сеть):
+```
+# Список разрешённых Origin через запятую (для CSRF-защиты). Пример: http://localhost:3000,http://127.0.0.1:3000
+ALLOWED_ORIGINS=
+
+# Опционально: публичный адрес dev-сервера для HMR за прокси/в сети
+NEXT_PUBLIC_WS_URL=
+```
+
+LDAP (если используется вход по домену; значения обычно хранятся в БД `systemSettings`, но ниже — быстрый чек-лист ключей):
+```
+# ldapHost, ldapPort, ldapSSL, ldapUserDN, ldapUserPassword,
+# ldapBaseDN, ldapAttrLogin, ldapAttrEmail, ldapAttrFirstName, ldapAttrLastName, ldapDomain
+# Эти ключи задаются через интерфейс «Настройки» и сохраняются в БД.
 ```
 
 ---
@@ -295,4 +313,61 @@ JWT_SECRET=your-secret-key
 - [Zod](https://zod.dev/)
 
 ---
+
+## Production и безопасность
+
+- Cookie `auth-token` помечается как `secure` в production; за прокси/HTTPS убедитесь, что фронт доступен по HTTPS.
+- Глобальная CSRF‑проверка: в middleware для небезопасных методов сверяется `Origin` с `Host` и `ALLOWED_ORIGINS`.
+- Rate limiting: в проекте используется простой in‑memory лимитер (см. `lib/utils.ts:isRateLimited`). Для production рекомендуется Redis.
+- Загружаемые файлы сохраняются в `public/uploads`. Папка исключена из git и должна быть доступна на запись пользователем процесса Node.
+
+## Файлы и загрузки
+
+- Инциденты: загрузка вложений при создании и обновлении (`app/api/incidents/route.ts`, `app/api/incidents/update/route.ts`).
+- Запросы: загрузка файла согласования (`app/api/requests/route.ts`, `app/api/requests/update/route.ts`).
+- Путь хранения: `public/uploads/<имя_файла>`, в БД сохраняются относительные пути вида `/uploads/...`.
+
+## Роли и бизнес‑правила
+
+- Роли: `ADMIN`, `TECHNICIAN`, `MANAGER`, `USER`.
+- При создании инцидента пользователем с ролью `USER` приоритет принудительно `LOW`, исполнитель не назначается — дальнейшие изменения делает администратор.
+
+## Отчёты и знания
+
+- Убраны мок‑данные SLA на странице отчётов.
+- На странице базы знаний статистика рассчитывается по данным БД (кол-во статей, просмотры, средний рейтинг, активные авторы за месяц).
+
+## Уведомления (toast) и подтверждения
+
+- Единая система уведомлений на базе ShadCN/Radix (`components/ui/toast*`, `components/ui/toaster`). Максимум 3 одновременных уведомления.
+- Все подтверждения действий — через модальные `AlertDialog` (см. `components/ui/confirm-dialog.tsx`).
+
+## Поток уведомлений (SSE)
+
+- Endpoint: `GET /api/notifications/stream` — серверные события. За прокси включите поддержку keep‑alive и не буферизуйте ответ.
+
+## Сборка и деплой
+
+```bash
+npm run build
+npm run start
+```
+
+- За прокси (Nginx/Apache) пробрасывайте заголовки `X-Forwarded-*`.
+- Если в dev при доступе по IP возникают 403 для `/_next` или `__nextjs_font`, убедитесь, что middleware не матчится на эти пути и в `next.config.mjs` включены нужные заголовки для dev.
+
+## Известные нюансы / троблшутинг
+
+- Ошибка сборки с `dtrace-provider`: в `next.config.mjs` настроен alias `dtrace-provider: false` для клиента. Пересоберите после `rm -rf node_modules .next && npm i` при необходимости.
+- "Rendered fewer hooks than expected": убедитесь, что вызовы хуков не зависят от условных возвратов (см. фикс в `app/requests/RequestsListClient.tsx`).
+- При быстром редиректе тосты могут быть не видны — в списках реализованы локальные обновления состояния без `window.location.reload()`.
+
+## Скрипты
+
+- `npm run dev` — локальная разработка
+- `npm run build` — сборка
+- `npm run start` — запуск production
+- `npm run studio` — Prisma Studio
+- `npm run seed` — сидирование данных (`prisma/seed.ts`)
+
 Если есть вопросы — пишите в issues! 
