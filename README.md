@@ -1,5 +1,15 @@
 # ITSM Project
 
+## Технологии
+- **Next.js 15** — SSR/SSG, маршрутизация, API-роуты
+- **Prisma** — ORM для работы с PostgreSQL
+- **PostgreSQL** — основная база данных
+- **Tailwind CSS** — стилизация UI
+- **Zod** — валидация данных и форм
+- **Radix/ShadCN** — UI-компоненты и уведомления
+- **TypeScript** — типизация всего кода
+- **LDAP** — поддержка корпоративной авторизации (опционально)
+
 ## Описание
 Веб-приложение для управления инцидентами, запросами, изменениями и пользователями на базе Next.js 15, Prisma, PostgreSQL.
 
@@ -90,6 +100,14 @@
 - **Валидация:** Все входные данные валидируются через zod (lib/validation).
 - **Ответы:** Всегда возвращается JSON с полем success/error, подробное сообщение об ошибке.
 - **Авторизация:** Проверка токена пользователя, если нет — 401.
+
+#### Дополнительные endpoints:
+- **db-status/route.ts** — Проверка состояния БД, размер, время последнего бэкапа. Метод: GET. Возвращает статус, размер, lastBackup.
+- **help/route.ts** — Получение и обновление справочного текста для пользователей. GET — получить текст, POST (только ADMIN) — обновить.
+- **ldap-test/route.ts** — Тест подключения к LDAP/AD. POST: host, port, user, password, ssl, baseDN. Возвращает success/error.
+- **logout/route.ts** — Выход пользователя, удаление сессии и cookie. POST. Возвращает success.
+- **search/route.ts** — Глобальный поиск по ИТ-ресурсам, рабочим станциям, пользователям, инцидентам, статьям. GET с query-параметром q. Возвращает массив результатов разных типов.
+- **settings/route.ts** — Получение и обновление системных настроек. GET — все настройки, POST — обновление (только для ADMIN). Использует upsert по ключу.
 - **Пример реализации:**
   ```ts
   // app/api/incidents/route.ts
@@ -307,6 +325,55 @@ LDAP (если используется вход по домену; значен
 
 ---
 
+## Пример настройки Nginx для HTTPS
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name your-domain.com;
+
+    ssl_certificate     /etc/letsencrypt/live/your-domain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_ciphers         HIGH:!aNULL:!MD5;
+
+    location / {
+        proxy_pass         http://127.0.0.1:3000;
+        proxy_set_header   Host $host;
+        proxy_set_header   X-Real-IP $remote_addr;
+        proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+        proxy_set_header   X-Forwarded-Host $host;
+        proxy_set_header   X-Forwarded-Port $server_port;
+        proxy_http_version 1.1;
+        proxy_set_header   Upgrade $http_upgrade;
+        proxy_set_header   Connection $connection_upgrade;
+        proxy_read_timeout 3600;
+        proxy_buffering    off; # Для SSE/stream
+    }
+
+    # Для Let's Encrypt challenge (если нужно)
+    location /.well-known/acme-challenge/ {
+        root /var/www/html;
+    }
+}
+
+server {
+    listen 80;
+    server_name your-domain.com;
+    return 301 https://$host$request_uri;
+}
+```
+
+**Примечания:**
+- Сертификаты можно получить через [Let's Encrypt](https://letsencrypt.org/).
+- Для production убедитесь, что cookie auth-token помечен как secure.
+- Для SSE (stream уведомлений) обязательно proxy_buffering off.
+- Пробрасывайте все X-Forwarded-* заголовки для корректной работы авторизации и логирования.
+- Для WebSocket/SSE proxy_http_version 1.1 и Upgrade/Connection обязательны.
+
+---
+
 ## Документация
 - [Next.js](https://nextjs.org/docs)
 - [Prisma](https://www.prisma.io/docs)
@@ -371,3 +438,24 @@ npm run start
 - `npm run seed` — сидирование данных (`prisma/seed.ts`)
 
 Если есть вопросы — пишите в issues! 
+
+---
+
+## Запуск через Docker (опционально)
+
+1. Соберите контейнер:
+   ```bash
+   docker build -t itsm-app .
+   ```
+2. Запустите контейнер:
+   ```bash
+   docker run --env-file .env -p 3000:3000 itsm-app
+   ```
+3. Для работы с БД используйте отдельный контейнер PostgreSQL или внешний сервер.
+
+---
+
+## Контакты
+- Разработчик: korolev.yv@oit.int
+- Telegram: @your_nick (замените на актуальный)
+- Issues: через GitHub Issues 
