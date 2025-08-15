@@ -3,11 +3,12 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Home, AlertTriangle, HelpCircle, GitBranch, Users, FileText, BarChart3, Settings, Bell, Layers, Database, ChevronLeft, ChevronRight, Monitor, ChevronDown } from "lucide-react"
+import { Home, AlertTriangle, HelpCircle, GitBranch, Users, FileText, BarChart3, Settings, Bell, Layers, Database, ChevronLeft, ChevronRight, Monitor, ChevronDown, BotIcon } from "lucide-react"
 import { useState } from "react"
 import { useCurrentUser } from "@/hooks/use-user-context"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { AiAssistantChat } from './ai-assistant-chat';
 
 const navigationGroups = [
   {
@@ -57,6 +58,7 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
   const [openGroups, setOpenGroups] = useState(() => new Set(navigationGroups.map(g => g.title)))
   const isMobile = useIsMobile()
+  const [aiOpen, setAiOpen] = useState(false);
 
   // Если мобильное устройство — всегда collapsed
   const effectiveCollapsed = isMobile ? true : collapsed
@@ -176,7 +178,21 @@ export default function Sidebar() {
             })}
           </nav>
         </div>
+        <div className="mt-auto flex flex-col items-start p-2 gap-2">
+          {/* Кнопка AI ассистента сразу после справки */}
+          <button
+            className="mt-2 ml-1 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-2 transition-colors duration-150 outline-none focus:ring-2 focus:ring-blue-400"
+            title="AI ассистент"
+            aria-label="AI ассистент"
+            style={{ width: 36, height: 36, minWidth: 36, minHeight: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            onClick={() => setAiOpen(true)}
+            tabIndex={0}
+          >
+            <BotIcon size={18} />
+          </button>
+        </div>
       </div>
+      <AiAssistantChat open={aiOpen} onClose={() => setAiOpen(false)} />
     </TooltipProvider>
   )
 }
