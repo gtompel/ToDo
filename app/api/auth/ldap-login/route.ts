@@ -10,7 +10,7 @@ import { isRateLimited } from '@/lib/utils'
 
 export const runtime = 'nodejs';
 
-export async function POST(req: any) {
+export async function POST(req: any): Promise<Response> {
   const { login, password } = await req.json()
   // CSRF: Origin/Host проверка
   try {
@@ -72,7 +72,7 @@ export async function POST(req: any) {
   });
   diagnostics.steps.push({ step: 'adInit', url, baseDN: ldapConfig.baseDN, admin: ldapConfig.userDN });
   // Проверяем логин/пароль через authenticate
-  return new Promise((resolve) => {
+  return new Promise<Response>((resolve) => {
     ad.authenticate(loginUPN, password, async (err: any, auth: boolean) => {
       if (err) {
         const safeMsg = (err?.message || '').replace(/\u0000/g, '')

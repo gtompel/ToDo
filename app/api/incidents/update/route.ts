@@ -59,19 +59,20 @@ export async function POST(req: Request) {
         }
       }
 
+      const data: any = {
+        ...(title !== undefined ? { title } : {}),
+        ...(description !== undefined ? { description } : {}),
+        ...(category !== undefined ? { category } : {}),
+        ...(status !== undefined ? { status } : {}),
+        ...(priority !== undefined ? { priority } : {}),
+        ...(assignedToId !== undefined ? { assignedToId: assignedToId ? String(assignedToId) : null } : {}),
+        ...(preActions !== undefined ? { preActions } : {}),
+        ...(expectedResult !== undefined ? { expectedResult } : {}),
+        ...(keepAttachments || savedPaths.length > 0 ? { attachments: [...(keepAttachments || []), ...savedPaths] } : {}),
+      }
       const updated = await prisma.incident.update({
         where: { id },
-        data: {
-          ...(title !== undefined ? { title } : {}),
-          ...(description !== undefined ? { description } : {}),
-          ...(category !== undefined ? { category } : {}),
-          ...(status !== undefined ? { status } : {}),
-          ...(priority !== undefined ? { priority } : {}),
-          ...(assignedToId !== undefined ? { assignedToId: assignedToId || null } : {}),
-          ...(preActions !== undefined ? { preActions } : {}),
-          ...(expectedResult !== undefined ? { expectedResult } : {}),
-          ...(keepAttachments || savedPaths.length > 0 ? { attachments: [...(keepAttachments || []), ...savedPaths] } : {}),
-        },
+        data,
         include: {
           assignedTo: { select: { id: true, firstName: true, lastName: true, email: true } },
         },
@@ -85,18 +86,19 @@ export async function POST(req: Request) {
     const { id, title, description, category, status, priority, assignedToId, preActions, expectedResult } = body || {}
     if (!id) return NextResponse.json({ error: "Не передан id" }, { status: 400 })
     try {
+      const data: any = {
+        ...(title !== undefined ? { title } : {}),
+        ...(description !== undefined ? { description } : {}),
+        ...(category !== undefined ? { category } : {}),
+        ...(status !== undefined ? { status } : {}),
+        ...(priority !== undefined ? { priority } : {}),
+        ...(assignedToId !== undefined ? { assignedToId: assignedToId ? String(assignedToId) : null } : {}),
+        ...(preActions !== undefined ? { preActions } : {}),
+        ...(expectedResult !== undefined ? { expectedResult } : {}),
+      }
       const updated = await prisma.incident.update({
         where: { id },
-        data: {
-          ...(title !== undefined ? { title } : {}),
-          ...(description !== undefined ? { description } : {}),
-          ...(category !== undefined ? { category } : {}),
-          ...(status !== undefined ? { status } : {}),
-          ...(priority !== undefined ? { priority } : {}),
-          ...(assignedToId !== undefined ? { assignedToId: assignedToId || null } : {}),
-          ...(preActions !== undefined ? { preActions } : {}),
-          ...(expectedResult !== undefined ? { expectedResult } : {}),
-        },
+        data,
         include: {
           assignedTo: { select: { id: true, firstName: true, lastName: true, email: true } },
         },

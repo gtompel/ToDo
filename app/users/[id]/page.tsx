@@ -257,7 +257,7 @@ export default function UserProfilePage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {assignedIncidents.map((item, index) => (
+                    {assignedIncidents.map((item: any, index: number) => (
                       <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg">
                         <div className="flex items-center gap-3">
                           <Badge variant="outline" className="text-xs">INC</Badge>
@@ -280,7 +280,7 @@ export default function UserProfilePage() {
                         </div>
                       </div>
                     ))}
-                    {assignedRequests.map((item, index) => (
+                    {assignedRequests.map((item: any, index: number) => (
                       <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg">
                         <div className="flex items-center gap-3">
                           <Badge variant="outline" className="text-xs">REQ</Badge>

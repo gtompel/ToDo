@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
-  const { id } = params
+export async function GET(req: Request, context: any) {
+  const { id } = context?.params || {}
   // Получаем текущую статью
   const article = await prisma.article.findUnique({ where: { id } })
   if (!article) return NextResponse.json({ articles: [] })

@@ -45,17 +45,18 @@ export async function POST(req: Request) {
         }
       }
 
+      const data: any = {
+        ...(title !== undefined ? { title } : {}),
+        ...(description !== undefined ? { description } : {}),
+        ...(status !== undefined ? { status } : {}),
+        ...(priority !== undefined ? { priority } : {}),
+        ...(assignedToId !== undefined ? { assignedToId: assignedToId ? String(assignedToId) : null } : {}),
+        ...(category !== undefined ? { category } : {}),
+        ...(keepAttachments.length || savedPaths.length ? {} : {}),
+      }
       const updated = await prisma.request.update({
         where: { id },
-        data: {
-          ...(title !== undefined ? { title } : {}),
-          ...(description !== undefined ? { description } : {}),
-          ...(status !== undefined ? { status } : {}),
-          ...(priority !== undefined ? { priority } : {}),
-          ...(assignedToId !== undefined ? { assignedToId: assignedToId || null } : {}),
-          ...(category !== undefined ? { category } : {}),
-          ...(keepAttachments.length || savedPaths.length ? { /* attachments field if exists */ } : {}),
-        },
+        data,
         include: { assignedTo: { select: { id: true, firstName: true, lastName: true, email: true } } },
       })
       return NextResponse.json({ success: true, request: updated })
@@ -67,16 +68,17 @@ export async function POST(req: Request) {
     const { id, title, description, status, priority, assignedToId, category } = body || {}
     if (!id) return NextResponse.json({ error: "Не передан id" }, { status: 400 })
     try {
+      const data: any = {
+        ...(title !== undefined ? { title } : {}),
+        ...(description !== undefined ? { description } : {}),
+        ...(status !== undefined ? { status } : {}),
+        ...(priority !== undefined ? { priority } : {}),
+        ...(assignedToId !== undefined ? { assignedToId: assignedToId ? String(assignedToId) : null } : {}),
+        ...(category !== undefined ? { category } : {}),
+      }
       const updated = await prisma.request.update({
         where: { id },
-        data: {
-          ...(title !== undefined ? { title } : {}),
-          ...(description !== undefined ? { description } : {}),
-          ...(status !== undefined ? { status } : {}),
-          ...(priority !== undefined ? { priority } : {}),
-          ...(assignedToId !== undefined ? { assignedToId: assignedToId || null } : {}),
-          ...(category !== undefined ? { category } : {}),
-        },
+        data,
         include: {
           assignedTo: { select: { id: true, firstName: true, lastName: true, email: true } },
         },

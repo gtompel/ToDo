@@ -3,8 +3,8 @@ import { prisma } from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/auth"
 
 // Получить статью по id
-export async function GET(req: Request, { params }: { params: { id: string } }) {
-  const { id } = await params
+export async function GET(req: Request, context: any) {
+  const { id } = context?.params || {}
   const article = await prisma.article.findUnique({
     where: { id },
     include: { author: { select: { id: true, email: true, firstName: true, lastName: true } } }
@@ -14,33 +14,11 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 }
 
 // Получить связанные статьи по тегам
-export async function GET_related(req: Request, { params }: { params: { id: string } }) {
-  const { id } = await params
-  // Получаем текущую статью
-  const article = await prisma.article.findUnique({ where: { id } })
-  if (!article) return NextResponse.json({ articles: [] })
-  if (!article.tags || article.tags.length === 0) return NextResponse.json({ articles: [] })
-  // Ищем другие статьи с любым из этих тегов, кроме текущей, только опубликованные
-  const related = await prisma.article.findMany({
-    where: {
-      id: { not: id },
-      tags: { hasSome: article.tags },
-      status: "published",
-    },
-    take: 5,
-    select: {
-      id: true,
-      title: true,
-      description: true,
-      tags: true,
-    },
-  })
-  return NextResponse.json({ articles: related })
-}
+// GET_related вынесен в app/api/articles/[id]/related/route.ts
 
 // PATCH: обновить статью или оценку полезности
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-  const { id } = await params
+export async function PATCH(req: Request, context: any) {
+  const { id } = context?.params || {}
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: "Требуется авторизация" }, { status: 401 })
 
@@ -78,10 +56,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 }
 
 // Удалить статью (только автор/админ)
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, context: any) {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: "Требуется авторизация" }, { status: 401 })
-  const { id } = await params
+  const { id } = context?.params || {}
   const article = await prisma.article.findUnique({ where: { id } })
   if (!article) return NextResponse.json({ error: "Статья не найдена" }, { status: 404 })
   if (article.authorId !== user.id && user.role !== "ADMIN") {

@@ -2,8 +2,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 
-export default async function RelatedArticlesPage({ params }: { params: { id: string } }) {
-  const { id } = params
+export default async function RelatedArticlesPage(props: any) {
+  const { id } = props?.params || {}
   const baseUrl = process.env.BASE_URL || "http://localhost:3000"
   const res = await fetch(`${baseUrl}/api/articles/${id}/related`, { cache: "no-store" })
   const data = await res.json()
