@@ -114,31 +114,31 @@ export default function ITResourcesTable({ resources: initialResources }: { reso
       <Card className="overflow-x-auto">
         <table className="min-w-full text-sm">
           <thead>
-            <tr className="bg-gray-50">
-              <th className="px-3 py-2 text-left">№</th>
-              <th className="px-3 py-2 text-left">Название</th>
-              <th className="px-3 py-2 text-left">Описание</th>
-              <th className="px-3 py-2 text-left">Владелец</th>
-              <th className="px-3 py-2 text-left">Источник</th>
-              <th className="px-3 py-2 text-left">Роли</th>
-              <th className="px-3 py-2 text-left">Примечание</th>
-              <th className="px-3 py-2 text-left">Действия</th>
+            <tr className="bg-muted border-b">
+              <th className="px-3 py-2 text-left font-medium text-foreground">№</th>
+              <th className="px-3 py-2 text-left font-medium text-foreground">Название</th>
+              <th className="px-3 py-2 text-left font-medium text-foreground">Описание</th>
+              <th className="px-3 py-2 text-left font-medium text-foreground">Владелец</th>
+              <th className="px-3 py-2 text-left font-medium text-foreground">Источник</th>
+              <th className="px-3 py-2 text-left font-medium text-foreground">Роли</th>
+              <th className="px-3 py-2 text-left font-medium text-foreground">Примечание</th>
+              <th className="px-3 py-2 text-left font-medium text-foreground">Действия</th>
             </tr>
           </thead>
           <tbody>
             {resources.map((r, i) => (
               <tr key={r.id} className="even:bg-muted/50 hover:bg-muted transition-colors">
-                <td className="px-4 py-2">{i + 1}</td>
-                <td className="px-4 py-2 font-bold">{r.name}</td>
-                <td className="px-4 py-2">{r.description}</td>
-                <td className="px-4 py-2">{r.owner}</td>
+                <td className="px-4 py-2 text-foreground">{i + 1}</td>
+                <td className="px-4 py-2 font-bold text-foreground">{r.name}</td>
+                <td className="px-4 py-2 text-foreground">{r.description}</td>
+                <td className="px-4 py-2 text-foreground">{r.owner}</td>
                 <td className="px-4 py-2"><a href={r.source} className="text-blue-600 underline" target="_blank" rel="noopener noreferrer">Ссылка</a></td>
                 <td className="px-4 py-2">
                   {r.roles.map((role: string) => (
-                    <span key={role} className="inline-block border rounded px-2 py-0.5 mr-1 text-xs bg-gray-100">{role}</span>
+                    <span key={role} className="inline-block border rounded px-2 py-0.5 mr-1 text-xs bg-muted text-foreground">{role}</span>
                   ))}
                 </td>
-                <td className="px-4 py-2">{r.note}</td>
+                <td className="px-4 py-2 text-foreground">{r.note}</td>
                 <td className="px-4 py-2 flex gap-2">
                   <Tooltip>
                     <TooltipTrigger asChild>

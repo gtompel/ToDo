@@ -40,7 +40,7 @@ export default function ChangesListWrapper({ isAdmin, assignees }: { isAdmin: bo
       ) : (
         <ChangesListClient changes={changes} isAdmin={isAdmin} assignees={assignees} />
       )}
-      <div className="flex items-center justify-between px-6 py-4 border-t bg-gray-50">
+      <div className="flex items-center justify-between px-6 py-4 border-t bg-muted">
         <div className="text-sm text-gray-600">
           {total === 0 ? 'Нет записей' : `${(page - 1) * pageSize + 1}-${Math.min(page * pageSize, total)} из ${total} записей`}
         </div>

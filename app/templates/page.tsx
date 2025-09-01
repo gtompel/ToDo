@@ -344,24 +344,24 @@ export default function TemplatesAdminPage() {
             {loading ? (
               <div className="text-center py-8 text-gray-500">Загрузка...</div>
             ) : (
-              <div className="overflow-x-auto rounded-lg border bg-white">
+              <div className="overflow-x-auto rounded-lg border bg-background">
                 <table className="w-full text-sm text-left">
-                  <thead className="bg-gray-100">
+                  <thead className="bg-muted border-b">
                     <tr>
-                      <th className="p-3 font-semibold">Тип</th>
-                      <th className="p-3 font-semibold">Название</th>
-                      <th className="p-3 font-semibold text-center">Активен</th>
-                      <th className="p-3 font-semibold">Действия</th>
+                      <th className="p-3 font-semibold text-foreground">Тип</th>
+                      <th className="p-3 font-semibold text-foreground">Название</th>
+                      <th className="p-3 font-semibold text-center text-foreground">Активен</th>
+                      <th className="p-3 font-semibold text-foreground">Действия</th>
                     </tr>
                   </thead>
                   <tbody>
                     {templates.map(t => (
-                      <tr key={t.id} className="border-t hover:bg-gray-50">
-                        <td className="p-3">{TEMPLATE_TYPE_OPTIONS.find(opt => opt.value === t.type)?.label || t.type}</td>
-                        <td className="p-3">
+                      <tr key={t.id} className="border-t hover:bg-muted/50">
+                        <td className="p-3 text-foreground">{TEMPLATE_TYPE_OPTIONS.find(opt => opt.value === t.type)?.label || t.type}</td>
+                        <td className="p-3 text-foreground">
                           <Link href={`/templates/${t.id}`} className="text-blue-600 hover:underline">{t.name}</Link>
                         </td>
-                        <td className="p-3 text-center">{t.isActive ? "Да" : "Нет"}</td>
+                        <td className="p-3 text-center text-foreground">{t.isActive ? "Да" : "Нет"}</td>
                         <td className="p-3 flex flex-wrap gap-2">
                           <Button size="sm" variant="outline" onClick={() => { handleEdit(t); setWizardStep(1); }}>Редактировать</Button>
                           <Button size="sm" variant="destructive" onClick={() => handleDelete(t.id)}>Удалить</Button>

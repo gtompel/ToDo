@@ -11,7 +11,7 @@ export default function NotificationBell() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="relative p-2 rounded-full hover:bg-gray-100 transition">
+        <button className="relative p-2 rounded-full hover:bg-muted transition">
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
             <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-500"></span>

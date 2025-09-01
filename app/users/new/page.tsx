@@ -28,7 +28,7 @@ export default function NewUserPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background py-8">
       <div className="bg-white border-b px-6 py-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>

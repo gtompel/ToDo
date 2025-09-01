@@ -33,7 +33,7 @@ function getStatusBadge(status: string) {
     case "IMPLEMENTED":
       return <span className="px-2 py-1 rounded bg-blue-600 text-white text-xs font-bold">Внедрен</span>
     default:
-      return <span className="px-2 py-1 rounded bg-gray-100 text-gray-700 text-xs">{status}</span>
+      return <span className="px-2 py-1 rounded bg-muted text-foreground text-xs">{status}</span>
   }
 }
 

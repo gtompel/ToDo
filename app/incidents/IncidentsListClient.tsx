@@ -18,15 +18,15 @@ function isImage(url: string) {
 function getStatusBadge(status: string) {
   switch (status) {
     case "OPEN":
-      return <span className="px-2 py-1 rounded bg-red-600 text-white text-xs font-bold">Открыт</span>
+      return <span className="px-2 py-1 rounded bg-red-500 text-white text-xs font-bold">Открыт</span>
     case "IN_PROGRESS":
-      return <span className="px-2 py-1 rounded bg-yellow-400 text-white text-xs font-bold">В работе</span>
+      return <span className="px-2 py-1 rounded bg-yellow-500 text-white text-xs font-bold">В работе</span>
     case "RESOLVED":
       return <span className="px-2 py-1 rounded bg-green-500 text-white text-xs font-bold">Решен</span>
     case "CLOSED":
       return <span className="px-2 py-1 rounded bg-gray-400 text-white text-xs font-bold">Закрыт</span>
     default:
-      return <span className="px-2 py-1 rounded bg-gray-100 text-gray-700 text-xs">{status}</span>
+      return <span className="px-2 py-1 rounded bg-muted text-foreground text-xs">{status}</span>
   }
 }
 
@@ -41,22 +41,22 @@ function getPriorityBadge(priority: string) {
     case "CRITICAL":
       return <span className="px-2 py-1 rounded bg-red-600 text-white text-xs font-bold">Критический</span>
     default:
-      return <span className="px-2 py-1 rounded bg-gray-100 text-gray-700 text-xs">{priority}</span>
+      return <span className="px-2 py-1 rounded bg-muted text-foreground text-xs">{priority}</span>
   }
 }
 
 function getCardClassByStatus(status: string) {
   switch (status) {
     case "OPEN":
-      return "border-l-4 border-red-600 bg-red-50"
+      return "border-l-4 border-red-600 bg-red-50 dark:bg-red-950/20"
     case "IN_PROGRESS":
-      return "border-l-4 border-yellow-400 bg-yellow-50"
+      return "border-l-4 border-yellow-400 bg-yellow-50 dark:bg-yellow-950/20"
     case "RESOLVED":
-      return "border-l-4 border-green-500 bg-green-50"
+      return "border-l-4 border-green-500 bg-green-50 dark:bg-green-950/20"
     case "CLOSED":
-      return "border-l-4 border-gray-400 bg-gray-50"
+      return "border-l-4 border-gray-400 bg-gray-50 dark:bg-gray-950/20"
     default:
-      return "border-l-4 border-gray-200 bg-white"
+      return "border-l-4 border-gray-200 bg-background"
   }
 }
 

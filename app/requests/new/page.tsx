@@ -280,21 +280,22 @@ export default function NewApplicationPage() {
       <div className="max-w-xl mx-auto py-12">
         <h1 className="text-2xl font-bold mb-6">Выберите шаблон запроса</h1>
         <div className="space-y-3 mb-8">
-          <button
-            className={`w-full border rounded p-3 text-left hover:bg-gray-50 ${selectedTemplateId === "" ? "border-blue-500" : ""}`}
-            onClick={() => { setSelectedTemplateId(""); setStep("form") }}
+          <div
+            className={`w-full border rounded p-3 text-left hover:bg-muted/50 ${selectedTemplateId === "" ? "border-blue-500" : ""}`}
+            onClick={() => setSelectedTemplateId("")}
           >
-            Без шаблона (стандартная форма)
-          </button>
+            <div className="font-medium">Без шаблона</div>
+            <div className="text-sm text-muted-foreground">Создать заявку с нуля</div>
+          </div>
           {templates.map(t => (
-            <button
+            <div
               key={t.id}
-              className={`w-full border rounded p-3 text-left hover:bg-gray-50 ${selectedTemplateId === t.id ? "border-blue-500" : ""}`}
-              onClick={() => { setSelectedTemplateId(t.id); setStep("form") }}
+              className={`w-full border rounded p-3 text-left hover:bg-muted/50 ${selectedTemplateId === t.id ? "border-blue-500" : ""}`}
+              onClick={() => setSelectedTemplateId(t.id)}
             >
-              <div className="font-semibold">{t.name}</div>
-              <div className="text-sm text-gray-500">{t.description}</div>
-            </button>
+              <div className="font-medium">{t.name}</div>
+              <div className="text-sm text-muted-foreground">{t.description}</div>
+            </div>
           ))}
         </div>
       </div>
@@ -572,7 +573,7 @@ export default function NewApplicationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-background py-8">
       <div className="container mx-auto px-4 max-w-4xl">
         <div className="mb-8">
           <Button type="button" variant="outline" onClick={() => setStep("select")}>Назад к выбору шаблона</Button>

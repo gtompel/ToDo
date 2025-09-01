@@ -67,18 +67,18 @@ export default function NotificationCenter({ onRead, onUnreadCount }: { onRead?:
   const lastNotifications = notifications.slice(0, 5);
 
   return (
-    <div className="p-4 w-80 bg-white shadow rounded">
-      <h2 className="font-bold mb-2">Уведомления</h2>
-      {lastNotifications.length === 0 && <div>Нет уведомлений</div>}
+    <div className="p-4 w-80 bg-background shadow rounded border">
+      <h2 className="font-bold mb-2 text-foreground">Уведомления</h2>
+      {lastNotifications.length === 0 && <div className="text-muted-foreground">Нет уведомлений</div>}
       <ul>
         {lastNotifications.map(n => (
           <li
             key={n.id}
-            className={`mb-2 p-2 rounded ${n.read ? 'bg-gray-100' : 'bg-blue-50'}`}
+            className={`mb-2 p-2 rounded ${n.read ? 'bg-muted' : 'bg-blue-50 dark:bg-blue-950/20'}`}
           >
-            <div className="font-semibold">{n.title}</div>
-            <div className="text-sm">{n.message}</div>
-            <div className="text-xs text-gray-400">{new Date(n.createdAt).toLocaleString()}</div>
+            <div className="font-semibold text-foreground">{n.title}</div>
+            <div className="text-sm text-foreground">{n.message}</div>
+            <div className="text-xs text-muted-foreground">{new Date(n.createdAt).toLocaleString()}</div>
             {!n.read && (
               <button
                 className="mt-1 text-xs text-blue-600 underline"

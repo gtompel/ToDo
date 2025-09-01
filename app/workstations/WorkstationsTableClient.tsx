@@ -114,27 +114,27 @@ export default function WorkstationsTable({ workstations }: { workstations: any[
       <Card className="overflow-x-auto">
         <table className="min-w-full text-sm">
           <thead>
-            <tr className="bg-gray-50">
-              <th className="px-3 py-2 text-left">№</th>
-              <th className="px-3 py-2 text-left">Имя компьютера</th>
-              <th className="px-3 py-2 text-left">IP-адрес</th>
-              <th className="px-3 py-2 text-left">Описание</th>
-              <th className="px-3 py-2 text-left">Пользователь</th>
-              <th className="px-3 py-2 text-left">Кабинет</th>
-              <th className="px-3 py-2 text-left">Отдел</th>
-              <th className="px-3 py-2 text-left">Действия</th>
+            <tr className="bg-muted border-b">
+              <th className="px-3 py-2 text-left font-medium text-foreground">№</th>
+              <th className="px-3 py-2 text-left font-medium text-foreground">Имя компьютера</th>
+              <th className="px-3 py-2 text-left font-medium text-foreground">IP-адрес</th>
+              <th className="px-3 py-2 text-left font-medium text-foreground">Описание</th>
+              <th className="px-3 py-2 text-left font-medium text-foreground">Пользователь</th>
+              <th className="px-3 py-2 text-left font-medium text-foreground">Кабинет</th>
+              <th className="px-3 py-2 text-left font-medium text-foreground">Отдел</th>
+              <th className="px-3 py-2 text-left font-medium text-foreground">Действия</th>
             </tr>
           </thead>
           <tbody>
             {workstationsState.map((w, i) => (
-              <tr key={w.id} className="border-b">
-                <td className="px-3 py-2">{i + 1}</td>
-                <td className="px-3 py-2 font-bold">{w.name}</td>
-                <td className="px-3 py-2">{w.ip || "-"}</td>
-                <td className="px-3 py-2">{w.description || "-"}</td>
-                <td className="px-3 py-2">{w.user ? `${w.user.firstName} ${w.user.lastName}` : "-"}</td>
-                <td className="px-3 py-2">{w.room || "-"}</td>
-                <td className="px-3 py-2">{w.department || "-"}</td>
+              <tr key={w.id} className="border-b hover:bg-muted/50">
+                <td className="px-3 py-2 text-foreground">{i + 1}</td>
+                <td className="px-3 py-2 font-bold text-foreground">{w.name}</td>
+                <td className="px-3 py-2 text-foreground">{w.ip || "-"}</td>
+                <td className="px-3 py-2 text-foreground">{w.description || "-"}</td>
+                <td className="px-3 py-2 text-foreground">{w.user ? `${w.user.firstName} ${w.user.lastName}` : "-"}</td>
+                <td className="px-3 py-2 text-foreground">{w.room || "-"}</td>
+                <td className="px-3 py-2 text-foreground">{w.department || "-"}</td>
                 <td className="px-3 py-2 flex gap-2">
                   {(user?.role === "ADMIN" || user?.role === "TECHNICIAN") && (
                     <button title="Редактировать" onClick={() => setEditWorkstation(w)}><Edit className="w-4 h-4" /></button>
