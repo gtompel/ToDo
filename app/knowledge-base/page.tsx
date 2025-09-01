@@ -60,7 +60,7 @@ export default function KnowledgeBasePage() {
 
   const getCategoryColor = (category: string) => {
     const cat = categories.find((c) => c.name === category)
-    return cat ? cat.color : "bg-gray-100 text-gray-800"
+    return cat ? cat.color : "bg-muted text-foreground"
   }
 
   const filteredArticles = articles.filter((article) => {

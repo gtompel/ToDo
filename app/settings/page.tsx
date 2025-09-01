@@ -536,7 +536,7 @@ export default function SettingsPage() {
                     <div className="flex justify-between items-center">
                       <span>Статус:</span>
                       {dbStatusLoading ? (
-                        <Badge className="bg-gray-100 text-gray-800">Проверка...</Badge>
+                        <Badge className="bg-muted text-foreground">Проверка...</Badge>
                       ) : dbStatus?.status === "healthy" ? (
                         <Badge className="bg-green-100 text-green-800">Здоровая</Badge>
                       ) : (

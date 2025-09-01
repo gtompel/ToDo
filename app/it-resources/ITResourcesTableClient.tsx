@@ -65,7 +65,7 @@ export default function ITResourcesTable({ resources: initialResources }: { reso
               <div><b>Описание:</b> {viewResource.description}</div>
               <div><b>Владелец:</b> {viewResource.owner}</div>
               <div><b>Источник:</b> <a href={viewResource.source} className="text-blue-600 underline" target="_blank" rel="noopener noreferrer">{viewResource.source}</a></div>
-              <div><b>Роли:</b> {viewResource.roles && viewResource.roles.length > 0 ? viewResource.roles.map((role: string) => <span key={role} className="inline-block border rounded px-2 py-0.5 mr-1 text-xs bg-gray-100">{role}</span>) : <span>-</span>}</div>
+              <div><b>Роли:</b> {viewResource.roles && viewResource.roles.length > 0 ? viewResource.roles.map((role: string) => <span key={role} className="inline-block border rounded px-2 py-0.5 mr-1 text-xs bg-muted text-foreground">{role}</span>) : <span>-</span>}</div>
               <div><b>Примечание:</b> {viewResource.note || <span>-</span>}</div>
               <div className="text-xs text-muted-foreground pt-2">
                 <div><b>Создано:</b> {viewResource.createdAt ? new Date(viewResource.createdAt).toLocaleString('ru-RU') : '-'}</div>

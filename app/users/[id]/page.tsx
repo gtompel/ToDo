@@ -123,7 +123,7 @@ export default function UserProfilePage() {
       case "Неактивен":
         return "bg-gray-100 text-gray-800"
       default:
-        return "bg-gray-100 text-gray-800"
+        return "bg-muted text-foreground"
     }
   }
 
@@ -136,7 +136,7 @@ export default function UserProfilePage() {
       case "warning":
         return "bg-yellow-500"
       default:
-        return "bg-gray-500"
+        return "bg-muted text-foreground"
     }
   }
 

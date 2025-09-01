@@ -36,7 +36,7 @@ const TEMPLATE_TYPE_OPTIONS = [
 
 function FieldEditor({ field, onChange, onDelete }: any) {
   return (
-    <div className="border rounded p-3 mb-2 bg-gray-50">
+    <div className="border rounded p-3 mb-2 bg-muted">
       <div className="flex gap-2 mb-2">
         <Input
           className="flex-1"
@@ -264,8 +264,8 @@ export default function TemplatesAdminPage() {
                       <Button type="button" variant="outline" onClick={handleAddField}>Добавить поле</Button>
                     </div>
                     <div className="mt-6 mb-2 text-gray-600 text-sm">Превью формы по шаблону:</div>
-                    <div className="border rounded p-4 bg-gray-50 mb-4">
-                      {fieldsUI.length === 0 && <div className="text-gray-400">Нет полей</div>}
+                    <div className="border rounded p-4 bg-muted mb-4">
+                      {fieldsUI.length === 0 && <div className="text-muted-foreground">Нет полей</div>}
                       {fieldsUI.map((field, idx) => (
                         <div key={idx} className="mb-3">
                           <Label className="block font-semibold mb-1">{field.name}{field.required && <span className="text-red-500">*</span>}</Label>
@@ -283,7 +283,7 @@ export default function TemplatesAdminPage() {
                           {field.type === "textarea" && <Textarea disabled placeholder={field.description} />}
                           {field.type === "select" && <select disabled className="border rounded px-2 py-1 w-full"><option>Выберите вариант</option>{field.options?.map((opt: string) => <option key={opt}>{opt}</option>)}</select>}
                           {field.type === "checkbox" && <input type="checkbox" disabled className="ml-2" />}
-                          {field.description && <div className="text-xs text-gray-500 mt-1">{field.description}</div>}
+                          {field.description && <div className="text-xs text-muted-foreground mt-1">{field.description}</div>}
                         </div>
                       ))}
                     </div>
