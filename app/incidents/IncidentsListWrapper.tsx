@@ -1,7 +1,8 @@
 "use client";
 import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { toast } from 'sonner';
 
 const IncidentsListClient = dynamic(() => import('./IncidentsListClient'), {
   loading: () => <div className="flex items-center justify-center h-64"><div className="text-center"><span className="animate-spin mr-2">⏳</span>Загрузка инцидентов...</div></div>,
@@ -21,6 +22,20 @@ export default function IncidentsListWrapper({ isAdmin, assignableUsers }: any) 
   const [incidents, setIncidents] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  // Обработка URL параметров для показа уведомлений
+  const currentSuccess = searchParams.get('success');
+  const currentMessage = searchParams.get('message');
+  const shownRef = useRef(false);
+
+  useEffect(() => {
+  if (shownRef.current) return;
+  if (currentSuccess === 'true' && currentMessage) {
+  shownRef.current = true;
+  toast.success('Успешно!', { description: currentMessage });
+  router.replace('/incidents', { scroll: false });
+  }
+  }, [currentSuccess, currentMessage, router]);
 
   useEffect(() => {
     setLoading(true);
@@ -73,4 +88,4 @@ export default function IncidentsListWrapper({ isAdmin, assignableUsers }: any) 
       </div>
     </div>
   );
-} 
+}

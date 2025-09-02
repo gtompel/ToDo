@@ -10,8 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { ArrowLeft, ArrowRight, Upload, Check } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function NewApplicationPage() {
+  const router = useRouter()
+  const { toast } = useToast()
   const [currentStep, setCurrentStep] = useState(1)
   const [formData, setFormData] = useState<Record<string, any>>({
     fullName: "",
@@ -90,35 +94,22 @@ export default function NewApplicationPage() {
       })
       if (!res.ok) {
         const err = await res.json()
-        alert(err.error || "Ошибка при создании запроса")
+        toast({
+          title: err.error || "Ошибка при создании запроса",
+          description: "Пожалуйста, попробуйте еще раз.",
+          variant: "destructive",
+        })
         return
       }
-      alert("Запрос успешно подан!")
-      setCurrentStep(1)
-      setFormData({
-        fullName: "",
-        department: "",
-        position: "",
-        building: "",
-        room: "",
-        deviceType: "",
-        manufacturer: "",
-        model: "",
-        serialNumber: "",
-        monitorManufacturer: "",
-        monitorModel: "",
-        monitorSerial: "",
-        operatingSystem: "",
-        additionalSoftware: "",
-        flashDrive: "",
-        additionalInfo: "",
-        needsEMVS: false,
-        needsSKZI: false,
-        needsRosatomAccess: false,
-        acknowledgmentFile: null,
-      })
+             // Редирект на страницу запросов с параметром успеха
+        console.log('Redirecting to requests with success params');
+        router.push('/requests?success=true&message=Запрос успешно создан')
     } catch (e) {
-      alert("Ошибка при отправке запроса")
+      toast({
+        title: "Ошибка при отправке запроса",
+        description: "Пожалуйста, попробуйте еще раз.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -127,7 +118,23 @@ export default function NewApplicationPage() {
 
   // Динамический рендеринг формы по шаблону
   const renderTemplateForm = () => {
-    if (!selectedTemplate) return null
+    if (!selectedTemplate || !selectedTemplate.fields || selectedTemplate.fields.length === 0) {
+      return (
+        <div className="space-y-6">
+          <Button type="button" variant="outline" onClick={() => setStep("select")}>Назад к выбору шаблона</Button>
+          <Card>
+            <CardHeader>
+              <CardTitle>Шаблон: {selectedTemplate?.name}</CardTitle>
+              <CardDescription>В данном шаблоне не определены поля для заполнения</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">Используйте стандартную форму для создания запроса</p>
+            </CardContent>
+          </Card>
+        </div>
+      )
+    }
+
     return (
       <form
         onSubmit={e => {
@@ -150,30 +157,42 @@ export default function NewApplicationPage() {
         }}
         className="space-y-6"
       >
-        <Button type="button" variant="outline" onClick={() => setStep("select")}>Назад к выбору шаблона</Button>
+        <div className="flex items-center justify-between">
+          <Button type="button" variant="outline" onClick={() => setStep("select")}>Назад к выбору шаблона</Button>
+          <div className="text-sm text-muted-foreground">
+            Шаблон: <span className="font-medium">{selectedTemplate.name}</span>
+          </div>
+        </div>
+        
         {formError && (
           <div className="bg-red-100 text-red-700 px-4 py-2 rounded border border-red-300">
             {formError}
           </div>
         )}
+        
         <Card>
           <CardHeader>
-            <CardTitle>Данные запроса</CardTitle>
+            <CardTitle>Данные запроса по шаблону</CardTitle>
+            <CardDescription>{selectedTemplate.description}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {selectedTemplate.fields.map((field: any) => (
               <div className="space-y-2" key={field.name}>
-                <Label htmlFor={field.name}>{field.name}{field.required && " *"}</Label>
+                <Label htmlFor={field.name} className="font-medium">
+                  {field.name}{field.required && <span className="text-red-500 ml-1">*</span>}
+                </Label>
+                
                 {field.type === "text" && (
                   <Input
                     id={field.name}
                     value={formData[field.name] ?? ""}
                     onChange={e => handleInputChange(field.name, e.target.value)}
                     required={field.required}
-                    placeholder={field.description}
+                    placeholder={field.description || `Введите ${field.name.toLowerCase()}`}
                     className={formErrors[field.name] ? "border-red-500" : ""}
                   />
                 )}
+                
                 {field.type === "number" && (
                   <Input
                     id={field.name}
@@ -181,10 +200,11 @@ export default function NewApplicationPage() {
                     value={formData[field.name] ?? ""}
                     onChange={e => handleInputChange(field.name, e.target.value)}
                     required={field.required}
-                    placeholder={field.description}
+                    placeholder={field.description || `Введите ${field.name.toLowerCase()}`}
                     className={formErrors[field.name] ? "border-red-500" : ""}
                   />
                 )}
+                
                 {field.type === "date" && (
                   <Input
                     id={field.name}
@@ -195,6 +215,7 @@ export default function NewApplicationPage() {
                     className={formErrors[field.name] ? "border-red-500" : ""}
                   />
                 )}
+                
                 {field.type === "email" && (
                   <Input
                     id={field.name}
@@ -202,10 +223,11 @@ export default function NewApplicationPage() {
                     value={formData[field.name] ?? ""}
                     onChange={e => handleInputChange(field.name, e.target.value)}
                     required={field.required}
-                    placeholder={field.description}
+                    placeholder={field.description || "example@company.com"}
                     className={formErrors[field.name] ? "border-red-500" : ""}
                   />
                 )}
+                
                 {field.type === "password" && (
                   <Input
                     id={field.name}
@@ -213,10 +235,11 @@ export default function NewApplicationPage() {
                     value={formData[field.name] ?? ""}
                     onChange={e => handleInputChange(field.name, e.target.value)}
                     required={field.required}
-                    placeholder={field.description}
+                    placeholder={field.description || "Введите пароль"}
                     className={formErrors[field.name] ? "border-red-500" : ""}
                   />
                 )}
+                
                 {field.type === "tel" && (
                   <Input
                     id={field.name}
@@ -224,51 +247,124 @@ export default function NewApplicationPage() {
                     value={formData[field.name] ?? ""}
                     onChange={e => handleInputChange(field.name, e.target.value)}
                     required={field.required}
-                    placeholder={field.description}
+                    placeholder={field.description || "+7 (999) 123-45-67"}
                     className={formErrors[field.name] ? "border-red-500" : ""}
                   />
                 )}
+                
+                {field.type === "file" && (
+                  <Input
+                    id={field.name}
+                    type="file"
+                    onChange={e => handleInputChange(field.name, e.target.files?.[0] || null)}
+                    required={field.required}
+                    className={formErrors[field.name] ? "border-red-500" : ""}
+                  />
+                )}
+                
+                {field.type === "url" && (
+                  <Input
+                    id={field.name}
+                    type="url"
+                    value={formData[field.name] ?? ""}
+                    onChange={e => handleInputChange(field.name, e.target.value)}
+                    required={field.required}
+                    placeholder={field.description || "https://example.com"}
+                    className={formErrors[field.name] ? "border-red-500" : ""}
+                  />
+                )}
+                
+                {field.type === "color" && (
+                  <Input
+                    id={field.name}
+                    type="color"
+                    value={formData[field.name] ?? "#000000"}
+                    onChange={e => handleInputChange(field.name, e.target.value)}
+                    required={field.required}
+                    className={formErrors[field.name] ? "border-red-500" : ""}
+                  />
+                )}
+                
+                {field.type === "time" && (
+                  <Input
+                    id={field.name}
+                    type="time"
+                    value={formData[field.name] ?? ""}
+                    onChange={e => handleInputChange(field.name, e.target.value)}
+                    required={field.required}
+                    className={formErrors[field.name] ? "border-red-500" : ""}
+                  />
+                )}
+                
+                {field.type === "range" && (
+                  <div className="space-y-2">
+                    <Input
+                      id={field.name}
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={formData[field.name] ?? "50"}
+                      onChange={e => handleInputChange(field.name, e.target.value)}
+                      required={field.required}
+                      className={formErrors[field.name] ? "border-red-500" : ""}
+                    />
+                    <div className="text-sm text-muted-foreground">Значение: {formData[field.name] || "50"}</div>
+                  </div>
+                )}
+                
                 {field.type === "textarea" && (
                   <Textarea
                     id={field.name}
                     value={formData[field.name] ?? ""}
                     onChange={e => handleInputChange(field.name, e.target.value)}
                     required={field.required}
-                    placeholder={field.description}
+                    placeholder={field.description || `Введите ${field.name.toLowerCase()}`}
+                    rows={4}
                     className={formErrors[field.name] ? "border-red-500" : ""}
                   />
                 )}
+                
                 {field.type === "select" && (
                   <Select value={formData[field.name] ?? ""} onValueChange={val => handleInputChange(field.name, val)}>
                     <SelectTrigger className={formErrors[field.name] ? "border-red-500" : ""}>
                       <SelectValue placeholder={field.description || "Выберите вариант"} />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="">Выберите вариант</SelectItem>
                       {field.options?.map((opt: string) => (
                         <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 )}
+                
                 {field.type === "checkbox" && (
                   <div className="flex items-center gap-2">
                     <Checkbox
                       id={field.name}
                       checked={!!formData[field.name]}
                       onCheckedChange={val => handleInputChange(field.name, !!val)}
+                      required={field.required}
                     />
-                    <Label htmlFor={field.name}>{field.description}</Label>
+                    <Label htmlFor={field.name} className="text-sm">{field.description || field.name}</Label>
                   </div>
                 )}
-                {formErrors[field.name] && <div className="text-red-500 text-xs mt-1">{formErrors[field.name]}</div>}
+                
+                {field.description && field.type !== "checkbox" && (
+                  <div className="text-xs text-muted-foreground">{field.description}</div>
+                )}
+                
+                {formErrors[field.name] && (
+                  <div className="text-red-500 text-xs">{formErrors[field.name]}</div>
+                )}
               </div>
             ))}
           </CardContent>
         </Card>
-        <div className="flex gap-4">
-          <Button type="submit" className="flex-1 md:flex-none">
-            <Check className="w-4 h-4 mr-2" />
-            Подать запрос
+        
+        <div className="flex gap-4 justify-center">
+          <Button type="submit" className="px-8 py-2">
+            Создать запрос
           </Button>
         </div>
       </form>
@@ -281,7 +377,7 @@ export default function NewApplicationPage() {
         <h1 className="text-2xl font-bold mb-6">Выберите шаблон запроса</h1>
         <div className="space-y-3 mb-8">
           <div
-            className={`w-full border rounded p-3 text-left hover:bg-muted/50 ${selectedTemplateId === "" ? "border-blue-500" : ""}`}
+            className={`w-full border rounded p-3 text-left hover:bg-muted/50 cursor-pointer ${selectedTemplateId === "" ? "border-blue-500" : ""}`}
             onClick={() => setSelectedTemplateId("")}
           >
             <div className="font-medium">Без шаблона</div>
@@ -290,7 +386,7 @@ export default function NewApplicationPage() {
           {templates.map(t => (
             <div
               key={t.id}
-              className={`w-full border rounded p-3 text-left hover:bg-muted/50 ${selectedTemplateId === t.id ? "border-blue-500" : ""}`}
+              className={`w-full border rounded p-3 text-left hover:bg-muted/50 cursor-pointer ${selectedTemplateId === t.id ? "border-blue-500" : ""}`}
               onClick={() => setSelectedTemplateId(t.id)}
             >
               <div className="font-medium">{t.name}</div>
@@ -298,12 +394,29 @@ export default function NewApplicationPage() {
             </div>
           ))}
         </div>
+        
+        {/* Кнопки навигации */}
+        <div className="flex gap-4">
+          <Button 
+            variant="outline" 
+            onClick={() => router.push('/requests')}
+            className="flex-1"
+          >
+            Отмена
+          </Button>
+          <Button 
+            onClick={() => setStep("form")}
+            className="flex-1"
+          >
+            Далее
+          </Button>
+        </div>
       </div>
     )
   }
 
   // Если выбран шаблон — показываем только форму по шаблону
-  if (selectedTemplate) {
+  if (selectedTemplateId && selectedTemplate) {
     return renderTemplateForm()
   }
 

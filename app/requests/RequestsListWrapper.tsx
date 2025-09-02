@@ -1,7 +1,8 @@
 "use client";
 import dynamic from 'next/dynamic';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { toast } from 'sonner';
 
 const RequestsListClient = dynamic(() => import('./RequestsListClient'), {
   ssr: false,
@@ -10,7 +11,22 @@ const RequestsListClient = dynamic(() => import('./RequestsListClient'), {
 
 export default function RequestsListWrapper({ requests, isAdmin, assignableUsers, total, page, pageSize }: any) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const pageCount = Math.ceil(total / pageSize);
+
+  // Обработка URL параметров для показа уведомлений
+  const currentSuccess = searchParams.get('success');
+  const currentMessage = searchParams.get('message');
+  const shownRef = useRef(false);
+
+  useEffect(() => {
+  if (shownRef.current) return;
+  if (currentSuccess === 'true' && currentMessage) {
+  shownRef.current = true;
+  toast.success('Успешно!', { description: currentMessage });
+  router.replace('/requests', { scroll: false });
+  }
+  }, [currentSuccess, currentMessage, router]);
 
   const handlePageChange = (newPage: number) => {
     router.push(`/requests?page=${newPage}&pageSize=${pageSize}`);

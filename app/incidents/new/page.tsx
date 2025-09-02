@@ -155,20 +155,8 @@ export default function NewIncidentPage() {
 
     setLoading(false)
     if (res.ok) {
-      setFormData({
-        title: "",
-        description: "",
-        priority: "",
-        category: "",
-        assignee: "",
-        reporter: "",
-        preActions: "",
-        expectedResult: "",
-        attachments: [],
-      })
-      if (fileInputRef.current) fileInputRef.current.value = ""
-      toast({ title: "Инцидент создан", description: "Запись успешно добавлена" })
-      setTimeout(() => router.push("/incidents"), 1500)
+      // Редирект на страницу инцидентов с параметром успеха
+      router.push('/incidents?success=true&message=Инцидент успешно создан')
     } else {
       let msg = "Ошибка при создании инцидента"
       try {
@@ -397,7 +385,7 @@ export default function NewIncidentPage() {
         <h1 className="text-2xl font-bold mb-6">Выберите шаблон инцидента</h1>
         <div className="space-y-3 mb-8">
           <div
-            className={`w-full border rounded p-3 text-left hover:bg-muted/50 ${selectedTemplateId === "" ? "border-blue-500" : ""}`}
+            className={`w-full border rounded p-3 text-left hover:bg-muted/50 cursor-pointer ${selectedTemplateId === "" ? "border-blue-500" : ""}`}
             onClick={() => setSelectedTemplateId("")}
           >
             <div className="font-medium">Без шаблона</div>
@@ -406,13 +394,30 @@ export default function NewIncidentPage() {
           {templates.map(t => (
             <div
               key={t.id}
-              className={`w-full border rounded p-3 text-left hover:bg-muted/50 ${selectedTemplateId === t.id ? "border-blue-500" : ""}`}
+              className={`w-full border rounded p-3 text-left hover:bg-muted/50 cursor-pointer ${selectedTemplateId === t.id ? "border-blue-500" : ""}`}
               onClick={() => setSelectedTemplateId(t.id)}
             >
               <div className="font-medium">{t.name}</div>
               <div className="text-sm text-muted-foreground">{t.description}</div>
             </div>
           ))}
+        </div>
+        
+        {/* Кнопки навигации */}
+        <div className="flex gap-4">
+          <Button 
+            variant="outline" 
+            onClick={() => router.push('/incidents')}
+            className="flex-1"
+          >
+            Отмена
+          </Button>
+          <Button 
+            onClick={() => setStep("form")}
+            className="flex-1"
+          >
+            Далее
+          </Button>
         </div>
       </div>
     )
@@ -432,7 +437,7 @@ export default function NewIncidentPage() {
         </div>
       </div>
 
-      {selectedTemplate ? renderTemplateForm() : (
+      {selectedTemplateId && selectedTemplate ? renderTemplateForm() : (
         <form onSubmit={handleSubmit} className="space-y-6">
           <Button type="button" variant="outline" onClick={() => setStep("select")}>Назад к выбору шаблона</Button>
           {/* Выбор шаблона (скрыт, т.к. теперь wizard) */}
