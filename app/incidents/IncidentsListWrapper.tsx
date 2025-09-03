@@ -2,7 +2,7 @@
 import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/use-toast';
 
 const IncidentsListClient = dynamic(() => import('./IncidentsListClient'), {
   loading: () => <div className="flex items-center justify-center h-64"><div className="text-center"><span className="animate-spin mr-2">⏳</span>Загрузка инцидентов...</div></div>,
@@ -32,7 +32,7 @@ export default function IncidentsListWrapper({ isAdmin, assignableUsers }: any) 
   if (shownRef.current) return;
   if (currentSuccess === 'true' && currentMessage) {
   shownRef.current = true;
-  toast.success('Успешно!', { description: currentMessage });
+  toast({ title: 'Успешно!', description: currentMessage });
   router.replace('/incidents', { scroll: false });
   }
   }, [currentSuccess, currentMessage, router]);

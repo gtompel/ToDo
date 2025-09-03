@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -16,6 +16,7 @@ import { useToast } from "@/components/ui/use-toast"
 export default function NewApplicationPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [currentStep, setCurrentStep] = useState(1)
   const [formData, setFormData] = useState<Record<string, any>>({
     fullName: "",
@@ -54,17 +55,20 @@ export default function NewApplicationPage() {
       .then(data => setTemplates(data.templates || []))
   }, [])
 
-  // Автозаполнение при выборе шаблона
+  // Автозаполнение при выборе шаблона: создаём объект значений по именам полей
   useEffect(() => {
     if (!selectedTemplateId) return
     const template = templates.find(t => t.id === selectedTemplateId)
     if (!template) return
-    const fields = template.fields || {}
-    setFormData(prev => ({
-      ...prev,
-      ...fields,
-    }))
-  }, [selectedTemplateId])
+    const fieldValues = (Array.isArray(template.fields) ? template.fields : []).reduce((acc: Record<string, any>, f: any) => {
+      const isCheckbox = f?.type === 'checkbox'
+      const isFile = f?.type === 'file'
+      acc[f.name] = f?.default ?? (isCheckbox ? false : isFile ? null : "")
+      return acc
+    }, {})
+    // Заменяем formData целиком, чтобы сохранить только поля шаблона
+    setFormData(fieldValues)
+  }, [selectedTemplateId, templates])
 
   const handleInputChange = (field: string, value: string | boolean | File | null) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -80,7 +84,19 @@ export default function NewApplicationPage() {
 
   const handleSubmit = async () => {
     const data = new FormData()
-    data.append("title", formData.fullName + " - " + formData.deviceType)
+    // Формируем заголовок: для шаблона — имя шаблона + первое заполненное поле; иначе — ФИО и тип устройства
+    const tpl = templates.find(t => t.id === selectedTemplateId)
+    let computedTitle = ''
+    if (tpl) {
+      const firstFilled = Object.values(formData).find(v => typeof v === 'string' && (v as string).trim()) as string | undefined
+      computedTitle = tpl.name + (firstFilled ? ` - ${firstFilled}` : '')
+    } else {
+      const left = (formData.fullName || '').toString().trim()
+      const right = (formData.deviceType || '').toString().trim()
+      computedTitle = [left, right].filter(Boolean).join(' - ')
+      if (!computedTitle) computedTitle = 'Запрос'
+    }
+    data.append("title", computedTitle)
     data.append("description", JSON.stringify(formData))
     data.append("type", "hardware")
     data.append("priority", "MEDIUM")
@@ -650,12 +666,11 @@ export default function NewApplicationPage() {
                     }}
                     className="hidden"
                     id="file-upload"
+                    ref={fileInputRef}
                   />
-                  <Label htmlFor="file-upload" className="cursor-pointer">
-                    <Button type="button" variant="outline">
-                      Выбрать файл
-                    </Button>
-                  </Label>
+                  <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                    Выбрать файл
+                  </Button>
                   {formData.acknowledgmentFile && (
                     <p className="mt-2 text-sm text-green-600">Файл загружен: {formData.acknowledgmentFile.name}</p>
                   )}

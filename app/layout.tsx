@@ -9,7 +9,7 @@ import { getCurrentUser } from "@/lib/auth"
 import Header from "@/components/header"
 import Sidebar from "@/components/sidebar"
 import { ThemeProvider } from "@/components/theme-provider"
-import { Toaster } from "@/components/ui/sonner"
+import { Toaster } from "@/components/ui/toaster"
 import AppShell from "./AppShell"
 import { UserProvider } from "@/hooks/use-user-context";
 

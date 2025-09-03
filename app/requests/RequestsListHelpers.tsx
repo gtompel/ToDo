@@ -48,36 +48,71 @@ export function renderRequestDetails(description: string) {
   } catch {
     return <p className="text-gray-700 mb-4">{description}</p>
   }
+
+  if (!data || typeof data !== 'object') {
+    return <p className="text-gray-700 mb-4">{String(description)}</p>
+  }
+
+  const labelMap: Record<string, string> = {
+    fullName: 'ФИО',
+    department: 'Подразделение',
+    position: 'Должность',
+    building: 'Здание',
+    room: 'Помещение',
+    deviceType: 'Тип устройства',
+    manufacturer: 'Производитель',
+    model: 'Модель',
+    serialNumber: 'Серийный номер',
+    monitorManufacturer: 'Произв. монитора',
+    monitorModel: 'Модель монитора',
+    monitorSerial: 'Серийный монитора',
+    operatingSystem: 'ОС',
+    additionalSoftware: 'Доп. ПО',
+    flashDrive: 'Флеш-носитель',
+    additionalInfo: 'Доп. информация',
+    needsEMVS: 'Нужен ЭМВС',
+    needsSKZI: 'Нужно СКЗИ',
+    needsRosatomAccess: 'Доступ Росатом',
+    // acknowledgmentFile выводим в блоке "Вложения", поэтому здесь не показываем
+    url: 'Ссылка на ресурс',
+  }
+
+  const entries = Object.entries(data).filter(([k, v]) => {
+    if (k === 'attachments' || k === 'acknowledgmentFile') return false
+    return v !== undefined && v !== null && v !== ""
+  })
+
+  if (entries.length === 0) return null
+
   return (
     <div className="mb-4">
       <table className="text-sm w-full">
         <tbody>
-          <tr><td className="font-medium pr-2">ФИО:</td><td>{data.fullName}</td></tr>
-          <tr><td className="font-medium pr-2">Подразделение:</td><td>{data.department}</td></tr>
-          <tr><td className="font-medium pr-2">Должность:</td><td>{data.position}</td></tr>
-          <tr><td className="font-medium pr-2">Здание/помещение:</td><td>{data.building} / {data.room}</td></tr>
-          <tr><td className="font-medium pr-2">Оборудование:</td><td>{data.deviceType} {data.manufacturer} {data.model} (S/N: {data.serialNumber})</td></tr>
-          <tr><td className="font-medium pr-2">Монитор:</td><td>{data.monitorManufacturer} {data.monitorModel} (S/N: {data.monitorSerial})</td></tr>
-          <tr><td className="font-medium pr-2">ОС:</td><td>{data.operatingSystem}</td></tr>
-          <tr><td className="font-medium pr-2">Доп. ПО:</td><td>{data.additionalSoftware}</td></tr>
-          <tr><td className="font-medium pr-2">Флеш-носитель:</td><td>{data.flashDrive}</td></tr>
-          <tr><td className="font-medium pr-2">Доп. требования:</td><td>
-            {data.needsEMVS && <span>ЕМВС; </span>}
-            {data.needsSKZI && <span>СКЗИ; </span>}
-            {data.needsRosatomAccess && <span>Росатом; </span>}
-            {!data.needsEMVS && !data.needsSKZI && !data.needsRosatomAccess && <span>нет</span>}
-          </td></tr>
-          {data.additionalInfo && <tr><td className="font-medium pr-2">Доп. информация:</td><td>{data.additionalInfo}</td></tr>}
-          {data.acknowledgmentFile && (
-            <tr>
-              <td className="font-medium pr-2">Лист ознакомления:</td>
-              <td>
-                <a href={data.acknowledgmentFile} target="_blank" className="underline text-blue-700" rel="noreferrer">
-                  {String(data.acknowledgmentFile).split('/').pop()}
-                </a>
-              </td>
-            </tr>
-          )}
+          {entries.map(([key, value]) => {
+            if (typeof value === 'boolean') {
+              return (
+                <tr key={key}><td className="font-medium pr-2">{labelMap[key] || key}:</td><td>{value ? 'Да' : 'Нет'}</td></tr>
+              )
+            }
+            if (key === 'building' || key === 'room') {
+              // building/room будут показаны отдельно, если оба присутствуют
+              return null
+            }
+            if ('building' in data && 'room' in data && key === 'deviceType') {
+              // отдельной логики не нужно; оставлено для совместимости
+            }
+            if (key === 'url') {
+              return (
+                <tr key={key}><td className="font-medium pr-2">{labelMap[key]}:</td><td><a className="underline text-blue-700" href={String(value)} target="_blank" rel="noreferrer">{String(value)}</a></td></tr>
+              )
+            }
+            return (
+              <tr key={key}><td className="font-medium pr-2">{labelMap[key] || key}:</td><td>{String(value)}</td></tr>
+            )
+          })}
+          {data.building || data.room ? (
+            <tr key="buildingRoom"><td className="font-medium pr-2">Здание/помещение:</td><td>{[data.building, data.room].filter(Boolean).join(' / ')}</td></tr>
+          ) : null}
         </tbody>
       </table>
     </div>

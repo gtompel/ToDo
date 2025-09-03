@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useConfirm } from "@/components/ui/confirm-dialog"
 
 function getStatusBadge(status: string) {
   switch (status) {
@@ -65,6 +66,7 @@ export default function RequestsListClient({ requests, isAdmin, assignableUsers,
   const [filter, setFilter] = useState({ department: "", lastName: "" })
   const [requestsState, setRequestsState] = useState<any[]>(requests)
   const [loadingId, setLoadingId] = useState<string | null>(null)
+  const { confirm, dialog } = useConfirm() // ✅ Подключаем confirm
 
   // Фильтрация только по текущему срезу
   const filtered = useMemo(() => {
@@ -80,7 +82,7 @@ export default function RequestsListClient({ requests, isAdmin, assignableUsers,
 
   const toggle = (id: string) => setOpen(open => open.includes(id) ? open.filter(i => i !== id) : [...open, id])
 
-  // Получаем уникальные отделы (HOOK должен быть до любых ранних return)
+  // Получаем уникальные отделы
   const departments = useMemo(() => {
     const set = new Set<string>()
     requestsState.forEach((r: any) => {
@@ -143,7 +145,8 @@ export default function RequestsListClient({ requests, isAdmin, assignableUsers,
     setLoadingId(id + action)
     let url = ""
     let body: any = { id }
-    // Определяем url и тело запроса в зависимости от действия
+
+    // Определяем url и тело запроса
     if (action === "status") {
       url = "/api/requests/status"
       body.status = value
@@ -154,11 +157,15 @@ export default function RequestsListClient({ requests, isAdmin, assignableUsers,
       url = "/api/requests/assign"
       body.userId = value
     } else if (action === "delete") {
+      // 🔴 Показываем подтверждение перед удалением
+      const ok = await confirm({ title: "Удалить запрос?" })
+      if (!ok) return // Пользователь отменил — выходим
       url = "/api/requests/delete"
     }
+
     if (!url) return
+
     try {
-      // Выполняем запрос к API
       const res = await fetchWithTimeout(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -166,13 +173,16 @@ export default function RequestsListClient({ requests, isAdmin, assignableUsers,
       })
       const data = await res.json()
       if (!res.ok || data.error) throw new Error(data.error || "Ошибка операции")
-      const successTitle =
+
+      const successDescription =
         action === "status" ? "Статус изменён" :
         action === "priority" ? "Приоритет изменён" :
         action === "assign" ? "Исполнитель назначен" :
-        action === "delete" ? "Запрос удалён" : "Успех"
-      toast({ title: successTitle, description: "Запрос обновлён" })
-      // Локально обновляем только изменённую карточку
+        action === "delete" ? "Запрос удалён" : "Операция выполнена"
+
+      toast({ title: "Успешно", description: successDescription })
+
+      // Локальное обновление состояния
       setRequestsState(list => {
         if (action === "delete") return list.filter(r => r.id !== id)
         const patch: any = {}
@@ -186,45 +196,60 @@ export default function RequestsListClient({ requests, isAdmin, assignableUsers,
         return list.map(r => r.id === id ? { ...r, ...patch } : r)
       })
     } catch (e: any) {
-      // Показываем ошибку через toast
       toast({ title: "Ошибка", description: e.message, variant: "destructive" })
     } finally {
       setLoadingId(null)
     }
   }
 
-  // Вынести рендер одной карточки запроса в отдельную функцию RequestCard
+  // Компонент карточки запроса
   function RequestCard({ request, isOpen, toggle, isAdmin, assignableUsers, handleAdminAction }: any) {
-  const [editOpen, setEditOpen] = useState(false)
-  const [editTitle, setEditTitle] = useState(request.title || "")
-  const [editDescription, setEditDescription] = useState(request.description || "")
-  const [editCategory, setEditCategory] = useState(request.category || "")
-  const [editPriority, setEditPriority] = useState(request.priority || "MEDIUM")
-  const [editStatus, setEditStatus] = useState(request.status || "OPEN")
-  const [isDescJson, setIsDescJson] = useState(false)
-  const [descFields, setDescFields] = useState<any>({})
+    const [editOpen, setEditOpen] = useState(false)
+    const [preview, setPreview] = useState<{ src: string, name: string } | null>(null)
+    const [editTitle, setEditTitle] = useState(request.title || "")
+    const [editDescription, setEditDescription] = useState(request.description || "")
+    const [editCategory, setEditCategory] = useState(request.category || "")
+    const [editPriority, setEditPriority] = useState(request.priority || "MEDIUM")
+    const [editStatus, setEditStatus] = useState(request.status || "OPEN")
+    const [isDescJson, setIsDescJson] = useState(false)
+    const [descFields, setDescFields] = useState<any>({})
 
-  const openEdit = () => {
-    setEditTitle(request.title || "")
-    setEditCategory(request.category || "")
-    setEditPriority(request.priority || "MEDIUM")
-    setEditStatus(request.status || "OPEN")
-    // попытка распарсить описание как JSON
-    let parsed: any = null
-    try {
-      parsed = JSON.parse(request.description)
-    } catch {}
-    const isObj = parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-    setIsDescJson(!!isObj)
-    if (isObj) {
-      setDescFields(parsed)
-    } else {
-      setEditDescription(request.description || "")
+    const openEdit = () => {
+      setEditTitle(request.title || "")
+      setEditCategory(request.category || "")
+      setEditPriority(request.priority || "MEDIUM")
+      setEditStatus(request.status || "OPEN")
+      let parsed: any = null
+      try {
+        parsed = JSON.parse(request.description)
+      } catch {}
+      const isObj = parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      setIsDescJson(!!isObj)
+      if (isObj) {
+        setDescFields(parsed)
+      } else {
+        setEditDescription(request.description || "")
+      }
+      setEditOpen(true)
     }
-    setEditOpen(true)
-  }
-  const headerColor = getCardClassByStatus(request.status)
-  return (
+
+    const headerColor = getCardClassByStatus(request.status)
+
+    const isImage = (url: string) => /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(url)
+
+    // Попытка распарсить описание для получения вложений (acknowledgmentFile или attachments)
+    let descJson: any = null
+    try { descJson = JSON.parse(request.description) } catch {}
+    const attachmentList: string[] = []
+    if (descJson) {
+      if (Array.isArray(descJson.attachments)) attachmentList.push(...descJson.attachments.filter((x: any) => typeof x === 'string'))
+      if (typeof descJson.acknowledgmentFile === 'string' && descJson.acknowledgmentFile) attachmentList.push(descJson.acknowledgmentFile)
+    }
+    if (typeof (request as any).acknowledgmentFile === 'string' && (request as any).acknowledgmentFile) {
+      if (!attachmentList.includes((request as any).acknowledgmentFile)) attachmentList.push((request as any).acknowledgmentFile)
+    }
+
+    return (
       <div key={request.id} className={`border-b last:border-0 group flex flex-col ${headerColor}`} style={{ borderLeftWidth: 4 }}>
         <div className="flex items-center gap-3 px-4 py-2 transition">
           <button
@@ -232,11 +257,11 @@ export default function RequestsListClient({ requests, isAdmin, assignableUsers,
             onClick={() => toggle(request.id)}
             aria-expanded={isOpen}
           >
-          {getStatusBadge(request.status)}
-          {getPriorityBadge(request.priority)}
-          <span className="flex-1 font-medium truncate">{request.title}</span>
-          <span className="text-xs text-gray-400">{formatRequestId(request.id)}</span>
-          <span className="text-xs text-gray-500 ml-4 whitespace-nowrap">{new Date(request.createdAt).toLocaleDateString("ru-RU")}</span>
+            {getStatusBadge(request.status)}
+            {getPriorityBadge(request.priority)}
+            <span className="flex-1 font-medium truncate">{request.title}</span>
+            <span className="text-xs text-gray-400">{formatRequestId(request.id)}</span>
+            <span className="text-xs text-gray-500 ml-4 whitespace-nowrap">{new Date(request.createdAt).toLocaleDateString("ru-RU")}</span>
           </button>
           {isAdmin && (
             <Button
@@ -254,12 +279,34 @@ export default function RequestsListClient({ requests, isAdmin, assignableUsers,
           </button>
         </div>
         <div
-          className={`transition-all duration-300 overflow-hidden ${isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}
+          className={`transition-all duration-300 ${isOpen ? 'max-h-screen overflow-auto opacity-100' : 'max-h-0 overflow-hidden opacity-0'}`}
           style={{ background: 'rgba(243,244,246,0.5)' }}
         >
           {isOpen && (
             <div className="px-4 py-2 text-xs animate-fade-in">
               <div className="mb-1 text-gray-700 whitespace-pre-wrap break-words">{renderRequestDetails(request.description)}</div>
+              {/* Вложения */}
+              {attachmentList.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  <div className="text-xs font-medium text-gray-700">Вложения:</div>
+                  <div className="flex flex-wrap gap-2">
+                    {attachmentList.map((att: string, idx: number) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        className="text-xs underline text-blue-700 hover:text-blue-900"
+                        onClick={() => setPreview({ src: att, name: `Файл ${idx + 1}` })}
+                      >
+                        {isImage(att) ? (
+                          <img src={att} alt="attachment" className="h-12 w-12 object-cover rounded border" />
+                        ) : (
+                          <span>Файл {idx + 1}</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="flex items-center justify-between text-gray-600 mb-1 gap-2 flex-wrap">
                 <div className="text-xs">
                   <span className="font-medium">Создал:</span> {(request.createdBy?.firstName || '') + ' ' + (request.createdBy?.lastName || '') || request.createdBy?.email || '—'}
@@ -290,7 +337,7 @@ export default function RequestsListClient({ requests, isAdmin, assignableUsers,
                 }}>
                   <label>
                     Статус:
-                    <select name="status" defaultValue={request.status} className="ml-1 border rounded px-2 py-1" onClick={e => e.stopPropagation()}>
+                    <select name="status" defaultValue={request.status || 'OPEN'} className="ml-1 border rounded px-2 py-1" onClick={e => e.stopPropagation()}>
                       {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                     </select>
                   </label>
@@ -301,7 +348,7 @@ export default function RequestsListClient({ requests, isAdmin, assignableUsers,
                   </button>
                   <label>
                     Приоритет:
-                    <select name="priority" defaultValue={request.priority} className="ml-1 border rounded px-2 py-1" onClick={e => e.stopPropagation()}>
+                    <select name="priority" defaultValue={request.priority || 'MEDIUM'} className="ml-1 border rounded px-2 py-1" onClick={e => e.stopPropagation()}>
                       {PRIORITY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                     </select>
                   </label>
@@ -332,7 +379,28 @@ export default function RequestsListClient({ requests, isAdmin, assignableUsers,
                   </button>
                 </form>
               )}
-              {/* Модалка вынесена вне раскрываемого блока для независимости */}
+              {/* Модалка предпросмотра вложения */}
+              <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
+                <DialogContent className="max-w-4xl">
+                  <DialogHeader>
+                    <DialogTitle>{preview?.name || 'Вложение'}</DialogTitle>
+                    <DialogDescription className="sr-only">Окно предпросмотра вложенного файла</DialogDescription>
+                  </DialogHeader>
+                  {preview && (
+                    <div className="flex items-center justify-center">
+                      {isImage(preview.src) ? (
+                        <img src={preview.src} alt="attachment preview" className="max-h-[80vh] max-w-[90vw] object-contain rounded" />
+                      ) : (
+                        <div className="text-sm">
+                          <a href={preview.src} target="_blank" rel="noreferrer" className="underline text-blue-700">Открыть файл</a>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
+
+              {/* Модалка редактирования */}
               <Dialog open={editOpen} onOpenChange={setEditOpen}>
                 <DialogContent>
                   <DialogHeader>
@@ -422,12 +490,32 @@ export default function RequestsListClient({ requests, isAdmin, assignableUsers,
                         const res = await fetchWithTimeout('/api/requests/update', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ id: request.id, title: editTitle, description: isDescJson ? JSON.stringify(descFields) : editDescription, category: editCategory, priority: editPriority, status: editStatus }),
+                          body: JSON.stringify({
+                            id: request.id,
+                            title: editTitle,
+                            description: isDescJson ? JSON.stringify(descFields) : editDescription,
+                            category: editCategory,
+                            priority: editPriority,
+                            status: editStatus
+                          }),
                         })
                         const data = await res.json()
                         if (!res.ok || data.error) throw new Error(data.error || 'Ошибка обновления')
-                        toast({ title: 'Запрос обновлён' })
-                        setRequestsState(list => list.map(r => r.id === request.id ? { ...r, title: editTitle, description: (isDescJson ? JSON.stringify(descFields) : editDescription), category: editCategory, priority: editPriority, status: editStatus } : r))
+                        toast({ title: 'Успешно', description: 'Запрос обновлён' })
+                        setRequestsState(list =>
+                          list.map(r =>
+                            r.id === request.id
+                              ? {
+                                  ...r,
+                                  title: editTitle,
+                                  description: isDescJson ? JSON.stringify(descFields) : editDescription,
+                                  category: editCategory,
+                                  priority: editPriority,
+                                  status: editStatus
+                                }
+                              : r
+                          )
+                        )
                         setEditOpen(false)
                       } catch (e: any) {
                         toast({ title: 'Ошибка', description: e.message, variant: 'destructive' })
@@ -440,11 +528,12 @@ export default function RequestsListClient({ requests, isAdmin, assignableUsers,
           )}
         </div>
       </div>
-    );
+    )
   }
 
   return (
     <>
+      {dialog} {/* 🔺 Рендерим модальное окно confirm */}
       <RequestsFilterPanel departments={departments} filter={filter} setFilter={setFilter} />
       <div className="space-y-4">
         {filtered.map((request: any) => (
@@ -461,4 +550,4 @@ export default function RequestsListClient({ requests, isAdmin, assignableUsers,
       </div>
     </>
   )
-} 
+}

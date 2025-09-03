@@ -1,7 +1,6 @@
 "use client"
 
-import { useState, useTransition, useRef } from "react"
-import { Button } from "@/components/ui/button"
+import { useState, useRef } from "react"
 import { toast } from "@/components/ui/use-toast"
 import { useConfirm } from "@/components/ui/confirm-dialog"
 import { fetchWithTimeout } from "@/lib/utils"
@@ -23,10 +22,18 @@ const PRIORITY_OPTIONS = [
   { value: "LOW", label: "Низкий" },
 ]
 
+type Incident = {
+  id: string
+  status: string
+  assignedToId?: string | null
+  priority: string
+}
+
+type Assignee = { id: string; firstName: string; lastName: string; email: string }
+
 // Компонент для административных действий над инцидентом
-export default function IncidentsAdminActions({ incident, assignees, onUpdated, onDeleted }: { incident: any, assignees: Array<{id: string, firstName: string, lastName: string, email: string}>, onUpdated?: (patch: any) => void, onDeleted?: () => void }) {
+export default function IncidentsAdminActions({ incident, assignees, onUpdated, onDeleted }: { incident: Incident, assignees: Assignee[], onUpdated?: (patch: Partial<Incident> & { assignedTo?: Assignee }) => void, onDeleted?: () => void }) {
   // Состояния для управления формой
-  const [isPending, startTransition] = useTransition()
   const [status, setStatus] = useState(incident.status) // Текущий статус
   const [assignee, setAssignee] = useState(incident.assignedToId || "") // Текущий исполнитель
   const [loading, setLoading] = useState(false) // Флаг загрузки
@@ -50,7 +57,7 @@ export default function IncidentsAdminActions({ incident, assignees, onUpdated, 
         })
         data = await res.json()
         if (!res.ok || data.error) throw new Error(data.error || "Ошибка смены статуса")
-        toast({ title: "Статус изменён", description: "Инцидент обновлён" })
+        toast({ title: "Успешно", description: "Статус изменён" })
         onUpdated?.({ status: value || status })
       // Смена приоритета
       } else if (action === "priority") {
@@ -62,7 +69,7 @@ export default function IncidentsAdminActions({ incident, assignees, onUpdated, 
         })
         data = await res.json()
         if (!res.ok || data.error) throw new Error(data.error || "Ошибка смены приоритета")
-        toast({ title: "Приоритет изменён", description: "Инцидент обновлён" })
+        toast({ title: "Успешно", description: "Приоритет изменён" })
         onUpdated?.({ priority: value || priority })
       // Назначение исполнителя
       } else if (action === "assign") {
@@ -74,7 +81,7 @@ export default function IncidentsAdminActions({ incident, assignees, onUpdated, 
         })
         data = await res.json()
         if (!res.ok || data.error) throw new Error(data.error || "Ошибка назначения")
-        toast({ title: "Исполнитель назначен" })
+        toast({ title: "Успешно", description: "Исполнитель назначен" })
         const userId = value || assignee
         const user = assignees.find(u => u.id === userId)
         onUpdated?.({ assignedToId: userId, assignedTo: user ? { firstName: user.firstName, lastName: user.lastName, email: user.email, id: user.id } : undefined })
@@ -89,13 +96,14 @@ export default function IncidentsAdminActions({ incident, assignees, onUpdated, 
           })
           data = await res.json()
           if (!res.ok || data.error) throw new Error(data.error || "Ошибка удаления")
-          toast({ title: "Инцидент удалён" })
+          toast({ title: "Успешно", description: "Инцидент удалён" })
           onDeleted?.()
         }
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       // Показываем ошибку через toast
-      toast({ title: "Ошибка", description: e.message, variant: "destructive" })
+      const message = e instanceof Error ? e.message : String(e)
+      toast({ title: "Ошибка", description: message, variant: "destructive" })
     } finally {
       setLoading(false)
     }
@@ -105,7 +113,7 @@ export default function IncidentsAdminActions({ incident, assignees, onUpdated, 
   return (
     <form className="flex flex-wrap gap-2 items-center mt-2" onSubmit={async (e) => {
       e.preventDefault()
-      const form = e.currentTarget as HTMLFormElement & { elements: { [key: string]: any } }
+      const form = e.currentTarget as HTMLFormElement & { elements: Record<string, HTMLInputElement> }
       const action = form.elements['action'].value
       // В зависимости от выбранного действия вызываем обработчик
       if (action === "status") {
@@ -169,4 +177,4 @@ export default function IncidentsAdminActions({ incident, assignees, onUpdated, 
       </button>
     </form>
   )
-} 
+}

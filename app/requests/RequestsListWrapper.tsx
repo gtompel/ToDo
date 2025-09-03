@@ -2,7 +2,7 @@
 import dynamic from 'next/dynamic';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/use-toast';
 
 const RequestsListClient = dynamic(() => import('./RequestsListClient'), {
   ssr: false,
@@ -23,7 +23,7 @@ export default function RequestsListWrapper({ requests, isAdmin, assignableUsers
   if (shownRef.current) return;
   if (currentSuccess === 'true' && currentMessage) {
   shownRef.current = true;
-  toast.success('Успешно!', { description: currentMessage });
+  toast({ title: 'Успешно!', description: currentMessage });
   router.replace('/requests', { scroll: false });
   }
   }, [currentSuccess, currentMessage, router]);

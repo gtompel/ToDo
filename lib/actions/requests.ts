@@ -99,7 +99,8 @@ export async function createRequest(formData: FormData, userId?: string) {
         priority: priority as any,
         createdById: userId,
         assignedToId: assignedToId || null,
-        acknowledgmentFile: (acknowledgmentFile && typeof (acknowledgmentFile as any).name === 'string') ? (acknowledgmentFile as any).name : null,
+        // Если пришла строка URL (когда файл уже загружен в /api/requests)
+        acknowledgmentFile: (acknowledgmentFile && typeof (acknowledgmentFile as any).name === 'string') ? (acknowledgmentFile as any).name : (typeof (formData.get('acknowledgmentFile') as any) === 'string' ? String(formData.get('acknowledgmentFile')) : null),
       },
     })
 

@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Settings, Bell, Mail, Shield, Database, Clock, Save, RefreshCw, AlertTriangle } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@/components/ui/use-toast"
 
 // Страница общих настроек системы
 const defaultSettings = {
@@ -110,7 +110,7 @@ export default function SettingsPage() {
       .then(setDbStatus)
       .catch(() => {
         setDbStatus({ status: "error", size: 0, lastBackup: null })
-        toast.error("Ошибка получения статуса базы данных")
+        toast({ title: "Ошибка", description: "Ошибка получения статуса базы данных", variant: "destructive" })
       })
       .finally(() => setDbStatusLoading(false))
   }, [])
@@ -120,7 +120,7 @@ export default function SettingsPage() {
     fetch("/api/settings")
       .then(res => res.json())
       .then(data => setSettings((prev) => ({ ...prev, ...defaultSettings, ...data.settings })))
-      .catch(() => toast.error("Ошибка загрузки настроек"))
+      .catch(() => toast({ title: "Ошибка", description: "Ошибка загрузки настроек", variant: "destructive" }))
       .finally(() => setLoading(false))
     fetchDbStatus()
   }, [fetchDbStatus])
@@ -147,14 +147,14 @@ export default function SettingsPage() {
       })
       const data = await res.json()
       if (res.ok && data.success) {
-        toast.success("LDAP: подключение успешно")
+        toast({ title: "LDAP", description: "Подключение успешно" })
         setLdapStatus({ success: true, message: "Подключение успешно" })
       } else {
-        toast.error("LDAP: ошибка подключения: " + (data.error || "Unknown error"))
+        toast({ title: "LDAP", description: "Ошибка подключения: " + (data.error || "Unknown error"), variant: "destructive" })
         setLdapStatus({ success: false, message: data.error || "Unknown error" })
       }
     } catch (e: any) {
-      toast.error("LDAP: ошибка подключения: " + (e?.message || String(e)))
+      toast({ title: "LDAP", description: "Ошибка подключения: " + (e?.message || String(e)), variant: "destructive" })
       setLdapStatus({ success: false, message: e?.message || String(e) })
     } finally {
       setLdapTestLoading(false)
@@ -182,7 +182,7 @@ export default function SettingsPage() {
     }))
     await handleSave()
     setLdapStatus(null)
-    toast.success("LDAP интеграция отключена")
+    toast({ title: "LDAP", description: "Интеграция отключена" })
   }
 
   // Сохранить настройки
@@ -195,9 +195,9 @@ export default function SettingsPage() {
         body: JSON.stringify(settings),
       })
       if (!res.ok) throw new Error()
-      toast.success("Настройки сохранены")
+      toast({ title: "Успешно", description: "Настройки сохранены" })
     } catch {
-      toast.error("Ошибка сохранения настроек")
+      toast({ title: "Ошибка", description: "Ошибка сохранения настроек", variant: "destructive" })
     } finally {
       setSaving(false)
     }
@@ -209,7 +209,7 @@ export default function SettingsPage() {
     fetch("/api/settings")
       .then(res => res.json())
       .then(data => setSettings(data.settings))
-      .catch(() => toast.error("Ошибка сброса настроек"))
+      .catch(() => toast({ title: "Ошибка", description: "Ошибка сброса настроек", variant: "destructive" }))
       .finally(() => setLoading(false))
   }
 
@@ -264,7 +264,7 @@ export default function SettingsPage() {
           <Button onClick={async () => {
             const err = validateLdap()
             if (err) {
-              toast.error(err)
+              toast({ title: "Ошибка", description: err, variant: "destructive" })
               return
             }
             await handleSave()

@@ -55,7 +55,7 @@ export default function ChangesAdminActions({ change, assignees, onUpdated }: { 
         })
         data = await res.json()
         if (!res.ok || data.error) throw new Error(data.error || "Ошибка смены статуса")
-        toast({ title: "Статус изменён", description: "Изменение обновлено" })
+        toast({ title: "Успешно", description: "Статус изменён" })
         onUpdated?.({ status: value || status })
       // Смена приоритета
       } else if (action === "priority") {
@@ -67,7 +67,7 @@ export default function ChangesAdminActions({ change, assignees, onUpdated }: { 
         })
         data = await res.json()
         if (!res.ok || data.error) throw new Error(data.error || "Ошибка смены приоритета")
-        toast({ title: "Приоритет изменён", description: "Изменение обновлено" })
+        toast({ title: "Успешно", description: "Приоритет изменён" })
         onUpdated?.({ priority: value || priority })
       // Назначение исполнителя
       } else if (action === "assign") {
@@ -79,7 +79,7 @@ export default function ChangesAdminActions({ change, assignees, onUpdated }: { 
         })
         data = await res.json()
         if (!res.ok || data.error) throw new Error(data.error || "Ошибка назначения")
-        toast({ title: "Исполнитель назначен" })
+        toast({ title: "Успешно", description: "Исполнитель назначен" })
         const userId = value || assignee
         const user = assignees.find(u => u.id === userId)
         onUpdated?.({ assignedToId: userId, assignedTo: user ? { id: user.id, firstName: user.firstName, lastName: user.lastName, email: user.email } : undefined })
@@ -195,7 +195,7 @@ export default function ChangesAdminActions({ change, assignees, onUpdated }: { 
                 })
                 const data = await res.json()
                 if (!res.ok || data.error) throw new Error(data.error || 'Ошибка обновления')
-                toast({ title: 'Изменение обновлено' })
+                toast({ title: 'Успешно', description: 'Изменение обновлено' })
                 onUpdated?.({ title: editTitle, description: editDescription, category: editCategory })
                 setEditOpen(false)
               } catch (e: any) {
