@@ -4,17 +4,29 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Plus, RefreshCw, Info, Edit, Trash2 } from "lucide-react"
 import ITResourceForm from "./ITResourceForm"
-import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogDescription, DialogHeader, DialogFooter } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip"
 import { useToast } from "@/components/ui/use-toast"
 import { useConfirm } from "@/components/ui/confirm-dialog"
 import { useCurrentUser } from "@/hooks/use-user-context"
 
-export default function ITResourcesTable({ resources: initialResources }: { resources: any[] }) {
-  const [resources, setResources] = useState(initialResources)
+type ITResource = {
+  id: string;
+  name: string;
+  description: string;
+  owner: string;
+  source: string;
+  roles: string[];
+  note?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export default function ITResourcesTable({ resources: initialResources }: { resources: ITResource[] }) {
+  const [resources, setResources] = useState<ITResource[]>(initialResources)
   const [showCreate, setShowCreate] = useState(false)
-  const [editResource, setEditResource] = useState<any>(null)
-  const [viewResource, setViewResource] = useState<any>(null) // новое состояние для просмотра
+  const [editResource, setEditResource] = useState<ITResource | null>(null)
+  const [viewResource, setViewResource] = useState<ITResource | null>(null) // новое состояние для просмотра
   const { toast } = useToast()
   const { confirm, dialog } = useConfirm()
   const user = useCurrentUser();
@@ -32,8 +44,8 @@ export default function ITResourcesTable({ resources: initialResources }: { reso
       await fetch(`/api/it-resources/${id}`, { method: "DELETE" })
       toast({ title: "Ресурс удалён" })
       fetchResources()
-    } catch (e: any) {
-      toast({ title: "Ошибка", description: e.message, variant: "destructive" })
+    } catch (e: unknown) {
+      toast({ title: "Ошибка", description: e instanceof Error ? e.message : String(e), variant: "destructive" })
     }
   }
 
@@ -48,7 +60,7 @@ export default function ITResourcesTable({ resources: initialResources }: { reso
             <DialogDescription>Измените необходимые поля и сохраните изменения.</DialogDescription>
           </DialogHeader>
           {editResource && (
-            <ITResourceForm initial={editResource} onSuccess={() => { setEditResource(null); fetchResources() }} onCancel={() => setEditResource(null)} />
+            <ITResourceForm initial={{ ...editResource, roles: editResource.roles.join(", ") }} onSuccess={() => { setEditResource(null); fetchResources() }} onCancel={() => setEditResource(null)} />
           )}
         </DialogContent>
       </Dialog>

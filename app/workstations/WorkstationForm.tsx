@@ -3,9 +3,27 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { ChangeEvent, FormEvent } from "react"
 
-export default function WorkstationForm({ initial, onSuccess }: { initial?: any, onSuccess: () => void }) {
-  const [form, setForm] = useState({
+interface WorkstationFormState {
+  name: string;
+  description: string;
+  userId: string;
+  ip: string;
+  status: string;
+  type: string;
+  room: string;
+  department: string;
+}
+interface UserOption {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
+export default function WorkstationForm({ initial, onSuccess }: { initial?: Partial<WorkstationFormState> & { id?: string }, onSuccess: () => void }) {
+  const [form, setForm] = useState<WorkstationFormState>({
     name: initial?.name || "",
     description: initial?.description || "",
     userId: initial?.userId || "",
@@ -15,7 +33,7 @@ export default function WorkstationForm({ initial, onSuccess }: { initial?: any,
     room: initial?.room || "",
     department: initial?.department || "",
   })
-  const [users, setUsers] = useState<any[]>([])
+  const [users, setUsers] = useState<UserOption[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
@@ -23,11 +41,11 @@ export default function WorkstationForm({ initial, onSuccess }: { initial?: any,
     fetch("/api/users?role=USER").then(res => res.json()).then(data => setUsers(data.users || []))
   }, [])
 
-  const handleChange = (e: any) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }))
   }
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setLoading(true)
     setError("")
@@ -42,8 +60,8 @@ export default function WorkstationForm({ initial, onSuccess }: { initial?: any,
       })
       if (!res.ok) throw new Error("Ошибка сохранения")
       onSuccess()
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e))
     } finally {
       setLoading(false)
     }

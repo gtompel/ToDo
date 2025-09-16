@@ -11,12 +11,14 @@ import { cookies } from 'next/headers';
 
 import { useSearchParams } from 'next/navigation';
 
-function parseIntOrDefault(val: any, def: number) {
-  const n = parseInt(val, 10);
+type SearchParams = { [key: string]: string | string[] | undefined };
+
+function parseIntOrDefault(val: string | string[] | undefined, def: number) {
+  const n = parseInt(Array.isArray(val) ? val[0] : val ?? '', 10);
   return isNaN(n) ? def : n;
 }
 
-export default async function RequestsPage({ searchParams }: { searchParams: any }) {
+export default async function RequestsPage({ searchParams }: { searchParams: SearchParams }) {
   searchParams = await searchParams;
   const user = await getCurrentUser()
   const isAdmin = user && (user.role === "ADMIN" || user.role === "MANAGER")

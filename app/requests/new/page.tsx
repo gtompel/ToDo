@@ -9,16 +9,55 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ArrowLeft, ArrowRight, Upload, Check } from "lucide-react"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/components/ui/use-toast"
+
+interface TemplateField {
+  name: string;
+  type: string;
+  required?: boolean;
+  description?: string;
+  options?: string[];
+  default?: string | boolean | null;
+}
+
+interface Template {
+  id: string;
+  name: string;
+  description?: string;
+  fields: TemplateField[];
+}
+
+interface FormDataState {
+  [key: string]: string | boolean | File | null | undefined;
+  fullName?: string;
+  department?: string;
+  position?: string;
+  building?: string;
+  room?: string;
+  deviceType?: string;
+  manufacturer?: string;
+  model?: string;
+  serialNumber?: string;
+  monitorManufacturer?: string;
+  monitorModel?: string;
+  monitorSerial?: string;
+  operatingSystem?: string;
+  additionalSoftware?: string;
+  flashDrive?: string;
+  additionalInfo?: string;
+  needsEMVS?: boolean;
+  needsSKZI?: boolean;
+  needsRosatomAccess?: boolean;
+  acknowledgmentFile?: File | null;
+}
 
 export default function NewApplicationPage() {
   const router = useRouter()
   const { toast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [currentStep, setCurrentStep] = useState(1)
-  const [formData, setFormData] = useState<Record<string, any>>({
+  const [formData, setFormData] = useState<FormDataState>({
     fullName: "",
     department: "",
     position: "",
@@ -38,11 +77,11 @@ export default function NewApplicationPage() {
     needsEMVS: false,
     needsSKZI: false,
     needsRosatomAccess: false,
-    acknowledgmentFile: null as File | null,
+    acknowledgmentFile: null,
   })
 
   // Состояния для шаблонов
-  const [templates, setTemplates] = useState<any[]>([])
+  const [templates, setTemplates] = useState<Template[]>([])
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("")
   const [step, setStep] = useState<"select"|"form">("select")
   const [formErrors, setFormErrors] = useState<{[key: string]: string}>({})
@@ -60,7 +99,7 @@ export default function NewApplicationPage() {
     if (!selectedTemplateId) return
     const template = templates.find(t => t.id === selectedTemplateId)
     if (!template) return
-    const fieldValues = (Array.isArray(template.fields) ? template.fields : []).reduce((acc: Record<string, any>, f: any) => {
+    const fieldValues = (Array.isArray(template.fields) ? template.fields : []).reduce((acc: FormDataState, f: TemplateField) => {
       const isCheckbox = f?.type === 'checkbox'
       const isFile = f?.type === 'file'
       acc[f.name] = f?.default ?? (isCheckbox ? false : isFile ? null : "")
@@ -191,7 +230,7 @@ export default function NewApplicationPage() {
             <CardDescription>{selectedTemplate.description}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {selectedTemplate.fields.map((field: any) => (
+            {selectedTemplate.fields.map((field: TemplateField) => (
               <div className="space-y-2" key={field.name}>
                 <Label htmlFor={field.name} className="font-medium">
                   {field.name}{field.required && <span className="text-red-500 ml-1">*</span>}
@@ -200,7 +239,7 @@ export default function NewApplicationPage() {
                 {field.type === "text" && (
                   <Input
                     id={field.name}
-                    value={formData[field.name] ?? ""}
+                    value={String(formData[field.name] ?? "")}
                     onChange={e => handleInputChange(field.name, e.target.value)}
                     required={field.required}
                     placeholder={field.description || `Введите ${field.name.toLowerCase()}`}
@@ -212,7 +251,7 @@ export default function NewApplicationPage() {
                   <Input
                     id={field.name}
                     type="number"
-                    value={formData[field.name] ?? ""}
+                    value={String(formData[field.name] ?? "")}
                     onChange={e => handleInputChange(field.name, e.target.value)}
                     required={field.required}
                     placeholder={field.description || `Введите ${field.name.toLowerCase()}`}
@@ -224,7 +263,7 @@ export default function NewApplicationPage() {
                   <Input
                     id={field.name}
                     type="date"
-                    value={formData[field.name] ?? ""}
+                    value={String(formData[field.name] ?? "")}
                     onChange={e => handleInputChange(field.name, e.target.value)}
                     required={field.required}
                     className={formErrors[field.name] ? "border-red-500" : ""}
@@ -235,7 +274,7 @@ export default function NewApplicationPage() {
                   <Input
                     id={field.name}
                     type="email"
-                    value={formData[field.name] ?? ""}
+                    value={String(formData[field.name] ?? "")}
                     onChange={e => handleInputChange(field.name, e.target.value)}
                     required={field.required}
                     placeholder={field.description || "example@company.com"}
@@ -247,7 +286,7 @@ export default function NewApplicationPage() {
                   <Input
                     id={field.name}
                     type="password"
-                    value={formData[field.name] ?? ""}
+                    value={String(formData[field.name] ?? "")}
                     onChange={e => handleInputChange(field.name, e.target.value)}
                     required={field.required}
                     placeholder={field.description || "Введите пароль"}
@@ -259,7 +298,7 @@ export default function NewApplicationPage() {
                   <Input
                     id={field.name}
                     type="tel"
-                    value={formData[field.name] ?? ""}
+                    value={String(formData[field.name] ?? "")}
                     onChange={e => handleInputChange(field.name, e.target.value)}
                     required={field.required}
                     placeholder={field.description || "+7 (999) 123-45-67"}
@@ -281,7 +320,7 @@ export default function NewApplicationPage() {
                   <Input
                     id={field.name}
                     type="url"
-                    value={formData[field.name] ?? ""}
+                    value={String(formData[field.name] ?? "")}
                     onChange={e => handleInputChange(field.name, e.target.value)}
                     required={field.required}
                     placeholder={field.description || "https://example.com"}
@@ -293,7 +332,7 @@ export default function NewApplicationPage() {
                   <Input
                     id={field.name}
                     type="color"
-                    value={formData[field.name] ?? "#000000"}
+                    value={String(formData[field.name] ?? "#000000")}
                     onChange={e => handleInputChange(field.name, e.target.value)}
                     required={field.required}
                     className={formErrors[field.name] ? "border-red-500" : ""}
@@ -304,7 +343,7 @@ export default function NewApplicationPage() {
                   <Input
                     id={field.name}
                     type="time"
-                    value={formData[field.name] ?? ""}
+                    value={String(formData[field.name] ?? "")}
                     onChange={e => handleInputChange(field.name, e.target.value)}
                     required={field.required}
                     className={formErrors[field.name] ? "border-red-500" : ""}
@@ -318,19 +357,21 @@ export default function NewApplicationPage() {
                       type="range"
                       min="0"
                       max="100"
-                      value={formData[field.name] ?? "50"}
+                      value={String(formData[field.name] ?? "50")}
                       onChange={e => handleInputChange(field.name, e.target.value)}
                       required={field.required}
                       className={formErrors[field.name] ? "border-red-500" : ""}
                     />
-                    <div className="text-sm text-muted-foreground">Значение: {formData[field.name] || "50"}</div>
+                    <div className="text-sm text-muted-foreground">Значение: {formData[field.name] && formData[field.name] instanceof File
+      ? (formData[field.name] as File).name
+      : String(formData[field.name] ?? "50")}</div>
                   </div>
                 )}
-                
+
                 {field.type === "textarea" && (
                   <Textarea
                     id={field.name}
-                    value={formData[field.name] ?? ""}
+                    value={String(formData[field.name] ?? "")}
                     onChange={e => handleInputChange(field.name, e.target.value)}
                     required={field.required}
                     placeholder={field.description || `Введите ${field.name.toLowerCase()}`}
@@ -340,13 +381,13 @@ export default function NewApplicationPage() {
                 )}
                 
                 {field.type === "select" && (
-                  <Select value={formData[field.name] ?? ""} onValueChange={val => handleInputChange(field.name, val)}>
+                  <Select value={String(formData[field.name] ?? "")} onValueChange={val => handleInputChange(field.name, val)}>
                     <SelectTrigger className={formErrors[field.name] ? "border-red-500" : ""}>
                       <SelectValue placeholder={field.description || "Выберите вариант"} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="">Выберите вариант</SelectItem>
-                      {field.options?.map((opt: string) => (
+                      {Array.isArray(field.options) && field.options.map((opt: string) => (
                         <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                       ))}
                     </SelectContent>
@@ -366,7 +407,15 @@ export default function NewApplicationPage() {
                 )}
                 
                 {field.description && field.type !== "checkbox" && (
-                  <div className="text-xs text-muted-foreground">{field.description}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {String((() => {
+                      const val = formData[field.name];
+                      if (val instanceof File) return val.name;
+                      if (typeof val === "boolean") return val ? "Да" : val === false ? "Нет" : "";
+                      if (typeof val === "string") return val;
+                      return typeof field.description === "string" ? field.description : "";
+                    })())}
+                  </div>
                 )}
                 
                 {formErrors[field.name] && (
@@ -446,7 +495,7 @@ export default function NewApplicationPage() {
                 <Label htmlFor="fullName">ФИО *</Label>
                 <Input
                   id="fullName"
-                  value={formData.fullName}
+                  value={String(formData.fullName)}
                   onChange={(e) => handleInputChange("fullName", e.target.value)}
                   placeholder="Иванов Иван Иванович"
                 />
@@ -455,7 +504,7 @@ export default function NewApplicationPage() {
                 <Label htmlFor="department">Подразделение *</Label>
                 <Input
                   id="department"
-                  value={formData.department}
+                  value={String(formData.department)}
                   onChange={(e) => handleInputChange("department", e.target.value)}
                   placeholder="Отдел информационных технологий"
                 />
@@ -464,7 +513,7 @@ export default function NewApplicationPage() {
                 <Label htmlFor="position">Должность *</Label>
                 <Input
                   id="position"
-                  value={formData.position}
+                  value={String(formData.position)}
                   onChange={(e) => handleInputChange("position", e.target.value)}
                   placeholder="Ведущий инженер"
                 />
@@ -473,7 +522,7 @@ export default function NewApplicationPage() {
                 <Label htmlFor="building">Здание *</Label>
                 <Input
                   id="building"
-                  value={formData.building}
+                  value={String(formData.building)}
                   onChange={(e) => handleInputChange("building", e.target.value)}
                   placeholder="108"
                 />
@@ -482,7 +531,7 @@ export default function NewApplicationPage() {
                 <Label htmlFor="room">Помещение *</Label>
                 <Input
                   id="room"
-                  value={formData.room}
+                  value={String(formData.room)}
                   onChange={(e) => handleInputChange("room", e.target.value)}
                   placeholder="129Б"
                 />
@@ -513,7 +562,7 @@ export default function NewApplicationPage() {
                 <Label htmlFor="manufacturer">Производитель *</Label>
                 <Input
                   id="manufacturer"
-                  value={formData.manufacturer}
+                  value={String(formData.manufacturer)}
                   onChange={(e) => handleInputChange("manufacturer", e.target.value)}
                   placeholder="Dell, HP, Lenovo и т.д."
                 />
@@ -522,7 +571,7 @@ export default function NewApplicationPage() {
                 <Label htmlFor="model">Модель *</Label>
                 <Input
                   id="model"
-                  value={formData.model}
+                  value={String(formData.model)}
                   onChange={(e) => handleInputChange("model", e.target.value)}
                   placeholder="OptiPlex 7090"
                 />
@@ -531,7 +580,7 @@ export default function NewApplicationPage() {
                 <Label htmlFor="serialNumber">Серийный номер</Label>
                 <Input
                   id="serialNumber"
-                  value={formData.serialNumber}
+                  value={String(formData.serialNumber)}
                   onChange={(e) => handleInputChange("serialNumber", e.target.value)}
                   placeholder="ABC123456789"
                 />
@@ -544,7 +593,7 @@ export default function NewApplicationPage() {
                 <Label htmlFor="monitorManufacturer">Производитель</Label>
                 <Input
                   id="monitorManufacturer"
-                  value={formData.monitorManufacturer}
+                  value={String(formData.monitorManufacturer)}
                   onChange={(e) => handleInputChange("monitorManufacturer", e.target.value)}
                   placeholder="Samsung, LG, Dell"
                 />
@@ -553,7 +602,7 @@ export default function NewApplicationPage() {
                 <Label htmlFor="monitorModel">Модель</Label>
                 <Input
                   id="monitorModel"
-                  value={formData.monitorModel}
+                  value={String(formData.monitorModel)}
                   onChange={(e) => handleInputChange("monitorModel", e.target.value)}
                   placeholder="S24F350"
                 />
@@ -562,7 +611,7 @@ export default function NewApplicationPage() {
                 <Label htmlFor="monitorSerial">Серийный номер</Label>
                 <Input
                   id="monitorSerial"
-                  value={formData.monitorSerial}
+                  value={String(formData.monitorSerial)}
                   onChange={(e) => handleInputChange("monitorSerial", e.target.value)}
                   placeholder="MON123456"
                 />
@@ -580,7 +629,7 @@ export default function NewApplicationPage() {
                 <Label htmlFor="operatingSystem">Операционная система</Label>
                 <Input
                   id="operatingSystem"
-                  value={formData.operatingSystem}
+                  value={String(formData.operatingSystem)}
                   onChange={(e) => handleInputChange("operatingSystem", e.target.value)}
                   placeholder="Уточнить у ОИТ/ОИБ"
                 />
@@ -589,7 +638,7 @@ export default function NewApplicationPage() {
                 <Label htmlFor="additionalSoftware">Дополнительное ПО</Label>
                 <Input
                   id="additionalSoftware"
-                  value={formData.additionalSoftware}
+                  value={String(formData.additionalSoftware)}
                   onChange={(e) => handleInputChange("additionalSoftware", e.target.value)}
                   placeholder="По умолчанию типовое"
                 />
@@ -598,7 +647,7 @@ export default function NewApplicationPage() {
                 <Label htmlFor="flashDrive">Флеш-носитель (уч.№)</Label>
                 <Input
                   id="flashDrive"
-                  value={formData.flashDrive}
+                  value={String(formData.flashDrive)}
                   onChange={(e) => handleInputChange("flashDrive", e.target.value)}
                   placeholder="Если необходим"
                 />
@@ -609,7 +658,7 @@ export default function NewApplicationPage() {
               <Label htmlFor="additionalInfo">Дополнительная информация</Label>
               <Textarea
                 id="additionalInfo"
-                value={formData.additionalInfo}
+                value={String(formData.additionalInfo)}
                 onChange={(e) => handleInputChange("additionalInfo", e.target.value)}
                 placeholder="Если необходима"
                 rows={3}
@@ -772,4 +821,4 @@ export default function NewApplicationPage() {
       </div>
     </div>
   )
-} 
+}

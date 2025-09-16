@@ -1,17 +1,26 @@
 "use client"
-import { useState } from "react"
+import { useState, ChangeEvent, FormEvent } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/components/ui/use-toast"
 
-export default function ITResourceForm({ initial, onSuccess, onCancel }: { initial?: any, onSuccess: () => void, onCancel?: () => void }) {
-  const [form, setForm] = useState({
+interface ITResourceFormState {
+  name: string;
+  description: string;
+  owner: string;
+  source: string;
+  roles: string;
+  note: string;
+}
+
+export default function ITResourceForm({ initial, onSuccess, onCancel }: { initial?: Partial<ITResourceFormState> & { id?: string }, onSuccess: () => void, onCancel?: () => void }) {
+  const [form, setForm] = useState<ITResourceFormState>({
     name: initial?.name || "",
     description: initial?.description || "",
     owner: initial?.owner || "",
     source: initial?.source || "",
-    roles: initial?.roles?.join(", ") || "",
+    roles: initial?.roles || "",
     note: initial?.note || "",
   })
   const [loading, setLoading] = useState(false)
@@ -21,19 +30,19 @@ export default function ITResourceForm({ initial, onSuccess, onCancel }: { initi
 
   const requiredFields = ["name", "description", "owner", "source"]
 
-  const handleChange = (e: any) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }))
     setTouched(t => ({ ...t, [e.target.name]: true }))
   }
 
   const validate = () => {
     for (const field of requiredFields) {
-      if (!(form as Record<string, any>)[field]) return false
+      if (!form[field as keyof ITResourceFormState]) return false
     }
     return true
   }
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setTouched(t => ({ ...t, name: true, description: true, owner: true, source: true }))
     if (!validate()) {
@@ -56,9 +65,10 @@ export default function ITResourceForm({ initial, onSuccess, onCancel }: { initi
       if (!res.ok) throw new Error("Ошибка сохранения")
       toast({ title: initial ? "Ресурс обновлён" : "Ресурс создан", description: form.name, })
       onSuccess()
-    } catch (e: any) {
-      setError(e.message)
-      toast({ title: "Ошибка", description: e.message, variant: "destructive" })
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e)
+      setError(msg)
+      toast({ title: "Ошибка", description: msg, variant: "destructive" })
     } finally {
       setLoading(false)
     }

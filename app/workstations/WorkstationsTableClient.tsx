@@ -4,17 +4,31 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Plus, RefreshCw, Edit, Trash2, Info } from "lucide-react"
 import WorkstationForm from "./WorkstationForm"
-import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogDescription, DialogHeader } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader } from "@/components/ui/dialog"
 import { useToast } from "@/components/ui/use-toast"
 import { useConfirm } from "@/components/ui/confirm-dialog"
 // import Link from "next/link"
 import { useCurrentUser } from "@/hooks/use-user-context"
 
-export default function WorkstationsTable({ workstations }: { workstations: any[] }) {
+type Workstation = {
+  id: string;
+  name: string;
+  ip?: string;
+  type?: string;
+  user?: { firstName: string; lastName: string } | null;
+  room?: string;
+  department?: string;
+  description?: string;
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export default function WorkstationsTable({ workstations }: { workstations: Workstation[] }) {
   const [showCreate, setShowCreate] = useState(false)
-  const [editWorkstation, setEditWorkstation] = useState<any>(null)
-  const [viewWorkstation, setViewWorkstation] = useState<any>(null)
-  const [workstationsState, setWorkstationsState] = useState(workstations)
+  const [editWorkstation, setEditWorkstation] = useState<Workstation | null>(null)
+  const [viewWorkstation, setViewWorkstation] = useState<Workstation | null>(null)
+  const [workstationsState, setWorkstationsState] = useState<Workstation[]>(workstations)
   const { toast } = useToast()
   const { confirm, dialog } = useConfirm()
   const user = useCurrentUser();
@@ -32,8 +46,8 @@ export default function WorkstationsTable({ workstations }: { workstations: any[
       await fetch(`/api/workstations/${id}`, { method: "DELETE" })
       toast({ title: "Станция удалена" })
       fetchWorkstations()
-    } catch (e: any) {
-      toast({ title: "Ошибка", description: e.message, variant: "destructive" })
+    } catch (e: unknown) {
+      toast({ title: "Ошибка", description: e instanceof Error ? e.message : String(e), variant: "destructive" })
     }
   }
 
