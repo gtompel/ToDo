@@ -2,12 +2,12 @@
 "use server"
 
 import { prisma } from "@/lib/prisma"
+import type { Priority, RequestStatus } from "@prisma/client"
 import { revalidatePath } from "next/cache"
-import { redirect } from "next/navigation"
 import { createNotification } from "./notifications";
 
 // Получить все запросы с пагинацией
-export async function getRequests(page = 1, pageSize = 10) {
+export async function getRequests(page = 1, pageSize = 10): Promise<{ data: unknown[]; total: number }> {
   try {
     const [requests, total] = await Promise.all([
       prisma.request.findMany({
@@ -39,7 +39,6 @@ export async function getRequests(page = 1, pageSize = 10) {
     ])
     return { data: requests, total }
   } catch (error) {
-    console.error("Error fetching requests:", error)
     return { data: [], total: 0 }
   }
 }
@@ -71,81 +70,73 @@ export async function getRequest(id: string) {
 
     return request
   } catch (error) {
-    console.error("Error fetching request:", error)
     return null
   }
 }
 
 // Создать новый запрос
-export async function createRequest(formData: FormData, userId?: string) {
-  // Получение данных из формы
-  const title = formData.get("title") as string
-  const description = formData.get("description") as string
-  const priority = formData.get("priority") as string
-  const assignedToId = formData.get("assigneeId") as string
-  const acknowledgmentFile = formData.get("acknowledgmentFile") as unknown as File | null
-
-  // Проверка обязательных полей
+export async function createRequest(formData: FormData, userId?: string): Promise<{ error?: string }> {
+  const title = formData.get("title")?.toString() || ""
+  const description = formData.get("description")?.toString() || ""
+  const priority = formData.get("priority") as Priority
+  const assignedToId = formData.get("assigneeId")?.toString() || null
+  const acknowledgmentFileEntry = formData.get("acknowledgmentFile")
+  let acknowledgmentFile: string | null = null
+  if (acknowledgmentFileEntry instanceof File) {
+    acknowledgmentFile = acknowledgmentFileEntry.name
+  } else if (typeof acknowledgmentFileEntry === "string") {
+    acknowledgmentFile = acknowledgmentFileEntry
+  }
   if (!title || !description || !userId) {
     return { error: "Заполните все обязательные поля" }
   }
-
   try {
-    // Создание запроса в базе данных
     await prisma.request.create({
       data: {
         title,
         description,
-        priority: priority as any,
-        createdById: userId,
-        assignedToId: assignedToId || null,
-        // Если пришла строка URL (когда файл уже загружен в /api/requests)
-        acknowledgmentFile: (acknowledgmentFile && typeof (acknowledgmentFile as any).name === 'string') ? (acknowledgmentFile as any).name : (typeof (formData.get('acknowledgmentFile') as any) === 'string' ? String(formData.get('acknowledgmentFile')) : null),
+        priority,
+        createdById: userId!,
+        assignedToId,
+        acknowledgmentFile,
       },
     })
-
-    revalidatePath("/requests")
-    // redirect("/requests") — удалено, редирект делать на клиенте
+    return {};
   } catch (error) {
-    console.error("Error creating request:", error)
     return { error: "Ошибка при создании запроса" }
   }
 }
 
 // Обновить запрос
-export async function updateRequest(id: string, formData: FormData) {
-  const title = formData.get("title") as string
-  const description = formData.get("description") as string
-  const status = formData.get("status") as string
-  const priority = formData.get("priority") as string
-  const assignedToId = formData.get("assigneeId") as string
-
+export async function updateRequest(id: string, formData: FormData): Promise<{ error?: string }> {
+  const title = formData.get("title")?.toString() || ""
+  const description = formData.get("description")?.toString() || ""
+  const status = formData.get("status") as RequestStatus
+  const priority = formData.get("priority") as Priority
+  const assignedToId = formData.get("assigneeId")?.toString() || null
   try {
     await prisma.request.update({
       where: { id },
       data: {
         title,
         description,
-        status: status as any,
-        priority: priority as any,
-        assignedToId: assignedToId || null,
+        status,
+        priority,
+        assignedToId,
       },
     })
-
-    revalidatePath("/requests")
-    revalidatePath(`/requests/${id}`)
+    return {};
   } catch (error) {
-    console.error("Error updating request:", error)
     return { error: "Ошибка при обновлении запроса" }
   }
 }
 
 // Сменить статус запроса
-export async function updateRequestStatus(id: string, status: string) {
+export async function updateRequestStatus(id: string, status: RequestStatus): Promise<{ success?: true; error?: string }> {
   try {
     const request = await prisma.request.update({
       where: { id },
-      data: { status: status as any },
+      data: { status },
       include: { assignedTo: true },
     });
     if (request.assignedTo) {
@@ -158,22 +149,20 @@ export async function updateRequestStatus(id: string, status: string) {
     revalidatePath("/requests");
     return { success: true };
   } catch (error) {
-    console.error("Error updating request status:", error);
     return { error: "Ошибка при смене статуса" };
   }
 }
 
 // Сменить приоритет запроса
-export async function updateRequestPriority(id: string, priority: string) {
+export async function updateRequestPriority(id: string, priority: Priority): Promise<{ success?: true; error?: string }> {
   try {
-    const request = await prisma.request.update({
+    await prisma.request.update({
       where: { id },
-      data: { priority: priority as any },
+      data: { priority },
     });
     revalidatePath("/requests");
     return { success: true };
   } catch (error) {
-    console.error("Error updating request priority:", error);
     return { error: "Ошибка при смене приоритета" };
   }
 }
@@ -188,7 +177,6 @@ export async function assignRequestToUser(id: string, userId: string) {
     revalidatePath("/requests")
     return { success: true }
   } catch (error) {
-    console.error("Error assigning request:", error)
     return { error: "Ошибка при назначении сотрудника" }
   }
 }
@@ -199,7 +187,7 @@ export async function deleteRequestById(id: string) {
   try {
     await prisma.request.delete({ where: { id } })
     return { success: true }
-  } catch (e: any) {
-    return { error: e.message || 'Ошибка удаления запроса' }
+  } catch (e: unknown) {
+    return { error: e instanceof Error ? e.message : 'Ошибка удаления запроса' }
   }
 }

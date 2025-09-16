@@ -118,7 +118,6 @@ export default function NewApplicationPage() {
         return
       }
              // Редирект на страницу запросов с параметром успеха
-        console.log('Redirecting to requests with success params');
         router.push('/requests?success=true&message=Запрос успешно создан')
     } catch (e) {
       toast({

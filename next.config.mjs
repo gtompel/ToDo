@@ -7,7 +7,7 @@ const nextConfig = {
     ignoreBuildErrors: false,
   },
   images: {
-    unoptimized: process.env.NODE_ENV !== 'production',
+    unoptimized: true,
   },
   allowedDevOrigins: [
     "http://localhost:3000",
@@ -48,7 +48,7 @@ const nextConfig = {
     })
     return headers
   },
-  webpack: (config, { isServer }) => {
+  webpack: (config, { _isServer }) => {
     // dtrace-provider — опциональная зависимость ldapjs; отключаем её, чтобы не падала сборка
     config.resolve = config.resolve || {}
     config.resolve.alias = {
