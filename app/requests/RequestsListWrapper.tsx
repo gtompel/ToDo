@@ -9,7 +9,16 @@ const RequestsListClient = dynamic(() => import('./RequestsListClient'), {
   loading: () => <div className="flex items-center justify-center h-64"><div className="text-center"><span className="animate-spin mr-2">⏳</span>Загрузка таблицы заявок...</div></div>,
 });
 
-export default function RequestsListWrapper({ requests, isAdmin, assignableUsers, total, page, pageSize }: any) {
+type UserLite = { id: string; firstName: string; lastName: string; email: string }
+
+export default function RequestsListWrapper({ requests, isAdmin, assignableUsers, total, page, pageSize }: {
+  requests: any[];
+  isAdmin: boolean;
+  assignableUsers: UserLite[];
+  total: number;
+  page: number;
+  pageSize: number;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pageCount = Math.ceil(total / pageSize);
@@ -37,10 +46,10 @@ export default function RequestsListWrapper({ requests, isAdmin, assignableUsers
 
   return (
     <div>
-      <RequestsListClient 
-        requests={requests} 
-        isAdmin={isAdmin} 
-        assignableUsers={assignableUsers} 
+      <RequestsListClient
+        requests={requests}
+        isAdmin={isAdmin}
+        assignableUsers={assignableUsers}
         total={total}
         page={page}
         pageSize={pageSize}

@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
       status: res.status,
       headers: { 'Content-Type': res.headers.get('content-type') || 'application/json' },
     });
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.message || String(e) }, { status: 500 });
+  } catch (e: unknown) {
+    return NextResponse.json({ error: e instanceof Error ? e.message : String(e) }, { status: 500 });
   }
 }

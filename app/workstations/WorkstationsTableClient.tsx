@@ -13,15 +13,16 @@ import { useCurrentUser } from "@/hooks/use-user-context"
 type Workstation = {
   id: string;
   name: string;
-  ip?: string;
-  type?: string;
+  ip?: string | null;
+  type?: string | null;
   user?: { firstName: string; lastName: string } | null;
-  room?: string;
-  department?: string;
-  description?: string;
-  status?: string;
-  createdAt?: string;
-  updatedAt?: string;
+  userId?: string | null;
+  room?: string | null;
+  department?: string | null;
+  description?: string | null;
+  status?: string | null;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
 };
 
 export default function WorkstationsTable({ workstations }: { workstations: Workstation[] }) {
@@ -116,7 +117,16 @@ export default function WorkstationsTable({ workstations }: { workstations: Work
                 <DialogDescription>Измените необходимые поля и сохраните изменения.</DialogDescription>
               </DialogHeader>
               {editWorkstation && (
-                <WorkstationForm initial={editWorkstation} onSuccess={() => { setEditWorkstation(null); fetchWorkstations() }} />
+                <WorkstationForm initial={{
+                  ...editWorkstation,
+                  description: editWorkstation?.description ?? "",
+                  userId: editWorkstation?.userId ?? "",
+                  ip: editWorkstation?.ip ?? "",
+                  status: editWorkstation?.status ?? "active",
+                  type: editWorkstation?.type ?? "",
+                  room: editWorkstation?.room ?? "",
+                  department: editWorkstation?.department ?? "",
+                }} onSuccess={() => { setEditWorkstation(null); fetchWorkstations() }} />
               )}
             </DialogContent>
           </Dialog>

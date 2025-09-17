@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/auth"
 
 // Получить статью по id
-export async function GET(req: Request, context: any) {
+export async function GET(req: Request, context: { params: { id: string } }) {
   const { id } = context?.params || {}
   const article = await prisma.article.findUnique({
     where: { id },
@@ -17,7 +17,7 @@ export async function GET(req: Request, context: any) {
 // GET_related вынесен в app/api/articles/[id]/related/route.ts
 
 // PATCH: обновить статью или оценку полезности
-export async function PATCH(req: Request, context: any) {
+export async function PATCH(req: Request, context: { params: { id: string } }) {
   const { id } = context?.params || {}
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: "Требуется авторизация" }, { status: 401 })
@@ -56,7 +56,7 @@ export async function PATCH(req: Request, context: any) {
 }
 
 // Удалить статью (только автор/админ)
-export async function DELETE(req: Request, context: any) {
+export async function DELETE(req: Request, context: { params: { id: string } }) {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: "Требуется авторизация" }, { status: 401 })
   const { id } = context?.params || {}

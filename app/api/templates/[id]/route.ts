@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/auth"
 
 // Получить шаблон по id
-export async function GET(req: Request, ctx: any) {
+export async function GET(req: Request, ctx: { params: { id: string } }) {
   const { id } = ctx?.params || {}
   const template = await prisma.template.findUnique({ where: { id } })
   if (!template) return NextResponse.json({ error: "Шаблон не найден" }, { status: 404 })
@@ -11,7 +11,7 @@ export async function GET(req: Request, ctx: any) {
 }
 
 // Обновить шаблон по id (только для админа)
-export async function PUT(req: Request, ctx: any) {
+export async function PUT(req: Request, ctx: { params: { id: string } }) {
   const user = await getCurrentUser()
   if (!user || user.role !== "ADMIN") {
     return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 })
@@ -27,7 +27,7 @@ export async function PUT(req: Request, ctx: any) {
 }
 
 // Удалить шаблон по id (только для админа)
-export async function DELETE(req: Request, ctx: any) {
+export async function DELETE(req: Request, ctx: { params: { id: string } }) {
   const user = await getCurrentUser()
   if (!user || user.role !== "ADMIN") {
     return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 })

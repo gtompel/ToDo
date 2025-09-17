@@ -142,6 +142,21 @@ html.rosatom body {
   --muted-foreground: 221 100% 20%;
 }
 
+@media print {
+  /* Повтор заголовков таблиц на каждой странице */
+  table { page-break-inside: auto; border-collapse: collapse; width: 100%; }
+  thead { display: table-header-group; }
+  tfoot { display: table-footer-group; }
+  tr, img { page-break-inside: avoid; }
+  th, td { padding: 4px 8px; }
+
+  /* Убираем тёмные темы для печати, делаем фон белым, текст чёрным */
+  body { background: #fff !important; color: #000 !important; }
+
+  /* Скрыть ненужные интерактивные элементы при печати */
+  .no-print, button, [role="button"], .shadcn-dialog, .shadcn-tooltip { display: none !important; }
+}
+
 @layer base {
   * {
     @apply border-border;

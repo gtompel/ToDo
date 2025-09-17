@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
-export async function GET(req: Request, context: any) {
+export async function GET(req: Request, context: { params: { id: string } }) {
   const { id } = context?.params || {}
   // Получаем текущую статью
   const article = await prisma.article.findUnique({ where: { id } })
@@ -11,15 +11,11 @@ export async function GET(req: Request, context: any) {
   const related = await prisma.article.findMany({
     where: {
       id: { not: id },
+      isPublished: true,
       tags: { hasSome: article.tags },
-      status: "published",
     },
-    select: {
-      id: true,
-      title: true,
-      description: true,
-      tags: true,
-    },
+    select: { id: true, title: true, description: true, tags: true },
+    take: 10,
   })
   return NextResponse.json({ articles: related })
 } 

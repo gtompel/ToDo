@@ -3,13 +3,33 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import ChangesListClient from './ChangesListClient';
 
-export default function ChangesListWrapper({ isAdmin, assignees }: { isAdmin: boolean, assignees: any[] }) {
+type Assignee = {
+  id: string | number;
+  name: string;
+  // Добавьте другие поля, если они есть в объекте assignee
+};
+
+export default function ChangesListWrapper({
+  isAdmin,
+  assignees,
+}: {
+  isAdmin: boolean;
+  assignees: Assignee[];
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const page = parseInt(searchParams.get('page') || '1', 10);
+
+
+  type Change = {
+    // Примерные поля, заменить на актуальные если известны
+    id: string | number;
+    [key: string]: unknown;
+  };
+
   const pageSize = parseInt(searchParams.get('pageSize') || '10', 10);
 
-  const [changes, setChanges] = useState<any[]>([]);
+  const [changes, setChanges] = useState<Change[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
 

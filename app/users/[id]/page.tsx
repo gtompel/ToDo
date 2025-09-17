@@ -1,43 +1,68 @@
 "use client"
+
+import React, { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
   ArrowLeft,
   Edit,
-  Mail,
-  Phone,
-  Building,
-  Calendar,
   Shield,
-  Activity,
   Clock,
   UserCheck,
   UserX,
   Settings,
 } from "lucide-react"
 import Link from "next/link"
-import React, { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
-import { useState as useReactState } from "react"
-import { UserProfileCard } from "@/components/user-profile-card";
-import { UserActivityCard } from "@/components/user-activity-card";
+import { UserProfileCard } from "@/components/user-profile-card"
+import { UserActivityCard } from "@/components/user-activity-card"
 import { useCurrentUser } from "@/hooks/use-user-context"
+
+interface ActivityLogItem {
+  id: string
+  action: string
+  status: "success" | "error" | "warning" | string
+  timestamp?: string
+  ip?: string
+}
+
+interface AssignedItem {
+  id: string
+  title: string
+  priority: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | string
+  status: string
+}
+
+interface UserView {
+  id: string
+  email: string
+  firstName: string
+  lastName: string
+  middleName?: string | null
+  role: string
+  status: string
+  permissions?: string[]
+  manager?: string
+  assignedIncidents?: AssignedItem[]
+  assignedRequests?: AssignedItem[]
+}
 
 export default function UserProfilePage() {
   const params = useParams<{ id: string }>()
   const id = params.id
-  const [user, setUser] = useState<any>(null)
+
+  const [user, setUser] = useState<UserView | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
-  const [actionLoading, setActionLoading] = useReactState(false)
-  const [actionError, setActionError] = useReactState("")
-  const [actionSuccess, setActionSuccess] = useReactState("")
-  const [activityLog, setActivityLog] = useState<any[]>([])
-  const currentUser = useCurrentUser();
+  const [actionLoading, setActionLoading] = useState(false)
+  const [actionError, setActionError] = useState("")
+  const [actionSuccess, setActionSuccess] = useState("")
+  const [activityLog, setActivityLog] = useState<ActivityLogItem[]>([])
+  const currentUser = useCurrentUser()
 
   useEffect(() => {
     async function loadUser() {
@@ -46,15 +71,15 @@ export default function UserProfilePage() {
       try {
         const res = await fetch(`/api/users/${id}`)
         if (!res.ok) throw new Error("Ошибка загрузки пользователя")
-        const data = await res.json()
+        const data: UserView = await res.json()
         setUser(data)
-      } catch (e: any) {
-        setError(e.message || "Ошибка")
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : "Ошибка")
       } finally {
         setLoading(false)
       }
     }
-    loadUser()
+    if (id) loadUser()
   }, [id])
 
   useEffect(() => {
@@ -63,9 +88,11 @@ export default function UserProfilePage() {
         const res = await fetch(`/api/users/${id}/activity`)
         if (res.ok) {
           const data = await res.json()
-          setActivityLog(data.logs || [])
+          setActivityLog((data.logs as ActivityLogItem[]) || [])
         }
-      } catch {}
+      } catch {
+        // ignore
+      }
     }
     if (id) loadActivity()
   }, [id])
@@ -74,7 +101,9 @@ export default function UserProfilePage() {
     setActionLoading(true)
     setActionError("")
     setActionSuccess("")
-    let body: any = { id, action }
+
+    const body: Record<string, unknown> = { id, action }
+
     if (action === "reset-password") {
       const newPassword = prompt("Введите новый пароль для пользователя:")
       if (!newPassword) {
@@ -83,6 +112,7 @@ export default function UserProfilePage() {
       }
       body.newPassword = newPassword
     }
+
     try {
       const res = await fetch("/api/users", {
         method: "PATCH",
@@ -92,14 +122,15 @@ export default function UserProfilePage() {
       const data = await res.json()
       if (!res.ok || data.error) throw new Error(data.error || "Ошибка операции")
       setActionSuccess("Операция выполнена успешно")
+
       // обновить пользователя после действия
       const userRes = await fetch(`/api/users/${id}`)
-      if (userRes.ok) setUser(await userRes.json())
-    } catch (e: any) {
-      setActionError(e.message || "Ошибка операции")
+      if (userRes.ok) setUser((await userRes.json()) as UserView)
+    } catch (e: unknown) {
+      setActionError(e instanceof Error ? e.message : "Ошибка операции")
     } finally {
       setActionLoading(false)
-      setTimeout(() => setActionSuccess("") , 2000)
+      setTimeout(() => setActionSuccess(""), 2000)
     }
   }
 
@@ -107,25 +138,8 @@ export default function UserProfilePage() {
   if (error) return <div className="p-8 text-center text-red-500">{error}</div>
   if (!user) return <div className="p-8 text-center text-muted-foreground">Пользователь не найден</div>
 
-  // Формируем ФИО и инициалы
-  const fullName = [user.lastName, user.firstName, user.middleName].filter(Boolean).join(" ")
-  const initials = [user.lastName, user.firstName, user.middleName].filter(Boolean).map((n: string) => n[0]).join("")
-
-  const assignedIncidents = user.assignedIncidents || [];
-  const assignedRequests = user.assignedRequests || [];
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Активен":
-        return "bg-green-100 text-green-800"
-      case "Заблокирован":
-        return "bg-red-100 text-red-800"
-      case "Неактивен":
-        return "bg-gray-100 text-gray-800"
-      default:
-        return "bg-muted text-foreground"
-    }
-  }
+  const assignedIncidents = user.assignedIncidents || []
+  const assignedRequests = user.assignedRequests || []
 
   const getActivityStatusColor = (status: string) => {
     switch (status) {
@@ -142,7 +156,6 @@ export default function UserProfilePage() {
 
   return (
     <div className="space-y-6">
-      {/* Верхняя панель управления профилем */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
           <Link href="/users">
@@ -154,20 +167,19 @@ export default function UserProfilePage() {
           <p className="text-muted-foreground">Детальная информация о пользователе</p>
         </div>
         <div className="flex gap-2">
-          {/* Кнопки управления пользователем */}
           {currentUser?.role === "ADMIN" && user.status === "active" ? (
-            <Button variant="outline" disabled={actionLoading} onClick={() => handleUserAction("block")}> 
+            <Button variant="outline" disabled={actionLoading} onClick={() => handleUserAction("block")}>
               <UserX className="w-4 h-4 mr-2" />
               Заблокировать
             </Button>
-          ) : currentUser?.role === "ADMIN" && (
-            <Button variant="outline" disabled={actionLoading} onClick={() => handleUserAction("activate")}> 
+          ) : currentUser?.role === "ADMIN" ? (
+            <Button variant="outline" disabled={actionLoading} onClick={() => handleUserAction("activate")}>
               <UserCheck className="w-4 h-4 mr-2" />
               Активировать
             </Button>
-          )}
+          ) : null}
           {currentUser?.role === "ADMIN" && (
-            <Button variant="outline" disabled={actionLoading} onClick={() => handleUserAction("reset-password")}> 
+            <Button variant="outline" disabled={actionLoading} onClick={() => handleUserAction("reset-password")}>
               <Settings className="w-4 h-4 mr-2" />
               Сбросить пароль
             </Button>
@@ -182,17 +194,17 @@ export default function UserProfilePage() {
       </div>
 
       {(actionError || actionSuccess) && (
-        <div className={"text-sm " + (actionError ? "text-red-500" : "text-green-600")}>{actionError || actionSuccess}</div>
+        <div className={"text-sm " + (actionError ? "text-red-500" : "text-green-600")}>
+          {actionError || actionSuccess}
+        </div>
       )}
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Основная информация о пользователе */}
         <div className="lg:col-span-1 space-y-6">
           <UserProfileCard user={user} />
-          {/* Активность пользователя */}
           <UserActivityCard user={user} />
         </div>
-        {/* Остальные секции профиля (активности, назначенные задачи и т.д.) */}
+
         <div className="lg:col-span-2">
           <Tabs defaultValue="permissions" className="space-y-4">
             <TabsList>
@@ -222,8 +234,8 @@ export default function UserProfilePage() {
                     <h4 className="font-medium mb-3">Разрешения</h4>
                     <div className="grid gap-2 md:grid-cols-2">
                       {Array.isArray(user.permissions) && user.permissions.length > 0 ? (
-                        user.permissions.map((permission: string, index: number) => (
-                          <div key={index} className="flex items-center gap-2 p-2 border rounded">
+                        user.permissions.map((permission: string) => (
+                          <div key={permission} className="flex items-center gap-2 p-2 border rounded">
                             <div className="w-2 h-2 bg-green-500 rounded-full" />
                             <span className="text-sm">{permission}</span>
                           </div>
@@ -257,7 +269,7 @@ export default function UserProfilePage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {assignedIncidents.map((item: any, index: number) => (
+                    {assignedIncidents.map((item: AssignedItem) => (
                       <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg">
                         <div className="flex items-center gap-3">
                           <Badge variant="outline" className="text-xs">INC</Badge>
@@ -267,20 +279,23 @@ export default function UserProfilePage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge className={
-                            item.priority === "HIGH"
-                              ? "bg-red-100 text-red-800"
-                              : item.priority === "MEDIUM"
+                          <Badge
+                            className={
+                              item.priority === "HIGH"
+                                ? "bg-red-100 text-red-800"
+                                : item.priority === "MEDIUM"
                                 ? "bg-yellow-100 text-yellow-800"
                                 : "bg-green-100 text-green-800"
-                          }>
+                            }
+                          >
                             {item.priority === "HIGH" ? "Высокий" : item.priority === "MEDIUM" ? "Средний" : "Низкий"}
                           </Badge>
                           <Badge variant="outline">{item.status}</Badge>
                         </div>
                       </div>
                     ))}
-                    {assignedRequests.map((item: any, index: number) => (
+
+                    {assignedRequests.map((item: AssignedItem) => (
                       <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg">
                         <div className="flex items-center gap-3">
                           <Badge variant="outline" className="text-xs">REQ</Badge>
@@ -290,19 +305,22 @@ export default function UserProfilePage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge className={
-                            item.priority === "HIGH"
-                              ? "bg-red-100 text-red-800"
-                              : item.priority === "MEDIUM"
+                          <Badge
+                            className={
+                              item.priority === "HIGH"
+                                ? "bg-red-100 text-red-800"
+                                : item.priority === "MEDIUM"
                                 ? "bg-yellow-100 text-yellow-800"
                                 : "bg-green-100 text-green-800"
-                          }>
+                            }
+                          >
                             {item.priority === "HIGH" ? "Высокий" : item.priority === "MEDIUM" ? "Средний" : "Низкий"}
                           </Badge>
                           <Badge variant="outline">{item.status}</Badge>
                         </div>
                       </div>
                     ))}
+
                     {assignedIncidents.length === 0 && assignedRequests.length === 0 && (
                       <div className="text-muted-foreground text-sm">Нет назначенных задач</div>
                     )}

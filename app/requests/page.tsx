@@ -7,9 +7,8 @@ import { getAssignableUsers } from "@/lib/actions/users"
 import RequestsListWrapper from './RequestsListWrapper'
 
 import { getRequests } from '@/lib/actions/requests';
-import { cookies } from 'next/headers';
 
-import { useSearchParams } from 'next/navigation';
+
 
 type SearchParams = { [key: string]: string | string[] | undefined };
 
@@ -27,6 +26,12 @@ export default async function RequestsPage({ searchParams }: { searchParams: Sea
   const pageSize = parseIntOrDefault(searchParams?.pageSize, 10);
 
   const { data: requests, total } = await getRequests(page, pageSize);
+  type MinimalRequest = { category?: string | null; acknowledgmentFile?: string | null } & Record<string, unknown>
+  const normalized = (requests as MinimalRequest[]).map((r) => ({
+    ...r,
+    category: r.category ?? "",
+    acknowledgmentFile: r.acknowledgmentFile ?? "",
+  }))
   const assignableUsers = isAdmin ? await getAssignableUsers() : [];
 
   return (
@@ -44,9 +49,9 @@ export default async function RequestsPage({ searchParams }: { searchParams: Sea
         </Button>
       </div>
       <RequestsListWrapper 
-        requests={requests} 
+        requests={normalized} 
         isAdmin={isAdmin} 
-        assignableUsers={assignableUsers} 
+        assignableUsers={assignableUsers}
         total={total}
         page={page}
         pageSize={pageSize}

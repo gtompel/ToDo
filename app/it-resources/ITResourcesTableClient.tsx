@@ -17,9 +17,9 @@ type ITResource = {
   owner: string;
   source: string;
   roles: string[];
-  note?: string;
-  createdAt?: string;
-  updatedAt?: string;
+  note?: string | null;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
 };
 
 export default function ITResourcesTable({ resources: initialResources }: { resources: ITResource[] }) {
@@ -60,7 +60,7 @@ export default function ITResourcesTable({ resources: initialResources }: { reso
             <DialogDescription>Измените необходимые поля и сохраните изменения.</DialogDescription>
           </DialogHeader>
           {editResource && (
-            <ITResourceForm initial={{ ...editResource, roles: editResource.roles.join(", ") }} onSuccess={() => { setEditResource(null); fetchResources() }} onCancel={() => setEditResource(null)} />
+            <ITResourceForm initial={{ ...editResource, roles: editResource.roles.join(", "), note: editResource.note ?? "" }} onSuccess={() => { setEditResource(null); fetchResources() }} onCancel={() => setEditResource(null)} />
           )}
         </DialogContent>
       </Dialog>
