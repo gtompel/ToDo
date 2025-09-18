@@ -10,9 +10,9 @@ const nextConfig = {
     unoptimized: true,
   },
   allowedDevOrigins: [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://172.16.10.245:3000"
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+    "http://172.16.10.245:3001"
   ],
   async headers() {
     const isProd = process.env.NODE_ENV === 'production'

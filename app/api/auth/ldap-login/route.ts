@@ -119,7 +119,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   try {
     const origin = req.headers.get('origin') ?? ''
     const host = req.headers.get('host') ?? ''
-    const allowedEnv = (process.env.ALLOWED_ORIGINS ?? '')
+    const allowedEnv = (process.env.ALLOWED_ORIGIN ?? '')
       .split(',')
       .map(s => s.trim())
       .filter(Boolean)
@@ -305,17 +305,18 @@ export async function POST(req: NextRequest): Promise<Response> {
         diagnostics.steps.push({ step: 'loginLog', userId: user.id, date: new Date().toISOString() })
 
         const token = await createToken(user.id)
-        diagnostics.steps.push({ step: 'sessionCreated' })
+        const isHttps =
+          (req.headers.get('x-forwarded-proto') ?? '').toLowerCase() === 'https' ||
+          (req.headers.get('origin') ?? '').toLowerCase().startsWith('https://')
 
         const response = NextResponse.json({ success: true, diagnostics })
         response.cookies.set('auth-token', token, {
           httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
+          secure: isHttps,
           sameSite: 'lax',
           maxAge: 60 * 60 * 24 * 7,
-          path: '/'
+          path: '/',
         })
-
         return resolve(response)
       })
     })

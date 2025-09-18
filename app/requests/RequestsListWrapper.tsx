@@ -11,14 +11,18 @@ const RequestsListClient = dynamic(() => import('./RequestsListClient'), {
 
 type UserLite = { id: string; firstName: string; lastName: string; email: string }
 
-export default function RequestsListWrapper({ requests, isAdmin, assignableUsers, total, page, pageSize }: {
-  requests: any[];
+type RequestListItem = { id: string } & Record<string, unknown>
+
+type RequestsListWrapperProps = {
+  requests: RequestListItem[];
   isAdmin: boolean;
   assignableUsers: UserLite[];
   total: number;
   page: number;
   pageSize: number;
-}) {
+}
+
+export default function RequestsListWrapper({ requests, isAdmin, assignableUsers, total, page, pageSize }: RequestsListWrapperProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pageCount = Math.ceil(total / pageSize);

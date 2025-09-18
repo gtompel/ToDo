@@ -2,12 +2,15 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 
-export default async function RelatedArticlesPage(props: any) {
-  const { id } = props?.params || {}
-  const baseUrl = process.env.BASE_URL || "http://localhost:3000"
+type PageProps = { params: { id: string } }
+type RelatedArticle = { id: string; title: string; description?: string; tags: string[] }
+
+export default async function RelatedArticlesPage(props: PageProps) {
+  const { id } = props?.params || ({} as { id: string })
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || ""
   const res = await fetch(`${baseUrl}/api/articles/${id}/related`, { cache: "no-store" })
   const data = await res.json()
-  const related = data.articles || []
+  const related: RelatedArticle[] = Array.isArray(data.articles) ? data.articles : []
 
   return (
     <div className="space-y-6">
@@ -16,7 +19,7 @@ export default async function RelatedArticlesPage(props: any) {
         <div className="text-muted-foreground">Нет связанных статей</div>
       ) : (
         <div className="grid gap-4">
-          {related.map((article: any) => (
+          {related.map((article) => (
             <Card key={article.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-4">
                 <Link href={`/knowledge-base/${article.id}`} className="font-medium hover:text-primary">
@@ -24,7 +27,7 @@ export default async function RelatedArticlesPage(props: any) {
                 </Link>
                 <div className="text-muted-foreground text-xs mb-2 line-clamp-2">{article.description}</div>
                 <div className="flex flex-wrap gap-1">
-                  {article.tags.map((tag: string) => (
+                  {article.tags.map((tag) => (
                     <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
                   ))}
                 </div>

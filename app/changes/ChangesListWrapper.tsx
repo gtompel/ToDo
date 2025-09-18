@@ -5,7 +5,10 @@ import ChangesListClient from './ChangesListClient';
 
 type Assignee = {
   id: string | number;
-  name: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  avatar?: string
   // Добавьте другие поля, если они есть в объекте assignee
 };
 

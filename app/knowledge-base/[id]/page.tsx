@@ -2,7 +2,7 @@ import ArticlePageClient from "./ArticlePageClient"
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const baseUrl = process.env.BASE_URL || "http://localhost:3000"
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || ""
   // Инкремент просмотров
   await fetch(`${baseUrl}/api/articles/${id}`, {
     method: 'PATCH',

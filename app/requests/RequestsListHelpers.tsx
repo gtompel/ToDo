@@ -42,7 +42,7 @@ export function getPriorityBadge(priority: string) {
 }
 
 export function renderRequestDetails(description: string) {
-  let data: any = null
+  let data: unknown = null
   try {
     data = JSON.parse(description)
   } catch {
@@ -52,6 +52,8 @@ export function renderRequestDetails(description: string) {
   if (!data || typeof data !== 'object') {
     return <p className="text-gray-700 mb-4">{String(description)}</p>
   }
+
+  const obj = data as Record<string, unknown>
 
   const labelMap: Record<string, string> = {
     fullName: 'ФИО',
@@ -73,16 +75,18 @@ export function renderRequestDetails(description: string) {
     needsEMVS: 'Нужен ЭМВС',
     needsSKZI: 'Нужно СКЗИ',
     needsRosatomAccess: 'Доступ Росатом',
-    // acknowledgmentFile выводим в блоке "Вложения", поэтому здесь не показываем
     url: 'Ссылка на ресурс',
   }
 
-  const entries = Object.entries(data).filter(([k, v]) => {
+  const entries = Object.entries(obj).filter(([k, v]) => {
     if (k === 'attachments' || k === 'acknowledgmentFile') return false
     return v !== undefined && v !== null && v !== ""
   })
 
   if (entries.length === 0) return null
+
+  const building = obj['building'] as string | undefined
+  const room = obj['room'] as string | undefined
 
   return (
     <div className="mb-4">
@@ -95,11 +99,7 @@ export function renderRequestDetails(description: string) {
               )
             }
             if (key === 'building' || key === 'room') {
-              // building/room будут показаны отдельно, если оба присутствуют
               return null
-            }
-            if ('building' in data && 'room' in data && key === 'deviceType') {
-              // отдельной логики не нужно; оставлено для совместимости
             }
             if (key === 'url') {
               return (
@@ -110,8 +110,8 @@ export function renderRequestDetails(description: string) {
               <tr key={key}><td className="font-medium pr-2">{labelMap[key] || key}:</td><td>{String(value)}</td></tr>
             )
           })}
-          {data.building || data.room ? (
-            <tr key="buildingRoom"><td className="font-medium pr-2">Здание/помещение:</td><td>{[data.building, data.room].filter(Boolean).join(' / ')}</td></tr>
+          {building || room ? (
+            <tr key="buildingRoom"><td className="font-medium pr-2">Здание/помещение:</td><td>{[building, room].filter(Boolean).join(' / ')}</td></tr>
           ) : null}
         </tbody>
       </table>

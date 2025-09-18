@@ -3,12 +3,28 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Plus, GitBranch, ChevronDown } from "lucide-react"
+import { Plus, GitBranch } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/auth"
 import ChangesAdminActions from "./ChangesAdminActions"
 import { getAssignableUsers } from "@/lib/actions/users"
 import ChangesListWrapper from './ChangesListWrapper';
+
+type UserLite = { id: string; firstName: string; lastName: string; email: string }
+
+type Change = {
+  id: string
+  title: string
+  description: string
+  status: string
+  priority: string
+  category: string | null
+  createdAt: string | Date
+  scheduledAt: string | Date | null
+  createdBy: { firstName?: string | null; lastName?: string | null } | null
+  assignedTo: { firstName?: string | null; lastName?: string | null } | null
+  assignedToId?: string | null
+}
 
 // Получение всех изменений из базы данных
 async function getChanges() {
@@ -67,10 +83,9 @@ function getCardClassByStatus(status: string) {
 }
 
 // Компонент списка изменений
-async function ChangesList({ isAdmin, assignees }: { isAdmin: boolean, assignees: any[] }) {
+export async function ChangesList({ isAdmin, assignees }: { isAdmin: boolean; assignees: UserLite[] }) {
   const changes = await getChanges()
 
-  // Если изменений нет, показываем заглушку
   if (changes.length === 0) {
     return (
       <Card>
@@ -89,10 +104,9 @@ async function ChangesList({ isAdmin, assignees }: { isAdmin: boolean, assignees
     )
   }
 
-  // Отображаем список изменений
   return (
     <div className="space-y-4">
-      {changes.map((change: any) => (
+      {changes.map((change: Change) => (
         <Card key={change.id} className={getCardClassByStatus(change.status)}>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -123,7 +137,6 @@ async function ChangesList({ isAdmin, assignees }: { isAdmin: boolean, assignees
                 <span className="font-medium">Тип:</span> {change.category || "-"}
               </div>
             </div>
-            {/* Административные действия доступны только админу */}
             {isAdmin && <ChangesAdminActions change={change} assignees={assignees} />}
           </CardContent>
         </Card>

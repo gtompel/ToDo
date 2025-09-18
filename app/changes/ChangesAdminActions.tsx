@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition, useRef } from "react"
+import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { toast } from "@/components/ui/use-toast"
 import { fetchWithTimeout } from "@/lib/utils"
@@ -26,10 +26,27 @@ const PRIORITY_OPTIONS = [
   { value: "LOW", label: "Низкий" },
 ]
 
+type UserLite = { id: string; firstName: string; lastName: string; email: string }
+
+type Change = {
+  id: string
+  title: string
+  description: string
+  status: string
+  priority: string
+  category: string | null
+  assignedToId?: string | null
+}
+
+type ChangesAdminActionsProps = {
+  change: Change
+  assignees: UserLite[]
+  onUpdated?: (patch: Partial<Change> & { assignedTo?: UserLite }) => void
+}
+
 // Компонент для административных действий над изменением
-export default function ChangesAdminActions({ change, assignees, onUpdated }: { change: any, assignees: Array<{id: string, firstName: string, lastName: string, email: string}>, onUpdated?: (patch: any) => void }) {
+export default function ChangesAdminActions({ change, assignees, onUpdated }: ChangesAdminActionsProps) {
   // Состояния для управления формой
-  const [isPending, startTransition] = useTransition()
   const [status, setStatus] = useState(change.status) // Текущий статус
   const [assignee, setAssignee] = useState(change.assignedToId || "") // Текущий исполнитель
   const [loading, setLoading] = useState(false) // Флаг загрузки
@@ -41,10 +58,10 @@ export default function ChangesAdminActions({ change, assignees, onUpdated }: { 
   const [editCategory, setEditCategory] = useState(change.category || "")
 
   // Обработка административных действий (смена статуса, приоритета, назначение)
-  const handleAdminAction = async (action: string, value?: string) => {
+  const handleAdminAction = async (action: "status" | "priority" | "assign", value?: string) => {
     setLoading(true)
     try {
-      let res, data
+      let res: Response, data: unknown
       // Смена статуса
       if (action === "status") {
         setStatus(value || status)
@@ -54,7 +71,7 @@ export default function ChangesAdminActions({ change, assignees, onUpdated }: { 
           body: JSON.stringify({ id: change.id, status: value || status }),
         })
         data = await res.json()
-        if (!res.ok || data.error) throw new Error(data.error || "Ошибка смены статуса")
+        if (!res.ok || (data as { error?: string }).error) throw new Error((data as { error?: string }).error || "Ошибка смены статуса")
         toast({ title: "Успешно", description: "Статус изменён" })
         onUpdated?.({ status: value || status })
       // Смена приоритета
@@ -66,7 +83,7 @@ export default function ChangesAdminActions({ change, assignees, onUpdated }: { 
           body: JSON.stringify({ id: change.id, priority: value || priority }),
         })
         data = await res.json()
-        if (!res.ok || data.error) throw new Error(data.error || "Ошибка смены приоритета")
+        if (!res.ok || (data as { error?: string }).error) throw new Error((data as { error?: string }).error || "Ошибка смены приоритета")
         toast({ title: "Успешно", description: "Приоритет изменён" })
         onUpdated?.({ priority: value || priority })
       // Назначение исполнителя
@@ -78,15 +95,15 @@ export default function ChangesAdminActions({ change, assignees, onUpdated }: { 
           body: JSON.stringify({ id: change.id, userId: value || assignee }),
         })
         data = await res.json()
-        if (!res.ok || data.error) throw new Error(data.error || "Ошибка назначения")
+        if (!res.ok || (data as { error?: string }).error) throw new Error((data as { error?: string }).error || "Ошибка назначения")
         toast({ title: "Успешно", description: "Исполнитель назначен" })
         const userId = value || assignee
         const user = assignees.find(u => u.id === userId)
-        onUpdated?.({ assignedToId: userId, assignedTo: user ? { id: user.id, firstName: user.firstName, lastName: user.lastName, email: user.email } : undefined })
+        if (user) onUpdated?.({ assignedToId: userId, assignedTo: user })
       }
-    } catch (e: any) {
-      // Показываем ошибку через toast
-      toast({ title: "Ошибка", description: e.message, variant: "destructive" })
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e)
+      toast({ title: "Ошибка", description: message, variant: "destructive" })
     } finally {
       setLoading(false)
     }
@@ -98,15 +115,15 @@ export default function ChangesAdminActions({ change, assignees, onUpdated }: { 
       className="flex flex-wrap gap-2 items-center mt-2"
       onSubmit={async (e) => {
         e.preventDefault()
-        const form = e.currentTarget as HTMLFormElement & { elements: { [key: string]: any } }
-        const action = form.elements['action'].value
+        const form = e.currentTarget as HTMLFormElement & { elements: Record<string, HTMLInputElement | HTMLSelectElement> }
+        const action = (form.elements['action'] as HTMLInputElement).value
         // В зависимости от выбранного действия вызываем обработчик
         if (action === "status") {
-          await handleAdminAction("status", form.elements['status'].value)
+          await handleAdminAction("status", (form.elements['status'] as HTMLSelectElement).value)
         } else if (action === "priority") {
-          await handleAdminAction("priority", form.elements['priority'].value)
+          await handleAdminAction("priority", (form.elements['priority'] as HTMLSelectElement).value)
         } else if (action === "assign") {
-          await handleAdminAction("assign", form.elements['userId'].value)
+          await handleAdminAction("assign", (form.elements['userId'] as HTMLSelectElement).value)
         }
       }}
     >
@@ -194,12 +211,13 @@ export default function ChangesAdminActions({ change, assignees, onUpdated }: { 
                   body: JSON.stringify({ id: change.id, title: editTitle, description: editDescription, category: editCategory, status, priority, assignedToId: assignee || null }),
                 })
                 const data = await res.json()
-                if (!res.ok || data.error) throw new Error(data.error || 'Ошибка обновления')
+                if (!res.ok || (data as { error?: string }).error) throw new Error((data as { error?: string }).error || 'Ошибка обновления')
                 toast({ title: 'Успешно', description: 'Изменение обновлено' })
                 onUpdated?.({ title: editTitle, description: editDescription, category: editCategory })
                 setEditOpen(false)
-              } catch (e: any) {
-                toast({ title: 'Ошибка', description: e.message, variant: 'destructive' })
+              } catch (e) {
+                const message = e instanceof Error ? e.message : String(e)
+                toast({ title: 'Ошибка', description: message, variant: 'destructive' })
               }
             }}>Сохранить</Button>
           </DialogFooter>

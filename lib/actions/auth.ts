@@ -78,11 +78,15 @@ export async function loginAction(formData: FormData, ip?: string) {
     }
 
     const token = await createToken(user.id)
+    const hdrs2 = await headers()
+    const isHttps =
+      (hdrs2.get('x-forwarded-proto') ?? '').toLowerCase() === 'https' ||
+      (hdrs2.get('origin') ?? '').toLowerCase().startsWith('https://')
     ;(await cookies()).set("auth-token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: isHttps,
       sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: 60 * 60 * 24 * 7,
       path: "/",
     })
     await prisma.user.update({ where: { id: user.id }, data: { lastLogin: new Date() } })
