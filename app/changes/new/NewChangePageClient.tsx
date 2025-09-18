@@ -9,7 +9,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Checkbox } from "@/components/ui/checkbox"
 import { CalendarIcon, ArrowLeft } from "lucide-react"
 import { format } from "date-fns"
 import { ru } from "date-fns/locale"
@@ -37,8 +36,8 @@ export default function NewChangePage({ users }: { users: Array<{ id: string, fi
   })
 
   const [scheduledDate, setScheduledDate] = useState<Date>()
-  const [affectedSystems, setAffectedSystems] = useState<string[]>([])
-  const [approvers, setApprovers] = useState<string[]>([])
+  const [affectedSystems] = useState<string[]>([])
+  const [approvers] = useState<string[]>([])
 
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -47,15 +46,12 @@ export default function NewChangePage({ users }: { users: Array<{ id: string, fi
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
-  const handleSystemToggle = (system: string) => {
-    setAffectedSystems((prev) => (prev.includes(system) ? prev.filter((s) => s !== system) : [...prev, system]))
-  }
-
-  const handleApproverToggle = (approver: string) => {
-    setApprovers((prev) => (prev.includes(approver) ? prev.filter((a) => a !== approver) : [...prev, approver]))
-  }
 
   const handleSubmit = async (status: string) => {
+    if (!formData.title || !formData.description || !formData.priority || !formData.requester) {
+      toast({ title: "Ошибка", description: "Заполните все обязательные поля: название, описание, приоритет, инициатор", variant: "destructive" });
+      return;
+    }
     setLoading(true)
     try {
       const res = await fetch("/api/changes/create", {
@@ -73,29 +69,14 @@ export default function NewChangePage({ users }: { users: Array<{ id: string, fi
       if (!res.ok || data.error) throw new Error(data.error || "Ошибка создания изменения")
       toast({ title: "Изменение создано", description: "Запрос успешно сохранён" })
       router.push("/changes")
-    } catch (e: any) {
-      toast({ title: "Ошибка", description: e.message, variant: "destructive" })
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      toast({ title: "Ошибка", description: message, variant: "destructive" });
     } finally {
       setLoading(false)
     }
   }
 
-  const systems = [
-    "Сервер базы данных",
-    "Веб-сервер",
-    "Почтовый сервер",
-    "Файловый сервер",
-    "Сервер приложений",
-    "Сетевое оборудование",
-  ]
-
-  const potentialApprovers = [
-    "Руководитель IT",
-    "Менеджер по изменениям",
-    "Архитектор системы",
-    "Специалист по безопасности",
-    "Бизнес-аналитик",
-  ]
 
   return (
     <div className="space-y-6">
@@ -128,6 +109,7 @@ export default function NewChangePage({ users }: { users: Array<{ id: string, fi
                   placeholder="Краткое описание изменения"
                   value={formData.title}
                   onChange={(e) => handleInputChange("title", e.target.value)}
+                  required
                 />
               </div>
 
@@ -139,6 +121,7 @@ export default function NewChangePage({ users }: { users: Array<{ id: string, fi
                   rows={4}
                   value={formData.description}
                   onChange={(e) => handleInputChange("description", e.target.value)}
+                  required
                 />
               </div>
 
@@ -176,13 +159,15 @@ export default function NewChangePage({ users }: { users: Array<{ id: string, fi
 
               <div className="space-y-2">
                 <Label htmlFor="requester">Инициатор запроса *</Label>
-                <Select value={formData.requester} onValueChange={(value) => handleInputChange("requester", value)}>
+                <Select value={formData.requester} onValueChange={(value) => handleInputChange("requester", value)} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Выберите инициатора" />
                   </SelectTrigger>
                   <SelectContent>
                     {users.map((user) => (
-                      <SelectItem key={user.id} value={user.id}>{user.lastName} {user.firstName}</SelectItem>
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.lastName} {user.firstName}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -198,6 +183,21 @@ export default function NewChangePage({ users }: { users: Array<{ id: string, fi
                     {users.map((user) => (
                       <SelectItem key={user.id} value={user.id}>{user.lastName} {user.firstName}</SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Приоритет *</Label>
+                <Select value={formData.priority} onValueChange={(value) => handleInputChange("priority", value)} required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Выберите приоритет" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="LOW">Низкий</SelectItem>
+                    <SelectItem value="MEDIUM">Средний</SelectItem>
+                    <SelectItem value="HIGH">Высокий</SelectItem>
+                    <SelectItem value="CRITICAL">Критический</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

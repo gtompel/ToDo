@@ -49,7 +49,7 @@ export default async function RequestsPage({ searchParams }: { searchParams: Sea
         </Button>
       </div>
       <RequestsListWrapper 
-        requests={normalized} 
+        requests={normalized}
         isAdmin={isAdmin} 
         assignableUsers={assignableUsers}
         total={total}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { ChevronDown, HelpCircle, Plus, Pencil } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -41,8 +41,7 @@ type UserLite = {
   department?: string;
 };
 
-// ✅ Обновлённый тип: добавлено department в createdBy и assignedTo
-type RequestItem = {
+export type RequestItem = {
   id: string;
   title?: string;
   description: string;
@@ -327,22 +326,21 @@ export default function RequestsListClient({
 
       setRequestsState((list) => {
         if (action === "delete") return list.filter((r) => r.id !== id);
-        const patch: Partial<RequestItem> = {};
-        if (action === "status") patch.status = String(body.status);
-        if (action === "priority") patch.priority = String(body.priority);
-        if (action === "assign") {
-          patch.assignedToId = String(body.userId);
-          const u = (assignableUsers || []).find((x) => x.id === body.userId);
-          patch.assignedTo = u
-            ? {
-                firstName: u.firstName,
-                lastName: u.lastName,
-                email: u.email,
-                department: u.department,
-              }
-            : null;
-        }
-        return list.map((r) => (r.id === id ? { ...r, ...patch } : r));
+        if (action === "status")
+          return list.map((r) =>
+            r.id === id ? { ...r, status: String(body.status) } : r
+          );
+        if (action === "priority")
+          return list.map((r) =>
+            r.id === id ? { ...r, priority: String(body.priority) } : r
+          );
+        if (action === "assign")
+          return list.map((r) =>
+            r.id === id
+              ? { ...r, assignedToId: String(body.userId), assignedTo: assignableUsers.find((u) => u.id === body.userId) || null }
+              : r
+          );
+        return list;
       });
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
@@ -377,6 +375,7 @@ export default function RequestsListClient({
       src: string;
       name: string;
     } | null>(null);
+    const actionRef = useRef<HTMLInputElement>(null);
     const [editTitle, setEditTitle] = useState(request.title || "");
     const [editDescription, setEditDescription] = useState(
       request.description || ""
@@ -468,15 +467,27 @@ export default function RequestsListClient({
             </span>
           </button>
           {isAdmin && (
-            <Button
-              variant="outline"
-              size="icon"
-              className="ml-2 h-7 w-7"
-              aria-label="Редактировать"
-              onClick={() => openEdit()}
-            >
-              <Pencil className="w-3.5 h-3.5" />
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="icon"
+                className="ml-2 h-7 w-7"
+                aria-label="Редактировать"
+                onClick={() => openEdit()}
+              >
+                <Pencil className="w-3.5 h-3.5" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="ml-2 h-7 w-7 text-red-600 hover:bg-red-100"
+                aria-label="Удалить"
+                type="button"
+                onClick={() => handleAdminAction("delete", request.id)}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </Button>
+            </>
           )}
           <button
             className="ml-1"
@@ -557,30 +568,23 @@ export default function RequestsListClient({
                   className="flex flex-wrap gap-2 items-center mt-2"
                   onSubmit={async (e) => {
                     e.preventDefault();
-                    const form = e.currentTarget as HTMLFormElement;
-                    const formData = new FormData(form);
-                    const action = String(formData.get("action") ?? "");
-
+                    const form = e.currentTarget as HTMLFormElement & { elements: Record<string, HTMLInputElement> };
+                    const action = form.elements['action'].value;
                     try {
                       if (action === "status") {
-                        const status = String(formData.get("status") ?? "");
+                        const status = form.elements['status'].value;
                         await handleAdminAction("status", request.id, status);
                       } else if (action === "priority") {
-                        const priority = String(formData.get("priority") ?? "");
-                        await handleAdminAction(
-                          "priority",
-                          request.id,
-                          priority
-                        );
+                        const priority = form.elements['priority'].value;
+                        await handleAdminAction("priority", request.id, priority);
                       } else if (action === "assign") {
-                        const userId = String(formData.get("userId") ?? "");
+                        const userId = form.elements['userId'].value;
                         await handleAdminAction("assign", request.id, userId);
                       } else if (action === "delete") {
                         await handleAdminAction("delete", request.id);
                       }
                     } catch (e) {
-                      const message =
-                        e instanceof Error ? e.message : String(e);
+                      const message = e instanceof Error ? e.message : String(e);
                       toast({
                         title: "Ошибка",
                         description: message,
@@ -589,6 +593,7 @@ export default function RequestsListClient({
                     }
                   }}
                 >
+                  <input ref={actionRef} type="hidden" name="action" value="status" />
                   <label>
                     Статус:
                     <select
@@ -606,9 +611,8 @@ export default function RequestsListClient({
                   </label>
                   <button
                     type="submit"
-                    name="action"
-                    value="status"
                     className="px-2 py-1 border rounded bg-blue-100 hover:bg-blue-200"
+                    onClick={e => { e.stopPropagation(); if (actionRef.current) actionRef.current.value = "status"; }}
                   >
                     Сменить
                   </button>
@@ -630,9 +634,8 @@ export default function RequestsListClient({
                   </label>
                   <button
                     type="submit"
-                    name="action"
-                    value="priority"
                     className="px-2 py-1 border rounded bg-blue-100 hover:bg-blue-200"
+                    onClick={e => { e.stopPropagation(); if (actionRef.current) actionRef.current.value = "priority"; }}
                   >
                     Сменить
                   </button>
@@ -661,18 +664,16 @@ export default function RequestsListClient({
                   </label>
                   <button
                     type="submit"
-                    name="action"
-                    value="assign"
                     className="px-2 py-1 border rounded bg-green-100 hover:bg-green-200"
+                    onClick={e => { e.stopPropagation(); if (actionRef.current) actionRef.current.value = "assign"; }}
                   >
                     Назначить
                   </button>
 
                   <button
                     type="submit"
-                    name="action"
-                    value="delete"
                     className="px-2 py-1 border rounded bg-red-100 hover:bg-red-200 ml-2"
+                    onClick={e => { e.stopPropagation(); if (actionRef.current) actionRef.current.value = "delete"; }}
                   >
                     Удалить
                   </button>

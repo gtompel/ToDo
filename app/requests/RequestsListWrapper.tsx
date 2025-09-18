@@ -1,8 +1,9 @@
 "use client";
 import dynamic from 'next/dynamic';
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from '@/components/ui/use-toast';
+import type { RequestItem } from './RequestsListClient';
 
 const RequestsListClient = dynamic(() => import('./RequestsListClient'), {
   ssr: false,
@@ -11,10 +12,8 @@ const RequestsListClient = dynamic(() => import('./RequestsListClient'), {
 
 type UserLite = { id: string; firstName: string; lastName: string; email: string }
 
-type RequestListItem = { id: string } & Record<string, unknown>
-
 type RequestsListWrapperProps = {
-  requests: RequestListItem[];
+  requests: RequestItem[];
   isAdmin: boolean;
   assignableUsers: UserLite[];
   total: number;
@@ -55,7 +54,6 @@ export default function RequestsListWrapper({ requests, isAdmin, assignableUsers
         isAdmin={isAdmin}
         assignableUsers={assignableUsers}
         total={total}
-        page={page}
         pageSize={pageSize}
       />
       <div className="flex items-center justify-between px-6 py-4 border-t bg-muted">
