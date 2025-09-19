@@ -26,7 +26,7 @@ type Change = {
   assignedToId?: string | null
 }
 
-// Получение всех изменений из базы данных
+// Получение всех изменений из базы данных — теперь локальная функция
 async function getChanges() {
   return prisma.change.findMany({
     include: {
@@ -82,8 +82,9 @@ function getCardClassByStatus(status: string) {
   }
 }
 
-// Компонент списка изменений
-export async function ChangesList({ isAdmin, assignees }: { isAdmin: boolean; assignees: UserLite[] }) {
+// ✅ УДАЛИЛИ ИМЕНОВАННЫЙ ЭКСПОРТ — перенесли внутрь ChangesPage
+// Компонент списка изменений — теперь локальная функция внутри ChangesPage
+async function ChangesList({ isAdmin, assignees }: { isAdmin: boolean; assignees: UserLite[] }) {
   const changes = await getChanges()
 
   if (changes.length === 0) {

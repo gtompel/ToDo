@@ -1,38 +1,62 @@
-
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 import { getCurrentUser } from "@/lib/auth"
 import { getAssignableUsers } from "@/lib/actions/users"
-import RequestsListWrapper from './RequestsListWrapper'
+import RequestsListWrapper from "./RequestsListWrapper"
+import { getRequests } from "@/lib/actions/requests"
 
-import { getRequests } from '@/lib/actions/requests';
+export interface RequestItem {
+  id: string
+  description: string
+  priority: string
+  status: string
+  createdAt: string
+  category: string
+  acknowledgmentFile: string
+  // дополнительные поля
+  [key: string]: unknown
+}
 
+interface SearchParams {
+  [key: string]: string | string[] | undefined
+}
 
+function parsePageParam(val: string | string[] | undefined, fallback: number) {
+  const raw = Array.isArray(val) ? val[0] : val
+  const n = raw ? Number(raw) : NaN
+  return Number.isInteger(n) && n > 0 ? n : fallback
+}
 
-type SearchParams = { [key: string]: string | string[] | undefined };
-
-function parseIntOrDefault(val: string | string[] | undefined, def: number) {
-  const n = parseInt(Array.isArray(val) ? val[0] : val ?? '', 10);
-  return isNaN(n) ? def : n;
+function normalizeRequests(items: Partial<RequestItem>[]): RequestItem[] {
+  return items.map((r) => ({
+    id: String(r.id ?? ""),
+    description: String(r.description ?? ""),
+    priority: String(r.priority ?? ""),
+    status: String(r.status ?? ""),
+    createdAt: String(r.createdAt ?? ""),
+    category: r.category ?? "",
+    acknowledgmentFile: r.acknowledgmentFile ?? "",
+    ...r,
+  }))
 }
 
 export default async function RequestsPage({ searchParams }: { searchParams: SearchParams }) {
-  searchParams = await searchParams;
   const user = await getCurrentUser()
-  const isAdmin = user && (user.role === "ADMIN" || user.role === "MANAGER")
+  const isAdmin = Boolean(user && (user.role === "ADMIN" || user.role === "MANAGER"))
 
-  const page = parseIntOrDefault(searchParams?.page, 1);
-  const pageSize = parseIntOrDefault(searchParams?.pageSize, 10);
+  const page = parsePageParam(searchParams?.page, 1)
+  const pageSize = parsePageParam(searchParams?.pageSize, 10)
 
-  const { data: requests, total } = await getRequests(page, pageSize);
-  type MinimalRequest = { category?: string | null; acknowledgmentFile?: string | null } & Record<string, unknown>
-  const normalized = (requests as MinimalRequest[]).map((r) => ({
-    ...r,
-    category: r.category ?? "",
-    acknowledgmentFile: r.acknowledgmentFile ?? "",
-  }))
-  const assignableUsers = isAdmin ? await getAssignableUsers() : [];
+  const requestsPromise = getRequests(page, pageSize)
+  const assignableUsersPromise = isAdmin ? getAssignableUsers() : Promise.resolve([])
+
+  const [{ data: requests = [], total = 0 }, assignableUsers] = await Promise.all([
+    requestsPromise,
+    assignableUsersPromise,
+  ])
+
+  const normalized = normalizeRequests(requests as Partial<RequestItem>[])
 
   return (
     <div className="space-y-6">
@@ -48,9 +72,10 @@ export default async function RequestsPage({ searchParams }: { searchParams: Sea
           </Link>
         </Button>
       </div>
-      <RequestsListWrapper 
+
+      <RequestsListWrapper
         requests={normalized}
-        isAdmin={isAdmin} 
+        isAdmin={isAdmin}
         assignableUsers={assignableUsers}
         total={total}
         page={page}
