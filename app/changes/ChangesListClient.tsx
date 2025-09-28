@@ -1,11 +1,40 @@
 "use client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import ChangesAdminActions from './ChangesAdminActions';
-import { useState, useMemo } from 'react'
+import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { GitBranch, Pencil } from 'lucide-react';
+import { GitBranch, Pencil} from 'lucide-react';
 
-function getStatusBadge(status: string) {
+type User = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+};
+
+type Priority = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | string;
+type Status = 'PENDING' | 'APPROVED' | 'REJECTED' | 'IMPLEMENTED' | 'CANCELLED' | 'DRAFT' | string;
+
+type Change = {
+  id: string;
+  title: string;
+  status: Status;
+  priority: Priority;
+  createdAt: string;
+  description: string;
+  createdBy?: User | null;
+  assignedTo?: User | null;
+  scheduledAt?: string | null;
+  category: string | null;
+};
+
+interface Props {
+  changes: Change[];
+  isAdmin: boolean;
+  assignees: User[];
+}
+
+function getStatusBadge(status: Status) {
   switch (status) {
     case "PENDING":
       return <span className="px-2 py-1 rounded bg-yellow-500 text-white text-xs font-bold">Ожидает</span>;
@@ -24,7 +53,7 @@ function getStatusBadge(status: string) {
   }
 }
 
-function getPriorityBadge(priority: string) {
+function getPriorityBadge(priority?: Priority) {
   switch (priority) {
     case "CRITICAL":
       return <Badge variant="destructive">Критический</Badge>;
@@ -35,11 +64,11 @@ function getPriorityBadge(priority: string) {
     case "LOW":
       return <Badge variant="outline">Низкий</Badge>;
     default:
-      return <Badge>{priority}</Badge>;
+      return <Badge>{priority ?? "-"}</Badge>;
   }
 }
 
-function getCardClassByStatus(status: string) {
+function getCardClassByStatus(status: Status) {
   switch (status) {
     case "PENDING":
       return "border-l-4 border-yellow-400 bg-yellow-50 dark:bg-yellow-950/20";
@@ -54,9 +83,30 @@ function getCardClassByStatus(status: string) {
   }
 }
 
-export default function ChangesListClient({ changes, isAdmin, assignees }: { changes: any[], isAdmin: boolean, assignees: any[] }) {
-  const [changesState, setChangesState] = useState<any[]>(changes)
-  const list = changesState
+export default function ChangesListClient({ changes, isAdmin, assignees }: Props) {
+  const [changesState, setChangesState] = useState<Change[]>(changes);
+  const [editDialogOpen, setEditDialogOpen] = useState<boolean>(false);
+  const [editChange, setEditChange] = useState<Change | null>(null);
+
+  // Обработчик открытия диалога редактирования через CustomEvent { detail: { id: string } }
+  useEffect(() => {
+    const handleOpenEdit = (e: Event) => {
+      const ev = e as CustomEvent<{ id: string }>;
+      const id = ev?.detail?.id;
+      if (!id) return;
+      const change = changesState.find((c) => c.id === id);
+      if (change) {
+        setEditChange(change);
+        setEditDialogOpen(true);
+      }
+    };
+    window.addEventListener('open-change-edit', handleOpenEdit as EventListener);
+    return () => {
+      window.removeEventListener('open-change-edit', handleOpenEdit as EventListener);
+    };
+  }, [changesState]);
+
+  const list = changesState;
   if (!list || list.length === 0) {
     return (
       <Card>
@@ -68,9 +118,10 @@ export default function ChangesListClient({ changes, isAdmin, assignees }: { cha
       </Card>
     );
   }
+
   return (
     <div className="space-y-4">
-      {list.map((change: any) => (
+      {list.map((change) => (
         <Card key={change.id} className={getCardClassByStatus(change.status) + " relative"}>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -85,7 +136,7 @@ export default function ChangesListClient({ changes, isAdmin, assignees }: { cha
                   aria-label="Редактировать"
                   onClick={(e) => {
                     e.stopPropagation();
-                    const ev = new CustomEvent('open-change-edit', { detail: { id: change.id } });
+                    const ev = new CustomEvent<{ id: string }>('open-change-edit', { detail: { id: change.id } });
                     window.dispatchEvent(ev);
                   }}
                 >
@@ -114,13 +165,18 @@ export default function ChangesListClient({ changes, isAdmin, assignees }: { cha
                 <span className="font-medium">Тип:</span> {change.category || "-"}
               </div>
             </div>
+
             {isAdmin && (
               <ChangesAdminActions
-                change={change}
-                assignees={assignees}
-                onUpdated={(patch: any) => {
-                  setChangesState(arr => arr.map(c => c.id === change.id ? { ...c, ...patch, assignedTo: patch.assignedTo ?? c.assignedTo } : c))
-                }}
+              change={change}
+              assignees={assignees}
+              editDialogOpen={editDialogOpen}
+              setEditDialogOpen={setEditDialogOpen}
+              editingChange={editChange}
+              setEditingChange={(change) => setEditChange(change)}
+              onUpdated={(patch: Partial<Change> & { assignedTo?: User }) => {
+                setChangesState(arr => arr.map(c => c.id === change.id ? { ...c, ...patch, assignedTo: patch.assignedTo ?? c.assignedTo } : c));
+              }}
               />
             )}
           </CardContent>
@@ -128,4 +184,4 @@ export default function ChangesListClient({ changes, isAdmin, assignees }: { cha
       ))}
     </div>
   );
-} 
+}
