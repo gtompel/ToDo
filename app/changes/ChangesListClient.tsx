@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import ChangesAdminActions from './ChangesAdminActions';
 import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { GitBranch, Pencil} from 'lucide-react';
+import { GitBranch, Pencil, Trash2 } from 'lucide-react';
 
 type User = {
   id: string;
@@ -21,7 +21,7 @@ type Change = {
   status: Status;
   priority: Priority;
   createdAt: string;
-  description: string;
+  description: string | null;
   createdBy?: User | null;
   assignedTo?: User | null;
   scheduledAt?: string | null;
@@ -87,8 +87,10 @@ export default function ChangesListClient({ changes, isAdmin, assignees }: Props
   const [changesState, setChangesState] = useState<Change[]>(changes);
   const [editDialogOpen, setEditDialogOpen] = useState<boolean>(false);
   const [editChange, setEditChange] = useState<Change | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
+  const [deletingChange, setDeletingChange] = useState<Change | null>(null);
 
-  // Обработчик открытия диалога редактирования через CustomEvent { detail: { id: string } }
+  // Обработчик открытия диалога редактирования
   useEffect(() => {
     const handleOpenEdit = (e: Event) => {
       const ev = e as CustomEvent<{ id: string }>;
@@ -103,6 +105,24 @@ export default function ChangesListClient({ changes, isAdmin, assignees }: Props
     window.addEventListener('open-change-edit', handleOpenEdit as EventListener);
     return () => {
       window.removeEventListener('open-change-edit', handleOpenEdit as EventListener);
+    };
+  }, [changesState]);
+
+  // Обработчик открытия диалога удаления
+  useEffect(() => {
+    const handleOpenDelete = (e: Event) => {
+      const ev = e as CustomEvent<{ id: string }>;
+      const id = ev?.detail?.id;
+      if (!id) return;
+      const change = changesState.find((c) => c.id === id);
+      if (change) {
+        setDeletingChange(change);
+        setDeleteDialogOpen(true);
+      }
+    };
+    window.addEventListener('open-change-delete', handleOpenDelete as EventListener);
+    return () => {
+      window.removeEventListener('open-change-delete', handleOpenDelete as EventListener);
     };
   }, [changesState]);
 
@@ -131,17 +151,30 @@ export default function ChangesListClient({ changes, isAdmin, assignees }: Props
                 {getPriorityBadge(change.priority)}
               </div>
               {isAdmin && (
-                <button
-                  className="absolute top-2 right-2 h-7 w-7 border rounded text-xs flex items-center justify-center bg-white/70 hover:bg-white"
-                  aria-label="Редактировать"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const ev = new CustomEvent<{ id: string }>('open-change-edit', { detail: { id: change.id } });
-                    window.dispatchEvent(ev);
-                  }}
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                </button>
+                <div className="absolute top-2 right-2 flex gap-1">
+                  <button
+                    className="h-7 w-7 border rounded text-xs flex items-center justify-center bg-white/70 hover:bg-white"
+                    aria-label="Редактировать"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const ev = new CustomEvent<{ id: string }>('open-change-edit', { detail: { id: change.id } });
+                      window.dispatchEvent(ev);
+                    }}
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    className="h-7 w-7 border rounded text-xs flex items-center justify-center bg-white/70 hover:bg-white text-red-600 hover:text-red-700"
+                    aria-label="Удалить"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const ev = new CustomEvent<{ id: string }>('open-change-delete', { detail: { id: change.id } });
+                      window.dispatchEvent(ev);
+                    }}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               )}
             </div>
             <CardDescription>
@@ -149,10 +182,10 @@ export default function ChangesListClient({ changes, isAdmin, assignees }: Props
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-700 mb-4">{change.description}</p>
+            <p className="text-gray-700 mb-4">{change.description || "Без описания"}</p>
             <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
               <div>
-                <span className="font-medium">Создал:</span> {change.createdBy?.firstName} {change.createdBy?.lastName}
+                <span className="font-medium">Создал:</span> {change.createdBy ? `${change.createdBy.firstName} ${change.createdBy.lastName}` : "—"}
               </div>
               <div>
                 <span className="font-medium">Назначен:</span> {change.assignedTo ? `${change.assignedTo.firstName} ${change.assignedTo.lastName}` : "Не назначен"}
@@ -162,21 +195,31 @@ export default function ChangesListClient({ changes, isAdmin, assignees }: Props
                 {change.scheduledAt ? new Date(change.scheduledAt).toLocaleDateString("ru-RU") : "Не указана"}
               </div>
               <div>
-                <span className="font-medium">Тип:</span> {change.category || "-"}
+                <span className="font-medium">Тип:</span> {change.category || "—"}
               </div>
             </div>
 
             {isAdmin && (
               <ChangesAdminActions
-              change={change}
-              assignees={assignees}
-              editDialogOpen={editDialogOpen}
-              setEditDialogOpen={setEditDialogOpen}
-              editingChange={editChange}
-              setEditingChange={(change) => setEditChange(change)}
-              onUpdated={(patch: Partial<Change> & { assignedTo?: User }) => {
-                setChangesState(arr => arr.map(c => c.id === change.id ? { ...c, ...patch, assignedTo: patch.assignedTo ?? c.assignedTo } : c));
-              }}
+                change={change}
+                assignees={assignees}
+                editDialogOpen={editDialogOpen}
+                setEditDialogOpen={setEditDialogOpen}
+                editingChange={editChange}
+                setEditingChange={(newChange) => setEditChange(newChange)}
+                deleteDialogOpen={deleteDialogOpen}
+                setDeleteDialogOpen={setDeleteDialogOpen}
+                deletingChange={deletingChange}
+                setDeletingChange={setDeletingChange}
+                onUpdated={(patch) => {
+                  setChangesState(arr =>
+                    arr.map(c =>
+                      c.id === change.id
+                        ? { ...c, ...patch, assignedTo: patch.assignedTo ?? c.assignedTo }
+                        : c
+                    )
+                  );
+                }}
               />
             )}
           </CardContent>
