@@ -1,25 +1,66 @@
 "use client";
+
 import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
 import { toast } from '@/components/ui/use-toast';
 
 const IncidentsListClient = dynamic(() => import('./IncidentsListClient'), {
-  loading: () => <div className="flex items-center justify-center h-64"><div className="text-center"><span className="animate-spin mr-2">⏳</span>Загрузка инцидентов...</div></div>,
+  loading: () => (
+    <div className="flex items-center justify-center h-64">
+      <div className="text-center">
+        <span className="animate-spin mr-2">⏳</span>Загрузка инцидентов...
+      </div>
+    </div>
+  ),
 });
 
-function parseIntOrDefault(val: any, def: number) {
+// =============== ТИПЫ ===============
+// Тот же User, что и в IncidentsListClient
+interface User {
+  id: string;
+  firstName: string | null; // ⚠️ важно: может быть null
+  lastName: string | null;  // ⚠️ важно: может быть null
+  email: string;
+}
+
+// Полный Incident, соответствующий тому, что ожидает IncidentsListClient
+interface Incident {
+  id: string;
+  title: string;
+  description: string | null;
+  status: string;
+  priority: string;
+  category: string | null;
+  createdAt: string;
+  createdBy: User;           // ⚠️ обязательно, используется в фильтре и отображении
+  assignedTo: User | null;
+  attachments: string[];    // массив URL
+  preActions: string | null;
+  expectedResult: string | null;
+}
+
+// =============== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===============
+function parseIntOrDefault(val: string | null, def: number): number {
+  if (val === null) return def;
   const n = parseInt(val, 10);
   return isNaN(n) ? def : n;
 }
 
-export default function IncidentsListWrapper({ isAdmin, assignableUsers }: any) {
+// =============== КОМПОНЕНТ ===============
+export default function IncidentsListWrapper({
+  isAdmin,
+  assignableUsers,
+}: {
+  isAdmin: boolean;
+  assignableUsers: User[];
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const page = parseIntOrDefault(searchParams.get('page'), 1);
   const pageSize = parseIntOrDefault(searchParams.get('pageSize'), 10);
 
-  const [incidents, setIncidents] = useState<any[]>([]);
+  const [incidents, setIncidents] = useState<Incident[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -29,23 +70,24 @@ export default function IncidentsListWrapper({ isAdmin, assignableUsers }: any) 
   const shownRef = useRef(false);
 
   useEffect(() => {
-  if (shownRef.current) return;
-  if (currentSuccess === 'true' && currentMessage) {
-  shownRef.current = true;
-  toast({ title: 'Успешно!', description: currentMessage });
-  router.replace('/incidents', { scroll: false });
-  }
+    if (shownRef.current) return;
+    if (currentSuccess === 'true' && currentMessage) {
+      shownRef.current = true;
+      toast({ title: 'Успешно!', description: currentMessage });
+      router.replace('/incidents', { scroll: false });
+    }
   }, [currentSuccess, currentMessage, router]);
 
   useEffect(() => {
     setLoading(true);
     fetch(`/api/incidents?page=${page}&pageSize=${pageSize}`)
-      .then(res => res.json())
+      .then((res) => res.json())
       .then(({ data, total }) => {
         setIncidents(data);
         setTotal(total);
         setLoading(false);
-      });
+      })
+      .catch(() => setLoading(false));
   }, [page, pageSize]);
 
   const pageCount = Math.ceil(total / pageSize);
@@ -53,6 +95,7 @@ export default function IncidentsListWrapper({ isAdmin, assignableUsers }: any) 
   const handlePageChange = (newPage: number) => {
     router.push(`/incidents?page=${newPage}&pageSize=${pageSize}`);
   };
+
   const handlePageSizeChange = (newSize: number) => {
     router.push(`/incidents?page=1&pageSize=${newSize}`);
   };
@@ -62,23 +105,55 @@ export default function IncidentsListWrapper({ isAdmin, assignableUsers }: any) 
       {loading ? (
         <div className="flex items-center justify-center h-64">Загрузка...</div>
       ) : (
-        <IncidentsListClient 
-          incidents={incidents} 
-          isAdmin={isAdmin} 
-          assignableUsers={assignableUsers} 
+        <IncidentsListClient
+          incidents={incidents}
+          isAdmin={isAdmin}
+          assignableUsers={assignableUsers}
         />
       )}
       <div className="flex items-center justify-between px-6 py-4 border-t bg-muted">
         <div className="text-sm text-gray-600">
-          {total === 0 ? 'Нет записей' : `${(page - 1) * pageSize + 1}-${Math.min(page * pageSize, total)} из ${total} записей`}
+          {total === 0
+            ? 'Нет записей'
+            : `${(page - 1) * pageSize + 1}-${Math.min(page * pageSize, total)} из ${total} записей`}
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => handlePageChange(1)} disabled={page === 1} className="px-2 py-1 border rounded disabled:opacity-50">«</button>
-          <button onClick={() => handlePageChange(Math.max(1, page - 1))} disabled={page === 1} className="px-2 py-1 border rounded disabled:opacity-50">‹</button>
-          <span className="text-sm">{page} / {pageCount}</span>
-          <button onClick={() => handlePageChange(Math.min(pageCount, page + 1))} disabled={page === pageCount} className="px-2 py-1 border rounded disabled:opacity-50">›</button>
-          <button onClick={() => handlePageChange(pageCount)} disabled={page === pageCount} className="px-2 py-1 border rounded disabled:opacity-50">»</button>
-          <select value={pageSize} onChange={e => handlePageSizeChange(Number(e.target.value))} className="ml-2 px-2 py-1 border rounded">
+          <button
+            onClick={() => handlePageChange(1)}
+            disabled={page === 1}
+            className="px-2 py-1 border rounded disabled:opacity-50"
+          >
+            «
+          </button>
+          <button
+            onClick={() => handlePageChange(Math.max(1, page - 1))}
+            disabled={page === 1}
+            className="px-2 py-1 border rounded disabled:opacity-50"
+          >
+            ‹
+          </button>
+          <span className="text-sm">
+            {page} / {pageCount}
+          </span>
+          <button
+            onClick={() => handlePageChange(Math.min(pageCount, page + 1))}
+            disabled={page === pageCount}
+            className="px-2 py-1 border rounded disabled:opacity-50"
+          >
+            ›
+          </button>
+          <button
+            onClick={() => handlePageChange(pageCount)}
+            disabled={page === pageCount}
+            className="px-2 py-1 border rounded disabled:opacity-50"
+          >
+            »
+          </button>
+          <select
+            value={pageSize}
+            onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+            className="ml-2 px-2 py-1 border rounded"
+          >
             <option value={10}>10</option>
             <option value={25}>25</option>
             <option value={50}>50</option>

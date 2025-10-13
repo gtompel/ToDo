@@ -3,8 +3,16 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 
+// Интерфейс для связанной статьи
+interface RelatedArticle {
+  id: string
+  title: string
+  description?: string
+  tags: string[]
+}
+
 export default function RelatedArticlesBlock({ articleId, tags }: { articleId: string, tags: string[] }) {
-  const [related, setRelated] = useState<any[]>([])
+  const [related, setRelated] = useState<RelatedArticle[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {

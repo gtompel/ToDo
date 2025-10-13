@@ -4,8 +4,6 @@ import { Bug } from "lucide-react";
 
 export default function Error({ error, reset }: { error: Error; reset: () => void }) {
   useEffect(() => {
-    // Можно логировать ошибку
-    // console.error(error);
   }, [error]);
 
   return (

@@ -8,7 +8,13 @@ function formatDate(date?: string | Date | null) {
   return d.toLocaleString('ru-RU');
 }
 
-export function UserActivityCard({ user }: { user: any }) {
+interface User {
+  lastLogin?: string | Date | null;
+  lastActivity?: string | Date | null;
+  passwordLastChanged?: string | Date | null;
+}
+
+export function UserActivityCard({ user }: { user: User }) {
   return (
     <Card>
       <CardHeader>

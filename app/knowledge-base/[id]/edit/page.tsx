@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, use as usePromise } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -12,10 +12,22 @@ import ReactMarkdown from "react-markdown"
 import { useToast } from "@/components/ui/use-toast"
 import { useConfirm } from "@/components/ui/confirm-dialog"
 
-export default function EditArticlePage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = usePromise(params)
+// =============== ТИПЫ ===============
+interface ArticleFormData {
+  id: string
+  title: string
+  description: string | null
+  category: string | null
+  tags: string[] | string
+  status: "draft" | "published"
+  content: string
+}
+
+// =============== КОМПОНЕНТ ===============
+export default function EditArticlePage({ params }: { params: { id: string } }) {
+  const { id } = params
   const router = useRouter()
-  const [formData, setFormData] = useState<any>(null)
+  const [formData, setFormData] = useState<ArticleFormData | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
@@ -33,39 +45,51 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
       .finally(() => setLoading(false))
   }, [id])
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData((prev: any) => ({ ...prev, [field]: value }))
+  const handleInputChange = (field: keyof ArticleFormData, value: string) => {
+    setFormData(prev => prev ? { ...prev, [field]: value } : null)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!formData) return
+
     setSaving(true)
     setError("")
+
     if (!formData.title || !formData.content) {
       setError("Заполните обязательные поля")
       setSaving(false)
       return
     }
+
     // Приводим tags к массиву строк
+    const tagsArray = typeof formData.tags === "string"
+      ? formData.tags.split(",").map(t => t.trim()).filter(Boolean)
+      : Array.isArray(formData.tags)
+        ? formData.tags
+        : []
+
     const submitData = {
       ...formData,
-      tags: typeof formData.tags === "string"
-        ? formData.tags.split(",").map((t: string) => t.trim()).filter(Boolean)
-        : [],
+      tags: tagsArray,
     }
+
     try {
       const res = await fetch(`/api/articles/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(submitData),
       })
+
       if (!res.ok) {
         const data = await res.json()
-        setError(data.error || "Ошибка сохранения")
-        toast({ title: "Ошибка", description: data.error || "Ошибка сохранения", variant: "destructive" })
+        const errorMsg = data.error || "Ошибка сохранения"
+        setError(errorMsg)
+        toast({ title: "Ошибка", description: errorMsg, variant: "destructive" })
         setSaving(false)
         return
       }
+
       toast({ title: "Сохранено", description: "Статья обновлена!" })
       router.push(`/knowledge-base/${id}`)
     } catch {
@@ -78,17 +102,21 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
   const handleDelete = async () => {
     const ok = await confirm({ title: "Удалить статью?" })
     if (!ok) return
+
     setDeleteError("")
     setSaving(true)
+
     try {
       const res = await fetch(`/api/articles/${id}`, { method: "DELETE" })
       if (!res.ok) {
         const data = await res.json()
-        setDeleteError(data.error || "Ошибка удаления")
-        toast({ title: "Ошибка", description: data.error || "Ошибка удаления", variant: "destructive" })
+        const errorMsg = data.error || "Ошибка удаления"
+        setDeleteError(errorMsg)
+        toast({ title: "Ошибка", description: errorMsg, variant: "destructive" })
         setSaving(false)
         return
       }
+
       toast({ title: "Удалено", description: "Статья удалена" })
       router.push("/knowledge-base")
     } catch {
@@ -101,7 +129,11 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
   if (loading) return <div className="p-8 text-center text-muted-foreground">Загрузка...</div>
   if (error || !formData) return <div className="p-8 text-center text-red-500">{error || "Статья не найдена"}</div>
 
-  const tagsString = Array.isArray(formData.tags) ? formData.tags.join(', ') : formData.tags;
+  const tagsString = Array.isArray(formData.tags)
+    ? formData.tags.join(', ')
+    : typeof formData.tags === 'string'
+      ? formData.tags
+      : ''
 
   return (
     <div className="space-y-6">
@@ -122,26 +154,43 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="title">Заголовок *</Label>
-              <Input id="title" value={formData.title} onChange={e => handleInputChange("title", e.target.value)} required />
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={e => handleInputChange("title", e.target.value)}
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="description">Описание</Label>
-              <Textarea id="description" value={formData.description || ""} onChange={e => handleInputChange("description", e.target.value)} />
+              <Textarea
+                id="description"
+                value={formData.description || ""}
+                onChange={e => handleInputChange("description", e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="category">Категория</Label>
-              <Input id="category" value={formData.category || ""} onChange={e => handleInputChange("category", e.target.value)} />
+              <Input
+                id="category"
+                value={formData.category || ""}
+                onChange={e => handleInputChange("category", e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="tags">Теги (через запятую)</Label>
-              <Input id="tags" value={formData.tags || ""} onChange={e => handleInputChange("tags", e.target.value)} />
+              <Input
+                id="tags"
+                value={tagsString}
+                onChange={e => handleInputChange("tags", e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="status">Статус</Label>
               <select
                 id="status"
                 className="border rounded px-2 py-1"
-                value={formData.status || "draft"}
+                value={formData.status}
                 onChange={e => handleInputChange("status", e.target.value)}
               >
                 <option value="draft">Черновик</option>
@@ -151,11 +200,31 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
             <div className="space-y-2">
               <Label htmlFor="content">Содержание *</Label>
               <div className="flex gap-2 mb-2">
-                <Button type="button" variant={previewMode ? "outline" : "secondary"} size="sm" onClick={() => setPreviewMode(false)}>Редактирование</Button>
-                <Button type="button" variant={previewMode ? "secondary" : "outline"} size="sm" onClick={() => setPreviewMode(true)}>Предпросмотр</Button>
+                <Button
+                  type="button"
+                  variant={previewMode ? "outline" : "secondary"}
+                  size="sm"
+                  onClick={() => setPreviewMode(false)}
+                >
+                  Редактирование
+                </Button>
+                <Button
+                  type="button"
+                  variant={previewMode ? "secondary" : "outline"}
+                  size="sm"
+                  onClick={() => setPreviewMode(true)}
+                >
+                  Предпросмотр
+                </Button>
               </div>
               {!previewMode ? (
-                <Textarea id="content" value={formData.content} onChange={e => handleInputChange("content", e.target.value)} rows={10} required />
+                <Textarea
+                  id="content"
+                  value={formData.content}
+                  onChange={e => handleInputChange("content", e.target.value)}
+                  rows={10}
+                  required
+                />
               ) : (
                 <div className="prose max-w-none border rounded p-4 bg-muted/50">
                   <ReactMarkdown>{formData.content || "_Нет содержимого_"}</ReactMarkdown>
@@ -165,8 +234,12 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
           </CardContent>
         </Card>
         <div className="flex gap-4">
-          <Button type="submit" disabled={saving}>{saving ? "Сохранение..." : "Сохранить"}</Button>
-          <Button type="button" variant="destructive" onClick={handleDelete} disabled={saving}>Удалить</Button>
+          <Button type="submit" disabled={saving}>
+            {saving ? "Сохранение..." : "Сохранить"}
+          </Button>
+          <Button type="button" variant="destructive" onClick={handleDelete} disabled={saving}>
+            Удалить
+          </Button>
           <Button type="button" variant="outline" asChild disabled={saving}>
             <Link href={`/knowledge-base/${id}`}>Отмена</Link>
           </Button>
@@ -176,4 +249,4 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
       </form>
     </div>
   )
-} 
+}

@@ -1,15 +1,28 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { useCurrentUser } from "@/hooks/use-user"
 
+// Интерфейс для статьи в базе знаний
+interface Article {
+  id: string
+  title: string
+  description?: string | null
+  category?: string | null
+  status: string
+  authorId?: string
+  tags?: string[]
+  updatedAt?: string | null
+  updated?: string | null
+}
+
 export default function DraftsPage() {
   const { user: currentUser } = useCurrentUser()
-  const [drafts, setDrafts] = useState<any[]>([])
+  const [drafts, setDrafts] = useState<Article[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
@@ -18,9 +31,9 @@ export default function DraftsPage() {
     fetch("/api/articles")
       .then(r => r.json())
       .then(data => {
-        let allDrafts = (data.articles || []).filter((a: any) => a.status === "draft")
+        let allDrafts = (data.articles || []).filter((a: Article) => a.status === "draft")
         if (currentUser?.role !== "ADMIN") {
-          allDrafts = allDrafts.filter((a: any) => a.authorId === currentUser?.id)
+          allDrafts = allDrafts.filter((a: Article) => a.authorId === currentUser?.id)
         }
         setDrafts(allDrafts)
       })
@@ -56,14 +69,25 @@ export default function DraftsPage() {
                     {article.title}
                   </Link>
                 </h3>
-                <div className="text-muted-foreground text-sm mb-2 line-clamp-2">{article.description}</div>
+                <div className="text-muted-foreground text-sm mb-2 line-clamp-2">
+                  {article.description || "Без описания"}
+                </div>
                 <div className="flex flex-wrap gap-1 mb-2">
-                  {article.tags.map((tag: string) => (
-                    <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
+                  {(article.tags || []).map((tag) => (
+                    <Badge key={tag} variant="secondary" className="text-xs">
+                      {tag}
+                    </Badge>
                   ))}
                 </div>
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                  <span>Обновлено: {article.updatedAt || article.updated}</span>
+                  <span>
+                    Обновлено:{" "}
+                    {article.updatedAt
+                      ? new Date(article.updatedAt).toLocaleDateString()
+                      : article.updated
+                      ? new Date(article.updated).toLocaleDateString()
+                      : "—"}
+                  </span>
                 </div>
               </CardContent>
             </Card>
@@ -72,4 +96,4 @@ export default function DraftsPage() {
       )}
     </div>
   )
-} 
+}

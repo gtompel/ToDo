@@ -10,18 +10,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Bell, Settings, LogOut, User } from "lucide-react"
+import { Settings, User } from "lucide-react"
 import Image from "next/image"
 import ThemeToggle from "@/components/ui/theme-toggle"
 import Link from "next/link"
 import NotificationBell from './notification-bell';
 import LogoutButton from "./logout-button"
 import { useRouter } from "next/navigation"
+import type { User as UserType, SearchResult } from "@/app/types/change"
 
-export default function Header({ onBurgerClick }: { onBurgerClick?: () => void }) {
-  const [user, setUser] = useState<any>(null)
+export default function Header({}: { onBurgerClick?: () => void }) {
+  const [user, setUser] = useState<UserType | null>(null)
   const [search, setSearch] = useState("")
-  const [results, setResults] = useState<any[]>([])
+  const [results, setResults] = useState<SearchResult[]>([])
   const [showResults, setShowResults] = useState(false)
   const router = useRouter()
   useEffect(() => {
@@ -57,7 +58,7 @@ export default function Header({ onBurgerClick }: { onBurgerClick?: () => void }
       </header>
     )
   }
-  const userInitials = `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
+  const userInitials = user ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase() : ""
   return (
     <header className="border-b bg-primary text-primary-foreground relative">
       <div className="flex h-16 items-center px-4 gap-4">
@@ -80,7 +81,7 @@ export default function Header({ onBurgerClick }: { onBurgerClick?: () => void }
             </span>
             {showResults && results.length > 0 && (
               <div className="absolute z-50 mt-1 w-full bg-white border rounded shadow-lg max-h-72 overflow-auto text-black">
-                {results.map((r, i) => (
+                {results.map((r) => (
                   <div
                     key={r.type + r.id}
                     className="px-3 py-2 hover:bg-primary/10 cursor-pointer border-b last:border-b-0"

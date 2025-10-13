@@ -13,14 +13,62 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { ArrowLeft, Save } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { prisma } from "@/lib/prisma"
 import { toast } from "@/components/ui/use-toast"
 
-// Страница создания нового инцидента
+// =============== ТИПЫ ===============
+interface Assignee {
+  id: string
+  name: string
+  position: string
+  email: string
+}
+
+interface TemplateField {
+  name: string
+  type: string
+  required: boolean
+  description?: string
+  options?: string[]
+  min?: number
+  max?: number
+  step?: number
+  default?: string | number | boolean
+}
+
+interface Template {
+  id: string
+  name: string
+  description: string
+  fields: TemplateField[]
+}
+
+interface FormData {
+  title: string
+  description: string
+  priority: string
+  category: string
+  assignee: string
+  reporter: string
+  preActions: string
+  expectedResult: string
+  attachments: File[]
+}
+
+// =============== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===============
+const getFormDataValue = (formData: FormData, key: string): string => {
+  const value = formData[key as keyof FormData]
+  return typeof value === 'string' ? value : ''
+}
+
+const getFormDataBoolean = (formData: FormData, key: string): boolean => {
+  const value = formData[key as keyof FormData]
+  return typeof value === 'boolean' ? value : false
+}
+
+// =============== КОМПОНЕНТ ===============
 export default function NewIncidentPage() {
   const router = useRouter()
-  // Состояния формы, загрузки и списка исполнителей
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     title: "",
     description: "",
     priority: "",
@@ -29,67 +77,72 @@ export default function NewIncidentPage() {
     reporter: "",
     preActions: "",
     expectedResult: "",
-    attachments: [] as File[],
+    attachments: [],
   })
   const [loading, setLoading] = useState(false)
-  const [assignees, setAssignees] = useState<{id: string, name: string, position: string, email: string}[]>([])
+  const [assignees, setAssignees] = useState<Assignee[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
-  // Состояния ошибок
-  const [errors, setErrors] = useState<{[key: string]: string}>({})
-  const [formErrors, setFormErrors] = useState<{[key: string]: string}>({})
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [formError, setFormError] = useState("")
-  // Состояния для шаблонов
-  const [templates, setTemplates] = useState<any[]>([])
+  const [templates, setTemplates] = useState<Template[]>([])
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("")
-  const [step, setStep] = useState<"select"|"form">("select")
+  const [step, setStep] = useState<"select" | "form">("select")
 
-  // Загрузка списка исполнителей при монтировании
+  // Загрузка исполнителей
   useEffect(() => {
     fetch("/api/users?role=TECHNICIAN,ADMIN")
       .then(res => res.json())
       .then(data => setAssignees(data.users || []))
   }, [])
 
-  // Загрузка шаблонов при монтировании
+  // Загрузка шаблонов
   useEffect(() => {
     fetch("/api/templates?type=INCIDENT")
       .then(res => res.json())
       .then(data => setTemplates(data.templates || []))
   }, [])
 
-  // Автозаполнение при выборе шаблона
+  // Автозаполнение по шаблону
   useEffect(() => {
     if (!selectedTemplateId) return
     const template = templates.find(t => t.id === selectedTemplateId)
     if (!template) return
-    const fields = template.fields || {}
+    const fields = template.fields.reduce((acc, field) => {
+      acc[field.name] = field.default?.toString() ?? ''
+      return acc
+    }, {} as Record<string, string>)
     setFormData(prev => ({
       ...prev,
       ...fields,
+      attachments: [], // ← явно сбрасываем вложения для шаблонов
     }))
-  }, [selectedTemplateId])
+  }, [selectedTemplateId, templates])
 
-  // Ключ для localStorage (по типу и шаблону)
   const draftKey = `incident_draft_${selectedTemplateId || 'default'}`
 
-  // Восстановление черновика при открытии формы/шаблона
+  // Восстановление черновика
   useEffect(() => {
     if (typeof window === 'undefined') return
     const draft = localStorage.getItem(draftKey)
     if (draft) {
       try {
-        setFormData(JSON.parse(draft))
+        const parsed = JSON.parse(draft)
+        setFormData({
+          ...parsed,
+          attachments: [], // ← не восстанавливаем вложения
+        })
       } catch {}
     }
-  }, [selectedTemplateId])
+  }, [draftKey])
 
-  // Автосохранение черновика при изменении формы
+  // Автосохранение черновика
   useEffect(() => {
     if (typeof window === 'undefined') return
-    localStorage.setItem(draftKey, JSON.stringify(formData))
+    const { attachments, ...serializableData } = formData
+    localStorage.setItem(draftKey, JSON.stringify(serializableData))
   }, [formData, draftKey])
 
-  // Очистка черновика
   const clearDraft = () => {
     if (typeof window === 'undefined') return
     localStorage.removeItem(draftKey)
@@ -106,16 +159,14 @@ export default function NewIncidentPage() {
     })
   }
 
-  // Обработчик изменения поля формы
-  const handleInputChange = (field: string, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
+  const handleInputChange = (field: keyof FormData, value: string | File[]) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
   }
 
-  // Обработчик выбора файлов
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (files && files.length > 0) {
-      setFormData((prev) => ({
+      setFormData(prev => ({
         ...prev,
         attachments: Array.from(files),
       }))
@@ -126,11 +177,9 @@ export default function NewIncidentPage() {
     e.preventDefault()
     setFormError("")
     setErrors({})
-    // Клиентская валидация обязательных полей
-    const newErrors: {[key: string]: string} = {}
+    const newErrors: Record<string, string> = {}
     if (!formData.title.trim()) newErrors.title = "Заполните краткое описание проблемы"
     if (!formData.description.trim()) newErrors.description = "Заполните подробное описание"
-    // Приоритет для USER ставим на сервере как LOW, поэтому на клиенте не требуем
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
       setFormError("Пожалуйста, заполните все обязательные поля")
@@ -146,7 +195,7 @@ export default function NewIncidentPage() {
     data.append("assigneeId", formData.assignee)
     data.append("preActions", formData.preActions)
     data.append("expectedResult", formData.expectedResult)
-    formData.attachments.forEach((file) => data.append("attachments", file))
+    formData.attachments.forEach(file => data.append("attachments", file))
 
     const res = await fetch("/api/incidents", {
       method: "POST",
@@ -155,23 +204,20 @@ export default function NewIncidentPage() {
 
     setLoading(false)
     if (res.ok) {
-      // Редирект на страницу инцидентов с параметром успеха
       router.push('/incidents?success=true&message=Инцидент успешно создан')
     } else {
       let msg = "Ошибка при создании инцидента"
       try {
-        const data = await res.json()
-        if (data?.error) msg = data.error
+        const result = await res.json()
+        if (result?.error) msg = result.error
       } catch {}
       setFormError(msg)
       toast({ title: "Ошибка", description: msg, variant: "destructive" })
     }
   }
 
-  // Получить выбранный шаблон
   const selectedTemplate = templates.find(t => t.id === selectedTemplateId)
 
-  // Динамический рендеринг формы по шаблону
   const renderTemplateForm = () => {
     if (!selectedTemplate) return null
     return (
@@ -180,11 +226,18 @@ export default function NewIncidentPage() {
           e.preventDefault()
           setFormError("")
           setFormErrors({})
-          // Валидация
-          const errors: {[key: string]: string} = {}
+          const errors: Record<string, string> = {}
           for (const field of selectedTemplate.fields) {
-            if (field.required && !(formData as Record<string, any>)[field.name]) {
-              errors[field.name] = "Обязательное поле"
+            if (field.required) {
+              if (field.type === 'checkbox') {
+                if (!getFormDataBoolean(formData, field.name)) {
+                  errors[field.name] = "Обязательное поле"
+                }
+              } else {
+                if (!getFormDataValue(formData, field.name)) {
+                  errors[field.name] = "Обязательное поле"
+                }
+              }
             }
           }
           if (Object.keys(errors).length > 0) {
@@ -208,7 +261,7 @@ export default function NewIncidentPage() {
             <CardTitle>Данные инцидента</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {selectedTemplate.fields.map((field: any) => (
+            {selectedTemplate.fields.map(field => (
               <div className="space-y-1" key={field.name}>
                 <Label htmlFor={field.name} className="font-semibold">
                   {field.name}{field.required && <span className="text-red-500">*</span>}
@@ -216,8 +269,8 @@ export default function NewIncidentPage() {
                 {field.type === "text" && (
                   <Input
                     id={field.name}
-                    value={(formData as Record<string, any>)[field.name] ?? ""}
-                    onChange={e => handleInputChange(field.name, e.target.value)}
+                    value={getFormDataValue(formData, field.name)}
+                    onChange={e => handleInputChange(field.name as keyof FormData, e.target.value)}
                     required={field.required}
                     placeholder={field.description}
                     className={formErrors[field.name] ? "border-red-500" : ""}
@@ -227,8 +280,8 @@ export default function NewIncidentPage() {
                   <Input
                     id={field.name}
                     type="number"
-                    value={(formData as Record<string, any>)[field.name] ?? ""}
-                    onChange={e => handleInputChange(field.name, e.target.value)}
+                    value={getFormDataValue(formData, field.name)}
+                    onChange={e => handleInputChange(field.name as keyof FormData, e.target.value)}
                     required={field.required}
                     placeholder={field.description}
                     className={formErrors[field.name] ? "border-red-500" : ""}
@@ -238,8 +291,8 @@ export default function NewIncidentPage() {
                   <Input
                     id={field.name}
                     type="date"
-                    value={(formData as Record<string, any>)[field.name] ?? ""}
-                    onChange={e => handleInputChange(field.name, e.target.value)}
+                    value={getFormDataValue(formData, field.name)}
+                    onChange={e => handleInputChange(field.name as keyof FormData, e.target.value)}
                     required={field.required}
                     className={formErrors[field.name] ? "border-red-500" : ""}
                   />
@@ -248,8 +301,8 @@ export default function NewIncidentPage() {
                   <Input
                     id={field.name}
                     type="email"
-                    value={(formData as Record<string, any>)[field.name] ?? ""}
-                    onChange={e => handleInputChange(field.name, e.target.value)}
+                    value={getFormDataValue(formData, field.name)}
+                    onChange={e => handleInputChange(field.name as keyof FormData, e.target.value)}
                     required={field.required}
                     placeholder={field.description}
                     className={formErrors[field.name] ? "border-red-500" : ""}
@@ -259,8 +312,8 @@ export default function NewIncidentPage() {
                   <Input
                     id={field.name}
                     type="password"
-                    value={(formData as Record<string, any>)[field.name] ?? ""}
-                    onChange={e => handleInputChange(field.name, e.target.value)}
+                    value={getFormDataValue(formData, field.name)}
+                    onChange={e => handleInputChange(field.name as keyof FormData, e.target.value)}
                     required={field.required}
                     placeholder={field.description}
                     className={formErrors[field.name] ? "border-red-500" : ""}
@@ -270,28 +323,24 @@ export default function NewIncidentPage() {
                   <Input
                     id={field.name}
                     type="tel"
-                    value={(formData as Record<string, any>)[field.name] ?? ""}
-                    onChange={e => handleInputChange(field.name, e.target.value)}
+                    value={getFormDataValue(formData, field.name)}
+                    onChange={e => handleInputChange(field.name as keyof FormData, e.target.value)}
                     required={field.required}
                     placeholder={field.description}
                     className={formErrors[field.name] ? "border-red-500" : ""}
                   />
                 )}
                 {field.type === "file" && (
-                  <Input
-                    id={field.name}
-                    type="file"
-                    onChange={e => handleInputChange(field.name, e.target.files?.[0] || null)}
-                    required={field.required}
-                    className={formErrors[field.name] ? "border-red-500" : ""}
-                  />
+                  <div className="text-red-500 text-xs">
+                    Файлы не поддерживаются в шаблонах. Используйте основную форму.
+                  </div>
                 )}
                 {field.type === "url" && (
                   <Input
                     id={field.name}
                     type="url"
-                    value={(formData as Record<string, any>)[field.name] ?? ""}
-                    onChange={e => handleInputChange(field.name, e.target.value)}
+                    value={getFormDataValue(formData, field.name)}
+                    onChange={e => handleInputChange(field.name as keyof FormData, e.target.value)}
                     required={field.required}
                     placeholder={field.description}
                     className={formErrors[field.name] ? "border-red-500" : ""}
@@ -301,8 +350,8 @@ export default function NewIncidentPage() {
                   <Input
                     id={field.name}
                     type="color"
-                    value={(formData as Record<string, any>)[field.name] ?? "#000000"}
-                    onChange={e => handleInputChange(field.name, e.target.value)}
+                    value={getFormDataValue(formData, field.name) || "#000000"}
+                    onChange={e => handleInputChange(field.name as keyof FormData, e.target.value)}
                     required={field.required}
                     className={formErrors[field.name] ? "border-red-500" : ""}
                   />
@@ -311,8 +360,8 @@ export default function NewIncidentPage() {
                   <Input
                     id={field.name}
                     type="time"
-                    value={(formData as Record<string, any>)[field.name] ?? ""}
-                    onChange={e => handleInputChange(field.name, e.target.value)}
+                    value={getFormDataValue(formData, field.name)}
+                    onChange={e => handleInputChange(field.name as keyof FormData, e.target.value)}
                     required={field.required}
                     className={formErrors[field.name] ? "border-red-500" : ""}
                   />
@@ -324,8 +373,8 @@ export default function NewIncidentPage() {
                     min={field.min ?? 0}
                     max={field.max ?? 100}
                     step={field.step ?? 1}
-                    value={(formData as Record<string, any>)[field.name] ?? field.default ?? 0}
-                    onChange={e => handleInputChange(field.name, e.target.value)}
+                    value={getFormDataValue(formData, field.name) || (field.default?.toString() ?? "0")}
+                    onChange={e => handleInputChange(field.name as keyof FormData, e.target.value)}
                     required={field.required}
                     className={formErrors[field.name] ? "border-red-500" : ""}
                   />
@@ -333,21 +382,24 @@ export default function NewIncidentPage() {
                 {field.type === "textarea" && (
                   <Textarea
                     id={field.name}
-                    value={(formData as Record<string, any>)[field.name] ?? ""}
-                    onChange={e => handleInputChange(field.name, e.target.value)}
+                    value={getFormDataValue(formData, field.name)}
+                    onChange={e => handleInputChange(field.name as keyof FormData, e.target.value)}
                     required={field.required}
                     placeholder={field.description}
                     className={formErrors[field.name] ? "border-red-500" : ""}
                   />
                 )}
                 {field.type === "select" && (
-                  <Select value={(formData as Record<string, any>)[field.name] ?? ""} onValueChange={val => handleInputChange(field.name, val)}>
+                  <Select 
+                    value={getFormDataValue(formData, field.name)}
+                    onValueChange={val => handleInputChange(field.name as keyof FormData, val)}
+                  >
                     <SelectTrigger className={formErrors[field.name] ? "border-red-500" : ""}>
                       <SelectValue placeholder={field.description || "Выберите вариант"} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="" disabled>Выберите вариант</SelectItem>
-                      {field.options?.map((opt: string) => (
+                      {field.options?.map(opt => (
                         <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                       ))}
                     </SelectContent>
@@ -357,8 +409,13 @@ export default function NewIncidentPage() {
                   <div className="flex items-center gap-2">
                     <Checkbox
                       id={field.name}
-                      checked={!!(formData as Record<string, any>)[field.name]}
-                      onCheckedChange={val => handleInputChange(field.name, !!val)}
+                      checked={getFormDataBoolean(formData, field.name)}
+                      onCheckedChange={val => {
+                        setFormData(prev => ({
+                          ...prev,
+                          [field.name]: val === true
+                        }))
+                      }}
                     />
                     <Label htmlFor={field.name}>{field.description}</Label>
                   </div>
@@ -403,7 +460,6 @@ export default function NewIncidentPage() {
           ))}
         </div>
         
-        {/* Кнопки навигации */}
         <div className="flex gap-4">
           <Button 
             variant="outline" 
@@ -440,21 +496,6 @@ export default function NewIncidentPage() {
       {selectedTemplateId && selectedTemplate ? renderTemplateForm() : (
         <form onSubmit={handleSubmit} className="space-y-6">
           <Button type="button" variant="outline" onClick={() => setStep("select")}>Назад к выбору шаблона</Button>
-          {/* Выбор шаблона (скрыт, т.к. теперь wizard) */}
-          {/* <div className="space-y-2">
-          <Label htmlFor="template">Шаблон</Label>
-          <select
-            id="template"
-            className="w-full border rounded px-3 py-2"
-            value={selectedTemplateId}
-            onChange={e => setSelectedTemplateId(e.target.value)}
-          >
-            <option value="">Без шаблона</option>
-            {templates.map(t => (
-              <option key={t.id} value={t.id}>{t.name}</option>
-            ))}
-          </select>
-        </div> */}
           {formError && (
             <div className="bg-red-100 text-red-700 px-4 py-2 rounded border border-red-300">
               {formError}
@@ -472,7 +513,7 @@ export default function NewIncidentPage() {
                   id="title"
                   placeholder="Например: Недоступность почтового сервера"
                   value={formData.title}
-                  onChange={(e) => handleInputChange("title", e.target.value)}
+                  onChange={e => handleInputChange("title", e.target.value)}
                   required
                   className={errors.title ? "border-red-500 focus:border-red-500" : ""}
                 />
@@ -486,7 +527,7 @@ export default function NewIncidentPage() {
                   placeholder="Опишите проблему детально, укажите шаги для воспроизведения, влияние на бизнес..."
                   rows={4}
                   value={formData.description}
-                  onChange={(e) => handleInputChange("description", e.target.value)}
+                  onChange={e => handleInputChange("description", e.target.value)}
                   className={errors.description ? "border-red-500 focus:border-red-500" : ""}
                 />
                 {errors.description && <div className="text-red-500 text-xs mt-1">{errors.description}</div>}
@@ -495,7 +536,7 @@ export default function NewIncidentPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="priority">Приоритет</Label>
-                  <Select value={formData.priority} onValueChange={(value) => handleInputChange("priority", value)}>
+                  <Select value={formData.priority} onValueChange={value => handleInputChange("priority", value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="(будет установлен администратором)" />
                     </SelectTrigger>
@@ -511,7 +552,7 @@ export default function NewIncidentPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="category">Категория</Label>
-                  <Select value={formData.category} onValueChange={(value) => handleInputChange("category", value)}>
+                  <Select value={formData.category} onValueChange={value => handleInputChange("category", value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Выберите категорию" />
                     </SelectTrigger>
@@ -537,12 +578,12 @@ export default function NewIncidentPage() {
             <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="assignee">Исполнитель</Label>
-                  <Select value={formData.assignee} onValueChange={(value) => handleInputChange("assignee", value)}>
+                  <Select value={formData.assignee} onValueChange={value => handleInputChange("assignee", value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="(назначит администратор)" />
                     </SelectTrigger>
                     <SelectContent>
-                      {assignees.map((user) => (
+                      {assignees.map(user => (
                         <SelectItem key={user.id} value={user.id}>
                           {user.name} — {user.position} ({user.email})
                         </SelectItem>
@@ -557,7 +598,7 @@ export default function NewIncidentPage() {
                 <Input
                   id="reporter"
                   value={formData.reporter}
-                  onChange={(e) => handleInputChange("reporter", e.target.value)}
+                  onChange={e => handleInputChange("reporter", e.target.value)}
                   disabled
                 />
               </div>
@@ -577,7 +618,7 @@ export default function NewIncidentPage() {
                   placeholder="Опишите, что уже пробовали сделать"
                   rows={2}
                   value={formData.preActions}
-                  onChange={(e) => handleInputChange("preActions", e.target.value)}
+                  onChange={e => handleInputChange("preActions", e.target.value)}
                 />
               </div>
               <div className="space-y-2">
@@ -587,7 +628,7 @@ export default function NewIncidentPage() {
                   placeholder="Что вы ожидаете получить в результате решения?"
                   rows={2}
                   value={formData.expectedResult}
-                  onChange={(e) => handleInputChange("expectedResult", e.target.value)}
+                  onChange={e => handleInputChange("expectedResult", e.target.value)}
                 />
               </div>
               <div className="space-y-2">

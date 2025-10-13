@@ -1,35 +1,20 @@
+// app/changes/ChangesListWrapper.tsx
 "use client";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import ChangesListClient from './ChangesListClient';
-
-type Assignee = {
-  id: string | number;
-  firstName: string;
-  lastName: string;
-  email?: string;
-  avatar?: string
-  // Добавьте другие поля, если они есть в объекте assignee
-};
+import type { Change, User } from '@/app/types/change';
 
 export default function ChangesListWrapper({
   isAdmin,
   assignees,
 }: {
   isAdmin: boolean;
-  assignees: Assignee[];
+  assignees: User[];
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const page = parseInt(searchParams.get('page') || '1', 10);
-
-
-  type Change = {
-    // Примерные поля, заменить на актуальные если известны
-    id: string | number;
-    [key: string]: unknown;
-  };
-
   const pageSize = parseInt(searchParams.get('pageSize') || '10', 10);
 
   const [changes, setChanges] = useState<Change[]>([]);
@@ -52,6 +37,7 @@ export default function ChangesListWrapper({
   const handlePageChange = (newPage: number) => {
     router.push(`/changes?page=${newPage}&pageSize=${pageSize}`);
   };
+  
   const handlePageSizeChange = (newSize: number) => {
     router.push(`/changes?page=1&pageSize=${newSize}`);
   };

@@ -9,17 +9,52 @@ import { Label } from "@/components/ui/label"
 import { DatePickerWithRange } from "@/components/ui/date-range-picker"
 import { ArrowLeft, Download, Filter, TrendingUp, Clock, AlertTriangle, Target } from "lucide-react"
 import Link from "next/link"
+import { DateRange } from "react-day-picker"
+
+// Типы данных
+interface TrendItem {
+  period: string
+  created: number
+  resolved: number
+  pending: number
+}
+
+interface CategoryItem {
+  category: string
+  count: number
+  avgTime: string
+  sla: number
+}
+
+interface PriorityItem {
+  priority: string
+  count: number
+  avgTime: string
+  sla: number
+  target: string
+}
+
+interface DetailedMetrics {
+  totalIncidents: number
+  resolvedIncidents: number
+  avgResolutionTime: string
+  firstResponseTime: string
+  slaCompliance: number
+  escalationRate: number
+  reopenRate: number
+  customerSatisfaction: number
+}
 
 // Страница отчетов по инцидентам
 export default function IncidentReportsPage() {
   // Состояния для фильтров
-  const [dateRange, setDateRange] = useState<any>(null)
-  const [category, setCategory] = useState("all")
-  const [priority, setPriority] = useState("all")
-  const [assignee, setAssignee] = useState("all")
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
+  const [category, setCategory] = useState<string>("all")
+  const [priority, setPriority] = useState<string>("all")
+  const [assignee, setAssignee] = useState<string>("all")
 
   // Детализированные метрики (заглушка)
-  const detailedMetrics = {
+  const detailedMetrics: DetailedMetrics = {
     totalIncidents: 156,
     resolvedIncidents: 134,
     avgResolutionTime: "4.2 часа",
@@ -31,7 +66,7 @@ export default function IncidentReportsPage() {
   }
 
   // Данные для трендов (заглушка)
-  const trendData = [
+  const trendData: TrendItem[] = [
     { period: "Неделя 1", created: 38, resolved: 35, pending: 3 },
     { period: "Неделя 2", created: 42, resolved: 40, pending: 5 },
     { period: "Неделя 3", created: 35, resolved: 38, pending: 2 },
@@ -39,7 +74,7 @@ export default function IncidentReportsPage() {
   ]
 
   // Данные по категориям (заглушка)
-  const categoryBreakdown = [
+  const categoryBreakdown: CategoryItem[] = [
     { category: "Инфраструктура", count: 45, avgTime: "5.2ч", sla: 92 },
     { category: "Приложения", count: 38, avgTime: "3.8ч", sla: 96 },
     { category: "Сеть", count: 32, avgTime: "4.1ч", sla: 94 },
@@ -48,7 +83,7 @@ export default function IncidentReportsPage() {
   ]
 
   // Анализ по приоритетам (заглушка)
-  const priorityAnalysis = [
+  const priorityAnalysis: PriorityItem[] = [
     { priority: "Критический", count: 2, avgTime: "1.2ч", sla: 100, target: "1ч" },
     { priority: "Высокий", count: 8, avgTime: "2.8ч", sla: 95, target: "4ч" },
     { priority: "Средний", count: 12, avgTime: "6.2ч", sla: 92, target: "8ч" },
@@ -59,7 +94,7 @@ export default function IncidentReportsPage() {
     console.log("Экспорт детального отчета по инцидентам")
   }
 
-  const getPriorityColor = (priority: string) => {
+  const getPriorityColor = (priority: string): string => {
     switch (priority) {
       case "Критический":
         return "bg-red-500 text-white"
@@ -74,12 +109,11 @@ export default function IncidentReportsPage() {
     }
   }
 
-  const getSlaColor = (sla: number) => {
+  const getSlaColor = (sla: number): string => {
     if (sla >= 95) return "text-green-600"
     if (sla >= 90) return "text-yellow-600"
     return "text-red-600"
   }
-
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">

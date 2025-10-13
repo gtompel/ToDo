@@ -1,10 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Loader2, BotIcon, CheckCircle2, XCircle, Minus, X } from 'lucide-react';
 
-const AI_API_URL = process.env.NEXT_PUBLIC_AI_API_URL || 'http://172.16.8.200:11434';
+
 
 interface AiAssistantChatProps {
   open: boolean;

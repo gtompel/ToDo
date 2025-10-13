@@ -7,16 +7,43 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Search, Eye, Edit, Star, ThumbsUp, BookOpen, TrendingUp, Clock } from "lucide-react"
+import { Plus, Search, Eye, Edit, Star, BookOpen, TrendingUp } from "lucide-react"
 import Link from "next/link"
 import { useCurrentUser } from "@/hooks/use-user"
 
+// =============== ТИПЫ ===============
+interface Author {
+  id: string
+  firstName: string | null
+  lastName: string | null
+  email: string
+}
+
+interface Article {
+  id: string
+  title: string
+  description: string | null
+  category: string | null
+  tags: string[]
+  status: "draft" | "published" | "На рассмотрении"
+  views: number
+  rating: number
+  helpful: number
+  notHelpful: number
+  commentsCount: number
+  createdAt: string | null
+  updatedAt: string | null
+  authorId: string
+  author: Author | null
+}
+
+// =============== КОМПОНЕНТ ===============
 export default function KnowledgeBasePage() {
   const { user: currentUser } = useCurrentUser()
   const [searchTerm, setSearchTerm] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("all")
   const [sortBy, setSortBy] = useState("recent")
-  const [articles, setArticles] = useState<any[]>([])
+  const [articles, setArticles] = useState<Article[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [tab, setTab] = useState("articles")
@@ -34,7 +61,7 @@ export default function KnowledgeBasePage() {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
     const authorIds = new Set(
       articles
-        .filter((a) => new Date(a.updatedAt || a.updated) >= startOfMonth)
+        .filter((a) => new Date(a.updatedAt || a.createdAt || 0) >= startOfMonth)
         .map((a) => a.authorId)
         .filter(Boolean)
     )
@@ -52,7 +79,7 @@ export default function KnowledgeBasePage() {
 
   // Категории и теги можно вычислять из статей
   const categories = Array.from(new Set(articles.map(a => a.category).filter(Boolean))).map(name => ({
-    name,
+    name: name as string, // Убеждаемся, что name - строка
     count: articles.filter(a => a.category === name).length,
     color: "bg-blue-100 text-blue-800"
   }))
@@ -67,7 +94,7 @@ export default function KnowledgeBasePage() {
     const matchesSearch =
       article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (article.description || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (article.tags || []).some((tag: string) => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+      (article.tags || []).some((tag) => tag.toLowerCase().includes(searchTerm.toLowerCase()))
     const matchesCategory = categoryFilter === "all" || article.category === categoryFilter
     // Черновики видны только автору или админу
     const isDraft = article.status === "draft"
@@ -86,7 +113,7 @@ export default function KnowledgeBasePage() {
       case "views":
         return (b.views || 0) - (a.views || 0)
       case "recent":
-        return new Date(b.updatedAt || b.updated).getTime() - new Date(a.updatedAt || a.updated).getTime()
+        return new Date(b.updatedAt || b.createdAt || 0).getTime() - new Date(a.updatedAt || a.createdAt || 0).getTime()
       default:
         return 0
     }
@@ -126,7 +153,6 @@ export default function KnowledgeBasePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{articles.length}</div>
-            {/* Убрали моковую подпись */}
           </CardContent>
         </Card>
         <Card>
@@ -194,8 +220,8 @@ export default function KnowledgeBasePage() {
                   <SelectContent>
                     <SelectItem value="all">Все категории</SelectItem>
                     {categories.map((category) => (
-                      <SelectItem key={category.name} value={category.name}>
-                        {category.name} ({category.count})
+                      <SelectItem key={category.name || 'no-category'} value={category.name || ''}>
+                        {category.name || 'Без категории'} ({category.count})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -232,8 +258,8 @@ export default function KnowledgeBasePage() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1 space-y-3">
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline" className={getCategoryColor(article.category)}>
-                          {article.category}
+                        <Badge variant="outline" className={getCategoryColor(article.category || "")}>
+                          {article.category || "Без категории"}
                         </Badge>
                         <span className="text-sm text-muted-foreground">{article.id}</span>
                         {article.status === "На рассмотрении" && (
@@ -253,7 +279,7 @@ export default function KnowledgeBasePage() {
                       </div>
 
                       <div className="flex flex-wrap gap-1">
-                        {article.tags.map((tag: string) => (
+                        {article.tags.map((tag) => (
                           <Badge key={tag} variant="secondary" className="text-xs">
                             {tag}
                           </Badge>
@@ -261,7 +287,12 @@ export default function KnowledgeBasePage() {
                       </div>
 
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span>Автор: {article.author?.lastName || ''} {article.author?.firstName || ''}{!article.author?.lastName && !article.author?.firstName ? article.author?.email : ''}</span>
+                        <span>
+                          Автор:{" "}
+                          {article.author?.lastName || article.author?.firstName
+                            ? `${article.author.lastName || ""} ${article.author.firstName || ""}`.trim()
+                            : article.author?.email || "Неизвестен"}
+                        </span>
                         <span className="flex items-center gap-1">
                           <Eye className="w-3 h-3" />
                           {article.views || 0}
@@ -280,10 +311,10 @@ export default function KnowledgeBasePage() {
                           💬 {article.commentsCount || 0}
                         </span>
                         <span className="flex items-center gap-1">
-                          Создано: {article.createdAt ? new Date(article.createdAt).toLocaleDateString() : '-'}
+                          Создано: {article.createdAt ? new Date(article.createdAt).toLocaleDateString() : "-"}
                         </span>
                         <span className="flex items-center gap-1">
-                          Обновлено: {article.updatedAt ? new Date(article.updatedAt).toLocaleDateString() : '-'}
+                          Обновлено: {article.updatedAt ? new Date(article.updatedAt).toLocaleDateString() : "-"}
                         </span>
                       </div>
                     </div>

@@ -63,15 +63,15 @@ model Incident {
   status         IncidentStatus @default(OPEN)
   category       String?
   assignedToId   String?
-  createdById    String
+  createdById    String?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
   resolvedAt     DateTime?
   attachments    String[]
   expectedResult String?
   preActions     String?
-  assignedTo     User?          @relation("AssignedTo", fields: [assignedToId], references: [id])
-  createdBy      User           @relation("CreatedBy", fields: [createdById], references: [id])
+  assignedTo     User?          @relation("AssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdBy      User?          @relation("CreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@map("incidents")
   @@index([status])
@@ -86,13 +86,13 @@ model Request {
   status       RequestStatus @default(OPEN)
   category     String?
   assignedToId String?
-  createdById  String
+  createdById  String?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   resolvedAt   DateTime?
   acknowledgmentFile String?
-  assignedTo   User?         @relation("AssignedTo", fields: [assignedToId], references: [id])
-  createdBy    User          @relation("CreatedBy", fields: [createdById], references: [id])
+  assignedTo   User?         @relation("AssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdBy    User?         @relation("CreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@map("requests")
   @@index([status])
@@ -107,7 +107,7 @@ model Change {
   status                ChangeStatus @default(DRAFT)
   category              String?
   assignedToId          String?
-  createdById           String
+  createdById           String?
   scheduledAt           DateTime?
   createdAt             DateTime     @default(now())
   updatedAt             DateTime     @updatedAt
@@ -121,8 +121,8 @@ model Change {
   risk                  String?
   testPlan              String?
   urgency               String?
-  assignedTo            User?        @relation("AssignedTo", fields: [assignedToId], references: [id])
-  createdBy             User         @relation("CreatedBy", fields: [createdById], references: [id])
+  assignedTo            User?        @relation("AssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdBy             User?        @relation("CreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@map("changes")
   @@index([status])
@@ -140,23 +140,23 @@ model Article {
   status      String?
   helpful     Int      @default(0)
   notHelpful  Int      @default(0)
-  createdById String
+  createdById String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  authorId    String
-  author      User     @relation("UserArticles", fields: [authorId], references: [id])
+  authorId    String?
+  author      User?    @relation("UserArticles", fields: [authorId], references: [id], onDelete: SetNull)
   comments    Comment[]
   views       Int      @default(0)
 }
 
 model Notification {
   id        String   @id @default(uuid())
-  userId    String
+  userId    String?
   title     String
   message   String
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([userId])
 }
@@ -196,7 +196,7 @@ model Workstation {
   department  String?
   room        String?
   type        String?
-  user        User?    @relation(fields: [userId], references: [id])
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
 model SystemSettings {
@@ -212,19 +212,19 @@ model Comment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   articleId String
-  userId    String
+  userId    String?
   article   Article  @relation(fields: [articleId], references: [id])
-  user      User     @relation(fields: [userId], references: [id])
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
 model ActivityLog {
   id        String   @id @default(cuid())
-  userId    String
+  userId    String?
   action    String
   status    String
   ip        String?
   createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   
   @@index([userId])
 }

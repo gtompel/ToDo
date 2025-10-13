@@ -1,10 +1,30 @@
 "use client"
-import { use, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 
-export default function WorkstationPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
-  const [workstation, setWorkstation] = useState<any>(null)
+// План:
+ // 1. Задать корректный тип для workstation вместо any.
+ // 2. Вынести тип Workstation.
+ // 3. Исправить типизацию params (он не должен быть Promise).
+ // 4. Убрать use(params), использовать params напрямую.
+
+type Workstation = {
+  id: string
+  name: string
+  description?: string
+  user?: {
+    firstName: string
+    lastName: string
+  } | null
+  ip?: string | null
+  status: string
+  createdAt: string
+  updatedAt: string
+}
+
+export default function WorkstationPage({ params }: { params: { id: string } }) {
+  const { id } = params
+  const [workstation, setWorkstation] = useState<Workstation | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 

@@ -6,11 +6,30 @@ import { useCurrentUser } from "@/hooks/use-user"
 import { useToast } from "@/components/ui/use-toast"
 import { useConfirm } from "@/components/ui/confirm-dialog"
 
-export default function CommentsBlock({ article, comments }: { article: any, comments: any[] }) {
+// Интерфейсы
+interface User {
+  id: string
+  firstName?: string | null
+  lastName?: string | null
+  email?: string | null
+}
+
+interface Comment {
+  id: string
+  content: string
+  createdAt: string
+  user: User | null
+}
+
+interface Article {
+  id: string
+}
+
+export default function CommentsBlock({ article, comments }: { article: Article, comments: Comment[] }) {
   const { user: currentUser } = useCurrentUser()
   const [comment, setComment] = useState("")
   const { toast } = useToast()
-  const [localComments, setLocalComments] = useState<any[]>(comments)
+  const [localComments, setLocalComments] = useState<Comment[]>(comments)
   const { confirm, dialog } = useConfirm()
   const [pending, setPending] = useState(false)
 
@@ -100,11 +119,14 @@ export default function CommentsBlock({ article, comments }: { article: any, com
         <div className="text-muted-foreground">Комментариев пока нет</div>
       ) : (
         <div className="space-y-4">
-          {localComments.map((c: any) => (
+          {localComments.map((c) => (
             <div key={c.id} className="border-l-2 border-muted pl-4 space-y-2 opacity-100">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm">
-                  <span className="font-medium">{c.user?.lastName || ''} {c.user?.firstName || ''}{!c.user?.lastName && !c.user?.firstName ? c.user?.email : ''}</span>
+                  <span className="font-medium">
+                    {c.user?.lastName || ''} {c.user?.firstName || ''}
+                    {!c.user?.lastName && !c.user?.firstName ? c.user?.email : ''}
+                  </span>
                   <span className="text-muted-foreground">{new Date(c.createdAt).toLocaleString()}</span>
                 </div>
                 {currentUser && currentUser.role === "ADMIN" && (

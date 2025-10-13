@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { AlertTriangle, HelpCircle, GitBranch } from "lucide-react"
 import { prisma } from "@/lib/prisma"
+import type { IncidentWithUsers, RequestWithUsers } from "@/app/types/change"
 
 export const revalidate = 60
 
@@ -147,7 +148,7 @@ export default async function Dashboard() {
               {recentIncidents.length === 0 ? (
                 <p className="text-gray-500 text-center py-4">Нет инцидентов</p>
               ) : (
-                recentIncidents.map((incident: any) => (
+                recentIncidents.map((incident: IncidentWithUsers) => (
                   <div key={incident.id} className="flex items-center justify-between p-3 border rounded-lg">
                     <div className="flex-1">
                       <h4 className="font-medium">{incident.title}</h4>
@@ -176,7 +177,7 @@ export default async function Dashboard() {
               {recentRequests.length === 0 ? (
                 <p className="text-gray-500 text-center py-4">Нет запросов</p>
               ) : (
-                recentRequests.map((request: any) => (
+                recentRequests.map((request: RequestWithUsers) => (
                   <div key={request.id} className="flex items-center justify-between p-3 border rounded-lg">
                     <div className="flex-1">
                       <h4 className="font-medium">{request.title}</h4>

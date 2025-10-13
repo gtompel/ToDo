@@ -29,7 +29,7 @@ type Incident = {
   priority: string
 }
 
-type Assignee = { id: string; firstName: string; lastName: string; email: string }
+type Assignee = { id: string; firstName: string | null; lastName: string | null; email: string }
 
 // Компонент для административных действий над инцидентом
 export default function IncidentsAdminActions({ incident, assignees, onUpdated, onDeleted }: { incident: Incident, assignees: Assignee[], onUpdated?: (patch: Partial<Incident> & { assignedTo?: Assignee }) => void, onDeleted?: () => void }) {

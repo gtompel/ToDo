@@ -1,3 +1,4 @@
+// app/changes/ChangesAdminActions.tsx
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -14,8 +15,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import type { Change, UserLite } from "@/app/types/change";
 
-// Варианты статусов для изменений
 const STATUS_OPTIONS = [
   { value: "DRAFT", label: "Черновик" },
   { value: "PENDING_APPROVAL", label: "Ожидание одобрения" },
@@ -25,31 +26,12 @@ const STATUS_OPTIONS = [
   { value: "CANCELLED", label: "Отменено" },
 ];
 
-// Варианты приоритетов для изменений
 const PRIORITY_OPTIONS = [
   { value: "CRITICAL", label: "Критический" },
   { value: "HIGH", label: "Высокий" },
   { value: "MEDIUM", label: "Средний" },
   { value: "LOW", label: "Низкий" },
 ];
-
-type UserLite = {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-};
-
-type Change = {
-  id: string;
-  title: string;
-  description: string | null;
-  status: string;
-  priority: string;
-  category: string | null;
-  assignedToId?: string | null;
-  createdAt: string;
-};
 
 type ChangesAdminActionsProps = {
   change: Change;
@@ -65,7 +47,6 @@ type ChangesAdminActionsProps = {
   onUpdated?: (patch: Partial<Change> & { assignedTo?: UserLite }) => void;
 };
 
-// Компонент для административных действий над изменением
 export default function ChangesAdminActions({
   change,
   assignees,
@@ -90,12 +71,10 @@ export default function ChangesAdminActions({
   );
   const [editCategory, setEditCategory] = useState(change.category || "");
 
-  // Используем внешнее управление диалогом редактирования, если оно передано
   const isEditDialogControlled = editDialogOpen !== undefined;
   const isEditOpen = isEditDialogControlled ? editDialogOpen : false;
   const setIsEditOpen = isEditDialogControlled ? setEditDialogOpen : undefined;
 
-  // Синхронизация состояния редактирования
   useEffect(() => {
     if (editingChange && editingChange.id === change.id) {
       setEditTitle(editingChange.title || "");
@@ -107,7 +86,6 @@ export default function ChangesAdminActions({
     }
   }, [editingChange, change.id]);
 
-  // Обработка административных действий
   const handleAdminAction = async (
     action: "status" | "priority" | "assign",
     value?: string
@@ -170,7 +148,6 @@ export default function ChangesAdminActions({
     }
   };
 
-  // Обработчик удаления
   const handleDelete = async () => {
     if (!deletingChange) return;
 
@@ -189,12 +166,9 @@ export default function ChangesAdminActions({
 
       toast({ title: "Успешно", description: "Изменение удалено" });
 
-      // Закрываем диалог
       if (setDeleteDialogOpen) setDeleteDialogOpen(false);
       if (setDeletingChange) setDeletingChange(null);
-
-      // Обновляем список
-      onUpdated?.({}); // Это вызовет обновление в ChangesListClient
+      onUpdated?.({});
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       toast({ title: "Ошибка", description: message, variant: "destructive" });

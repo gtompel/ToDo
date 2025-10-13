@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import type { ComponentType } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -8,54 +9,134 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import {
   BarChart3,
-  TrendingUp,
-  TrendingDown,
   Clock,
   AlertTriangle,
   CheckCircle,
   Users,
-  Calendar,
   Download,
   RefreshCw,
   Loader2,
 } from "lucide-react"
-import { ChartContainer } from "@/components/ui/chart"
-import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from "recharts"
-import { Tooltip as UITooltip } from "@/components/ui/tooltip"
+import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer,Cell, BarChart, Bar } from "recharts"
 import useSWR from 'swr'
 
-// Страница отчетов
-export default function ReportsPage() {
-  // Состояния для диапазона времени и загрузки
-  const [timeRange, setTimeRange] = useState("30d")
-  const [refreshing, setRefreshing] = useState(false)
-  const [trendPeriod, setTrendPeriod] = useState(30)
+// ---------------------------
+// Интерфейсы для типизации
+// ---------------------------
 
-  const fetcher = (url: string) => fetch(url).then(r => r.json())
-  const { data: metrics, error: metricsError, isLoading: metricsLoading } = useSWR('/api/reports/metrics', fetcher, { revalidateOnFocus: false })
-  const { data: trend, error: trendError, isLoading: trendLoading } = useSWR(`/api/reports/trends?days=${trendPeriod}`, fetcher, { revalidateOnFocus: false })
+interface Assignee {
+  id: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+  isActive?: boolean;
+}
+
+interface StatusData {
+  status: string;
+  _count: { _all: number };
+}
+
+interface CategoryData {
+  category?: string | null;
+  _count: { _all: number };
+}
+
+interface AssigneeMetrics {
+  assignedToId: string;
+  _count: { _all: number };
+}
+
+interface MetricsData {
+  totalIncidents: number;
+  openIncidents: number;
+  closedIncidents: number;
+  totalRequests: number;
+  openRequests: number;
+  closedRequests: number;
+  totalChanges?: number;
+  pendingChanges?: number;
+  avgIncidentResolution?: number;
+  avgRequestCompletionTime?: string;
+  slaPercent: number;
+  slaCompliancePercent: number;
+  incidentStatus?: StatusData[];
+  incidentCategory?: CategoryData[];
+  requestStatus?: StatusData[];
+  requestCategory?: CategoryData[];
+  changeStatus?: StatusData[];
+  changeCategory?: CategoryData[];
+  incidentByAssignee?: AssigneeMetrics[];
+  requestByAssignee?: AssigneeMetrics[];
+  changeByAssignee?: AssigneeMetrics[];
+}
+
+interface TrendData {
+  labels: string[];
+  incidents: number[];
+  requests: number[];
+  changes: number[];
+  incidentsCreated: number[];
+  incidentsClosed: number[];
+  total?: {
+    incidents: number;
+    requests: number;
+    changes: number;
+  };
+}
+
+interface StatusMeta {
+  color: string;
+  icon: ComponentType<{ className?: string }>;
+  label: string;
+}
+
+// ---------------------------
+// Утилиты
+// ---------------------------
+const fetcher = (url: string) => fetch(url).then(r => r.json())
+
+// ---------------------------
+// Компонент
+// ---------------------------
+export default function ReportsPage(): JSX.Element {
+  // Состояния для диапазона времени и загрузки
+  const [timeRange, setTimeRange] = useState<string>("30d")
+  const [refreshing, setRefreshing] = useState<boolean>(false)
+  const [trendPeriod, setTrendPeriod] = useState<number>(30)
+
+  // Типизируем SWR для метрик
+  const { data: metrics, error: metricsError, isLoading: metricsLoading } = useSWR<MetricsData, Error>('/api/reports/metrics', fetcher, { revalidateOnFocus: false })
+  const { data: trend, error: trendError, isLoading: trendLoading } = useSWR<TrendData, Error>(`/api/reports/trends?days=${trendPeriod}`, fetcher, { revalidateOnFocus: false })
 
   // Цвета и иконки для статусов инцидентов
-  const incidentStatusMeta: Record<string, { color: string; icon: any; label: string }> = {
+  const incidentStatusMeta: Record<string, StatusMeta> = {
     CLOSED: { color: "#22c55e", icon: CheckCircle, label: "Решено" },
     IN_PROGRESS: { color: "#f59e42", icon: Clock, label: "В работе" },
     OPEN: { color: "#2563eb", icon: AlertTriangle, label: "Новые" },
     RESOLVED: { color: "#06b6d4", icon: CheckCircle, label: "Решено (ожидает)" },
   }
 
-  // Получить ФИО исполнителей по id
-  const [assignees, setAssignees] = useState<any>({})
+  // Получить ФИО исполнителей по id — теперь типизировано
+  const [assignees, setAssignees] = useState<Record<string, Assignee>>({})
   useEffect(() => {
     if (!metrics) return
+
     const ids = [
-      ...metrics.incidentByAssignee.map((a: any) => a.assignedToId),
-      ...metrics.requestByAssignee.map((a: any) => a.assignedToId),
-      ...metrics.changeByAssignee.map((a: any) => a.assignedToId),
+      ...(metrics.incidentByAssignee ?? []).map((a: AssigneeMetrics) => a.assignedToId),
+      ...(metrics.requestByAssignee ?? []).map((a: AssigneeMetrics) => a.assignedToId),
+      ...(metrics.changeByAssignee ?? []).map((a: AssigneeMetrics) => a.assignedToId),
     ].filter(Boolean)
+
     if (ids.length === 0) return
+
     fetch(`/api/users?ids=${ids.join(",")}`)
-      .then(r => r.json())
-      .then(data => setAssignees(data.users.reduce((acc: any, u: any) => { acc[u.id] = u; return acc }, {})))
+      .then((r) => {
+        if (!r.ok) throw new Error(`Failed to load users: ${r.status}`)
+        return r.json() as Promise<{ users: Assignee[]}>
+      })
+      .then(data => setAssignees(data.users.reduce((acc: Record<string, Assignee>, u: Assignee) => { acc[u.id] = u; return acc }, {})))
+      .catch(() => setAssignees({}))
   }, [metrics])
 
   // Обновить данные отчета
@@ -78,22 +159,22 @@ export default function ReportsPage() {
       status: 'RESOLVED',
       label: 'Решено',
       value:
-        ((metrics?.incidentStatus || []).find((s: any) => s.status === 'CLOSED')?._count._all || 0) +
-        ((metrics?.incidentStatus || []).find((s: any) => s.status === 'RESOLVED')?._count._all || 0),
+        ((metrics?.incidentStatus || []).find((s: StatusData) => s.status === 'CLOSED')?._count._all || 0) +
+        ((metrics?.incidentStatus || []).find((s: StatusData) => s.status === 'RESOLVED')?._count._all || 0),
       color: incidentStatusMeta['CLOSED']?.color || '#64748b',
       icon: incidentStatusMeta['CLOSED']?.icon || AlertTriangle,
     },
     {
       status: 'IN_PROGRESS',
       label: 'В работе',
-      value: (metrics?.incidentStatus || []).find((s: any) => s.status === 'IN_PROGRESS')?._count._all || 0,
+      value: (metrics?.incidentStatus || []).find((s: StatusData) => s.status === 'IN_PROGRESS')?._count._all || 0,
       color: incidentStatusMeta['IN_PROGRESS']?.color || '#64748b',
       icon: incidentStatusMeta['IN_PROGRESS']?.icon || AlertTriangle,
     },
     {
       status: 'OPEN',
       label: 'Новые',
-      value: (metrics?.incidentStatus || []).find((s: any) => s.status === 'OPEN')?._count._all || 0,
+      value: (metrics?.incidentStatus || []).find((s: StatusData) => s.status === 'OPEN')?._count._all || 0,
       color: incidentStatusMeta['OPEN']?.color || '#64748b',
       icon: incidentStatusMeta['OPEN']?.icon || AlertTriangle,
     },
@@ -106,7 +187,7 @@ export default function ReportsPage() {
     { key: 'Оборудование', label: 'Оборудование' },
   ]
   const requestCategoryData = requestCategoryOrder.map(({ key, label }) => {
-    const found = (metrics?.requestCategory || []).find((c: any) => c.category === key)
+    const found = (metrics?.requestCategory || []).find((c: CategoryData) => c.category === key)
     return {
       category: key,
       label,
@@ -130,12 +211,12 @@ export default function ReportsPage() {
     IN_PROGRESS: 'В работе',
   }
 
-  // Получаем только сотрудников с задачами
-  const assigneesWithTasks = Object.values(assignees).filter((u: any) => {
+  // Получаем только сотрудников с задачами (типизировано)
+  const assigneesWithTasks = Object.values(assignees).filter((u: Assignee) => {
     const openTasks = [
-      metrics?.incidentByAssignee?.find((a: any) => a.assignedToId === u.id)?._count._all || 0,
-      metrics?.requestByAssignee?.find((a: any) => a.assignedToId === u.id)?._count._all || 0,
-      metrics?.changeByAssignee?.find((a: any) => a.assignedToId === u.id)?._count._all || 0,
+      metrics?.incidentByAssignee?.find((a: AssigneeMetrics) => a.assignedToId === u.id)?._count._all || 0,
+      metrics?.requestByAssignee?.find((a: AssigneeMetrics) => a.assignedToId === u.id)?._count._all || 0,
+      metrics?.changeByAssignee?.find((a: AssigneeMetrics) => a.assignedToId === u.id)?._count._all || 0,
     ].reduce((a, b) => a + b, 0)
     return openTasks > 0
   })
@@ -147,7 +228,7 @@ export default function ReportsPage() {
           <h1 className="text-3xl font-bold">Отчеты и аналитика</h1>
           <p className="text-muted-foreground">Метрики производительности ITSM процессов</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex/items-center gap-2">
           <Select value={timeRange} onValueChange={setTimeRange}>
             <SelectTrigger className="w-40">
               <SelectValue />
@@ -174,7 +255,7 @@ export default function ReportsPage() {
       {metricsLoading ? (
         <div className="p-8 text-center text-muted-foreground">Загрузка метрик...</div>
       ) : metricsError ? (
-        <div className="p-8 text-center text-red-500">{metricsError}</div>
+        <div className="p-8 text-center text-red-500">{metricsError.message}</div>
       ) : metrics && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
@@ -229,8 +310,6 @@ export default function ReportsPage() {
             <CardContent>
               {metricsLoading ? (
                 <div className="h-64 flex items-center justify-center text-muted-foreground">Загрузка графика...</div>
-              ) : metricsError ? (
-                <div className="h-64 flex items-center justify-center text-red-500">{metricsError}</div>
               ) : statusData.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
                   <span className="text-3xl">📊</span>
@@ -240,7 +319,7 @@ export default function ReportsPage() {
                 <>
                   <BarChart width={220} height={120} data={statusData}>
                     <Bar dataKey="value">
-                      {statusData.map((s, idx) => (
+                      {statusData.map((s) => (
                         <Cell key={s.status} fill={s.color} />
                       ))}
                     </Bar>
@@ -260,55 +339,60 @@ export default function ReportsPage() {
               )}
             </CardContent>
           </Card>
+
           {/* Инциденты по категории */}
           <Card>
             <CardHeader><CardTitle>Инциденты по категории</CardTitle></CardHeader>
             <CardContent>
               <ul className="text-xs space-y-1">
-                {(metrics?.incidentCategory || []).map((c: any) => (
-                  <li key={c.category}>{c.category || 'Без категории'}: <b>{c._count._all}</b></li>
+                {(metrics?.incidentCategory || []).map((c: CategoryData) => (
+                  <li key={c.category || 'none'}>{c.category || 'Без категории'}: <b>{c._count._all}</b></li>
                 ))}
               </ul>
             </CardContent>
           </Card>
+
           {/* Запросы */}
           <Card>
             <CardHeader><CardTitle>Запросы по статусу</CardTitle></CardHeader>
             <CardContent>
               <ul className="text-xs space-y-1">
-                {(metrics?.requestStatus || []).map((s: any) => (
+                {(metrics?.requestStatus || []).map((s: StatusData) => (
                   <li key={s.status}>{requestStatusRu[s.status] || s.status}: <b>{s._count._all}</b></li>
                 ))}
               </ul>
             </CardContent>
           </Card>
+
           <Card>
             <CardHeader><CardTitle>Запросы по категории</CardTitle></CardHeader>
             <CardContent>
               <ul className="text-xs space-y-1">
-                {(metrics?.requestCategory || []).map((c: any) => (
-                  <li key={c.category}>{c.category || 'Без категории'}: <b>{c._count._all}</b></li>
+                {(metrics?.requestCategory || []).map((c: CategoryData) => (
+                  <li key={c.category || 'none'}>{c.category || 'Без категории'}: <b>{c._count._all}</b></li>
                 ))}
               </ul>
             </CardContent>
           </Card>
+
           {/* Изменения */}
           <Card>
             <CardHeader><CardTitle>Изменения по статусу</CardTitle></CardHeader>
             <CardContent>
               <ul className="text-xs space-y-1">
-                {(metrics?.changeStatus || []).map((s: any) => (
+                {(metrics?.changeStatus || []).map((s: StatusData) => (
                   <li key={s.status}>{changeStatusRu[s.status] || s.status}: <b>{s._count._all}</b></li>
                 ))}
               </ul>
             </CardContent>
           </Card>
+
           <Card>
             <CardHeader><CardTitle>Изменения по категории</CardTitle></CardHeader>
             <CardContent>
               <ul className="text-xs space-y-1">
-                {(metrics?.changeCategory || []).map((c: any) => (
-                  <li key={c.category}>{c.category || 'Без категории'}: <b>{c._count._all}</b></li>
+                {(metrics?.changeCategory || []).map((c: CategoryData) => (
+                  <li key={c.category || 'none'}>{c.category || 'Без категории'}: <b>{c._count._all}</b></li>
                 ))}
               </ul>
             </CardContent>
@@ -349,7 +433,7 @@ export default function ReportsPage() {
                 {trendLoading ? (
                   <div className="h-64 flex items-center justify-center text-muted-foreground">Загрузка графика...</div>
                 ) : trendError ? (
-                  <div className="h-64 flex items-center justify-center text-red-500">{trendError}</div>
+                  <div className="h-64 flex items-center justify-center text-red-500">{trendError?.message}</div>
                 ) : trend && (
                   <>
                     <ResponsiveContainer width="100%" height={250}>
@@ -369,9 +453,9 @@ export default function ReportsPage() {
                       </LineChart>
                     </ResponsiveContainer>
                     <div className="flex gap-6 mt-2 text-xs text-muted-foreground">
-                      <span>Инцидентов: <b>{trend.total.incidents}</b></span>
-                      <span>Заявок: <b>{trend.total.requests}</b></span>
-                      <span>Изменений: <b>{trend.total.changes}</b></span>
+                      <span>Инцидентов: <b>{trend.total?.incidents ?? 0}</b></span>
+                      <span>Заявок: <b>{trend.total?.requests ?? 0}</b></span>
+                      <span>Изменений: <b>{trend.total?.changes ?? 0}</b></span>
                     </div>
                   </>
                 )}
@@ -393,25 +477,17 @@ export default function ReportsPage() {
                         <div
                           className="h-full bg-green-500"
                           style={{
-                            width: `${
-                              (
-                                (
-                                  (metrics?.incidentStatus?.find((s: { status: string; _count: { _all: number } }) => s.status === 'CLOSED')?._count._all || 0) +
-                                  (metrics?.incidentStatus?.find((s: { status: string; _count: { _all: number } }) => s.status === 'RESOLVED')?._count._all || 0)
-                                ) / (metrics?.totalIncidents || 1)
-                              ) * 100
-                            }%`
+                            width: `${(
+                              ((metrics?.incidentStatus?.find((s: StatusData) => s.status === 'CLOSED')?._count._all || 0) +
+                              (metrics?.incidentStatus?.find((s: StatusData) => s.status === 'RESOLVED')?._count._all || 0)
+                            ) / (metrics?.totalIncidents || 1)) * 100}%`
                           }}
                         />
                       </div>
-                      <span className="text-sm font-medium">
-                        {
-                          ((metrics?.incidentStatus?.find((s: { status: string; _count: { _all: number } }) => s.status === 'CLOSED')?._count._all || 0) +
-                          (metrics?.incidentStatus?.find((s: { status: string; _count: { _all: number } }) => s.status === 'RESOLVED')?._count._all || 0))
-                        }
-                      </span>
+                      <span className="text-sm font-medium">{((metrics?.incidentStatus?.find((s: StatusData) => s.status === 'CLOSED')?._count._all || 0) + (metrics?.incidentStatus?.find((s: StatusData) => s.status === 'RESOLVED')?._count._all || 0))}</span>
                     </div>
                   </div>
+
                   <div className="flex items-center justify-between">
                     <span className="text-sm">В работе</span>
                     <div className="flex items-center gap-2">
@@ -419,23 +495,14 @@ export default function ReportsPage() {
                         <div
                           className="h-full bg-blue-500"
                           style={{
-                            width: `${
-                              ((metrics?.incidentStatus?.find(
-                                (s: { status: string; _count: { _all: number } }) => s.status === 'IN_PROGRESS'
-                              )?._count._all || 0) / (metrics?.totalIncidents || 1)) * 100
-                            }%`
+                            width: `${((metrics?.incidentStatus?.find((s: StatusData) => s.status === 'IN_PROGRESS')?._count._all || 0) / (metrics?.totalIncidents || 1)) * 100}%`
                           }}
                         />
                       </div>
-                      <span className="text-sm font-medium">
-                        {
-                          metrics?.incidentStatus?.find(
-                            (s: { status: string; _count: { _all: number } }) => s.status === 'IN_PROGRESS'
-                          )?._count._all || 0
-                        }
-                      </span>
+                      <span className="text-sm font-medium">{metrics?.incidentStatus?.find((s: StatusData) => s.status === 'IN_PROGRESS')?._count._all || 0}</span>
                     </div>
                   </div>
+
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Новые</span>
                     <div className="flex items-center gap-2">
@@ -443,21 +510,11 @@ export default function ReportsPage() {
                         <div
                           className="h-full bg-yellow-500"
                           style={{
-                            width: `${
-                              ((metrics?.incidentStatus?.find(
-                                (s: { status: string; _count: { _all: number } }) => s.status === 'OPEN'
-                              )?._count._all || 0) / (metrics?.totalIncidents || 1)) * 100
-                            }%`
+                            width: `${((metrics?.incidentStatus?.find((s: StatusData) => s.status === 'OPEN')?._count._all || 0) / (metrics?.totalIncidents || 1)) * 100}%`
                           }}
                         />
                       </div>
-                      <span className="text-sm font-medium">
-                        {
-                          metrics?.incidentStatus?.find(
-                            (s: { status: string; _count: { _all: number } }) => s.status === 'OPEN'
-                          )?._count._all || 0
-                        }
-                      </span>
+                      <span className="text-sm font-medium">{metrics?.incidentStatus?.find((s: StatusData) => s.status === 'OPEN')?._count._all || 0}</span>
                     </div>
                   </div>
                 </div>
@@ -480,7 +537,7 @@ export default function ReportsPage() {
                 {trendLoading ? (
                   <div className="h-64 flex items-center justify-center text-muted-foreground">Загрузка графика...</div>
                 ) : trendError ? (
-                  <div className="h-64 flex items-center justify-center text-red-500">{trendError}</div>
+                  <div className="h-64 flex items-center justify-center text-red-500">{trendError?.message}</div>
                 ) : trend && (
                   <ResponsiveContainer width="100%" height={250}>
                     <LineChart data={trend.labels.map((label: string, i: number) => ({
@@ -503,13 +560,13 @@ export default function ReportsPage() {
             <Card>
               <CardHeader><CardTitle>Статус инцидентов</CardTitle></CardHeader>
               <CardContent>
-                <BarChart width={220} height={120} data={(metrics?.incidentStatus || []).map((s: any) => ({
+                <BarChart width={220} height={120} data={(metrics?.incidentStatus || []).map((s: StatusData) => ({
                   name: incidentStatusMeta[s.status]?.label || s.status || 'Без статуса',
                   value: s._count._all,
                   color: incidentStatusMeta[s.status]?.color || '#64748b',
                 }))}>
                   <Bar dataKey="value">
-                    {(metrics?.incidentStatus || []).map((s: any, idx: number) => (
+                    {(metrics?.incidentStatus || []).map((s: StatusData) => (
                       <Cell key={s.status} fill={incidentStatusMeta[s.status]?.color || '#64748b'} />
                     ))}
                   </Bar>
@@ -580,7 +637,7 @@ export default function ReportsPage() {
               <CardContent>
                 <div className="text-2xl font-bold text-green-600">
                   {
-                    metrics?.requestStatus?.find((s: { status: string; _count: { _all: number } }) => s.status === 'COMPLETED')?._count._all || 0
+                    metrics?.requestStatus?.find((s: StatusData) => s.status === 'COMPLETED')?._count._all || 0
                   }
                 </div>
               </CardContent>
@@ -635,14 +692,14 @@ export default function ReportsPage() {
                     <span className="mt-2">Нет данных по сотрудникам</span>
                   </div>
                 ) : (
-                  <BarChart width={340} height={200} data={Object.values(assignees).map((u: any) => {
+                  <BarChart width={340} height={200} data={Object.values(assignees).map((u: Assignee) => {
                     const openTasks = [
-                      metrics?.incidentByAssignee?.find((a: any) => a.assignedToId === u.id)?._count._all || 0,
-                      metrics?.requestByAssignee?.find((a: any) => a.assignedToId === u.id)?._count._all || 0,
-                      metrics?.changeByAssignee?.find((a: any) => a.assignedToId === u.id)?._count._all || 0,
+                      metrics?.incidentByAssignee?.find((a: AssigneeMetrics) => a.assignedToId === u.id)?._count._all || 0,
+                      metrics?.requestByAssignee?.find((a: AssigneeMetrics) => a.assignedToId === u.id)?._count._all || 0,
+                      metrics?.changeByAssignee?.find((a: AssigneeMetrics) => a.assignedToId === u.id)?._count._all || 0,
                     ].reduce((a, b) => a + b, 0)
                     return {
-                      name: `${u.lastName} ${u.firstName}`,
+                      name: `${u.lastName || ''} ${u.firstName || ''}`.trim() || u.email || 'Без имени',
                       value: openTasks,
                     }
                   })}>
@@ -678,11 +735,11 @@ export default function ReportsPage() {
                       </thead>
                       <tbody>
                         {/* Получаем только сотрудников с задачами */}
-                        {assigneesWithTasks.map((u: any) => {
+                        {assigneesWithTasks.map((u: Assignee) => {
                           const openTasks = [
-                            metrics?.incidentByAssignee?.find((a: any) => a.assignedToId === u.id)?._count._all || 0,
-                            metrics?.requestByAssignee?.find((a: any) => a.assignedToId === u.id)?._count._all || 0,
-                            metrics?.changeByAssignee?.find((a: any) => a.assignedToId === u.id)?._count._all || 0,
+                            metrics?.incidentByAssignee?.find((a: AssigneeMetrics) => a.assignedToId === u.id)?._count._all || 0,
+                            metrics?.requestByAssignee?.find((a: AssigneeMetrics) => a.assignedToId === u.id)?._count._all || 0,
+                            metrics?.changeByAssignee?.find((a: AssigneeMetrics) => a.assignedToId === u.id)?._count._all || 0,
                           ].reduce((a, b) => a + b, 0)
                           // Решено — можно добавить аналогично, если есть такие данные
                           return (

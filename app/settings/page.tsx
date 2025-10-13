@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback} from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -101,7 +101,6 @@ export default function SettingsPage() {
   const [dbStatusLoading, setDbStatusLoading] = useState(false)
   const [ldapTestLoading, setLdapTestLoading] = useState(false)
   const [ldapStatus, setLdapStatus] = useState<{ success: boolean; message: string } | null>(null)
-  const ldapPasswordRef = useRef<HTMLInputElement>(null)
 
   const fetchDbStatus = useCallback(() => {
     setDbStatusLoading(true)
@@ -153,9 +152,10 @@ export default function SettingsPage() {
         toast({ title: "LDAP", description: "Ошибка подключения: " + (data.error || "Unknown error"), variant: "destructive" })
         setLdapStatus({ success: false, message: data.error || "Unknown error" })
       }
-    } catch (e: any) {
-      toast({ title: "LDAP", description: "Ошибка подключения: " + (e?.message || String(e)), variant: "destructive" })
-      setLdapStatus({ success: false, message: e?.message || String(e) })
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e)
+      toast({ title: "LDAP", description: "Ошибка подключения: " + msg, variant: "destructive" })
+      setLdapStatus({ success: false, message: msg })
     } finally {
       setLdapTestLoading(false)
     }
@@ -196,8 +196,9 @@ export default function SettingsPage() {
       })
       if (!res.ok) throw new Error()
       toast({ title: "Успешно", description: "Настройки сохранены" })
-    } catch {
-      toast({ title: "Ошибка", description: "Ошибка сохранения настроек", variant: "destructive" })
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e)
+      toast({ title: "Ошибка", description: "Ошибка сохранения настроек: " + msg, variant: "destructive" })
     } finally {
       setSaving(false)
     }

@@ -20,7 +20,49 @@ import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbP
 const CommentsBlock = dynamic(() => import("./CommentsBlock"), { ssr: false, loading: () => <div className="text-muted-foreground">Загрузка комментариев...</div> })
 const RelatedArticlesBlock = dynamic(() => import("./RelatedArticlesBlock"), { ssr: false, loading: () => <div className="text-muted-foreground">Загрузка связанных статей...</div> })
 
-export default function ArticlePageClient({ article, comments }: { article: any, comments: any[] }) {
+// =============== ТИПЫ ===============
+interface Author {
+  id: string
+  firstName: string | null
+  lastName: string | null
+  email: string
+}
+
+interface Comment {
+  id: string
+  content: string
+  author: Author
+  createdAt: string
+}
+
+interface Article {
+  id: string
+  title: string
+  description: string | null
+  content: string
+  category: string | null
+  status: string
+  authorId: string
+  author: Author | null
+  tags: string[]
+  createdAt: string | null
+  updatedAt: string | null
+  updated: string // fallback field
+  views: number
+  rating: number
+  votes: number
+  helpful: number
+  notHelpful: number
+  commentsCount: number
+}
+interface Comment {
+  id: string
+  content: string
+  createdAt: string
+  user: Author | null
+}
+// =============== КОМПОНЕНТ ===============
+export default function ArticlePageClient({ article, comments }: { article: Article, comments: Comment[] }) {
   const { user: currentUser } = useCurrentUser()
   const [rating, setRating] = useState(0)
   const [comment, setComment] = useState("")
@@ -60,7 +102,6 @@ export default function ArticlePageClient({ article, comments }: { article: any,
 
   let ratingTimeout: NodeJS.Timeout | null = null
 
-  // Обработчик выставления рейтинга с debounce
   const handleRating = (value: number) => {
     setRating(value)
     if (ratingTimeout) clearTimeout(ratingTimeout)
@@ -79,7 +120,6 @@ export default function ArticlePageClient({ article, comments }: { article: any,
     }, 600)
   }
 
-  // Обработчик отметки полезности
   const handleHelpful = async (helpful: boolean) => {
     if (isHelpful !== null) return
     setIsHelpful(helpful)
@@ -97,7 +137,6 @@ export default function ArticlePageClient({ article, comments }: { article: any,
     }
   }
 
-  // Добавление комментария
   const submitComment = async () => {
     if (!comment.trim()) return
     try {
@@ -118,7 +157,6 @@ export default function ArticlePageClient({ article, comments }: { article: any,
     }
   }
 
-  // Удаление комментария (только для админа)
   const handleDeleteComment = async (commentId: string) => {
     const ok = await confirm({ title: "Удалить комментарий?" })
     if (!ok) return
@@ -156,7 +194,9 @@ export default function ArticlePageClient({ article, comments }: { article: any,
             <>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbLink href={`/knowledge-base?category=${encodeURIComponent(article.category)}`}>{article.category}</BreadcrumbLink>
+                <BreadcrumbLink href={`/knowledge-base?category=${encodeURIComponent(article.category)}`}>
+                  {article.category}
+                </BreadcrumbLink>
               </BreadcrumbItem>
             </>
           )}
@@ -174,7 +214,7 @@ export default function ArticlePageClient({ article, comments }: { article: any,
         </Button>
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-2">
-            <Badge className="bg-blue-100 text-blue-800">{article.category}</Badge>
+            <Badge className="bg-blue-100 text-blue-800">{article.category || "Без категории"}</Badge>
             <span className="text-sm text-muted-foreground">{article.id}</span>
           </div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
@@ -214,11 +254,13 @@ export default function ArticlePageClient({ article, comments }: { article: any,
                 <div className="flex items-center gap-4">
                   <span className="flex items-center gap-1">
                     <User className="w-4 h-4" />
-                    {article.author?.lastName || ''} {article.author?.firstName || ''}{!article.author?.lastName && !article.author?.firstName ? article.author?.email : ''}
+                    {article.author?.lastName || article.author?.firstName
+                      ? `${article.author.lastName || ""} ${article.author.firstName || ""}`.trim()
+                      : article.author?.email || "Неизвестен"}
                   </span>
                   <span className="flex items-center gap-1">
                     <Clock className="w-4 h-4" />
-                    Обновлено: {article.updated}
+                    Обновлено: {article.updated ? new Date(article.updated).toLocaleDateString() : "-"}
                   </span>
                   <span className="flex items-center gap-1">
                     <Eye className="w-4 h-4" />
@@ -249,7 +291,7 @@ export default function ArticlePageClient({ article, comments }: { article: any,
           <Card>
             <CardContent className="p-4">
               <div className="flex flex-wrap gap-2">
-                {article.tags.map((tag: string) => (
+                {(article.tags || []).map((tag) => (
                   <Badge key={tag} variant="secondary">
                     {tag}
                   </Badge>
@@ -320,7 +362,6 @@ export default function ArticlePageClient({ article, comments }: { article: any,
               ) : (
                 <div className="text-muted-foreground">Комментарии будут загружены при прокрутке...</div>
               )}
-              {/* Textarea для нового комментария */}
               {currentUser && (
                 <div className="mt-6">
                   <Textarea
@@ -342,7 +383,6 @@ export default function ArticlePageClient({ article, comments }: { article: any,
 
         {/* Боковая панель */}
         <div className="space-y-6">
-          {/* Информация */}
           <Card>
             <CardHeader>
               <CardTitle>Информация</CardTitle>
@@ -357,7 +397,6 @@ export default function ArticlePageClient({ article, comments }: { article: any,
               <div>Комментариев: {article.commentsCount || 0}</div>
             </CardContent>
           </Card>
-          {/* Связанные статьи */}
           <Card ref={relatedRef}>
             <CardHeader>
               <CardTitle>Связанные статьи</CardTitle>
@@ -374,4 +413,4 @@ export default function ArticlePageClient({ article, comments }: { article: any,
       </div>
     </div>
   )
-} 
+}

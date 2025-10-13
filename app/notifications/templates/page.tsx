@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ArrowLeft, Save, Eye, Code, Mail, Smartphone, Bell } from "lucide-react"
+import { ArrowLeft, Save, Eye, Code, Mail, Bell } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 

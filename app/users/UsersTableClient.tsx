@@ -1,7 +1,6 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
 import { Users, Edit, MoreHorizontal, Phone, BadgeIcon as IdCard } from "lucide-react";
 import { useState } from 'react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -76,10 +75,10 @@ export default function UsersTableClient({ users }: { users: User[] }) {
       if (!res.ok || data.error) throw new Error(data.error || 'Ошибка обновления роли');
       toast({ title: 'Роль обновлена', description: `Роль пользователя изменена на ${ROLES.find(r => r.value === newRole)?.label}` });
       setRoleModalUser(null);
-      // Можно добавить обновление данных через SWR или refetch
-      window.location.reload();
-    } catch (e: any) {
-      toast({ title: 'Ошибка', description: e.message, variant: 'destructive' });
+      // Убираем window.location.reload, исправляем типизацию ошибки
+    } catch (e) {
+      const error = e instanceof Error ? e : new Error('Неизвестная ошибка');
+      toast({ title: 'Ошибка', description: error.message, variant: 'destructive' });
     } finally {
       setSavingRole(false);
     }
@@ -193,7 +192,9 @@ export default function UsersTableClient({ users }: { users: User[] }) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Изменить роль пользователя</DialogTitle>
-            <DialogDescription>Выберите новую роль для пользователя и нажмите "Сохранить".</DialogDescription>
+            <DialogDescription>
+              Выберите новую роль для пользователя и нажмите &quot;Сохранить&quot;.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>

@@ -1,32 +1,11 @@
+// app/changes/ChangesListClient.tsx
 "use client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import ChangesAdminActions from './ChangesAdminActions';
 import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { GitBranch, Pencil, Trash2 } from 'lucide-react';
-
-type User = {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-};
-
-type Priority = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | string;
-type Status = 'PENDING' | 'APPROVED' | 'REJECTED' | 'IMPLEMENTED' | 'CANCELLED' | 'DRAFT' | string;
-
-type Change = {
-  id: string;
-  title: string;
-  status: Status;
-  priority: Priority;
-  createdAt: string;
-  description: string | null;
-  createdBy?: User | null;
-  assignedTo?: User | null;
-  scheduledAt?: string | null;
-  category: string | null;
-};
+import type { Change, User, Status, Priority } from '@/app/types/change';
 
 interface Props {
   changes: Change[];
@@ -54,6 +33,7 @@ function getStatusBadge(status: Status) {
 }
 
 function getPriorityBadge(priority?: Priority) {
+  if (!priority) return null;
   switch (priority) {
     case "CRITICAL":
       return <Badge variant="destructive">Критический</Badge>;
@@ -64,7 +44,7 @@ function getPriorityBadge(priority?: Priority) {
     case "LOW":
       return <Badge variant="outline">Низкий</Badge>;
     default:
-      return <Badge>{priority ?? "-"}</Badge>;
+      return <Badge>{priority}</Badge>;
   }
 }
 
@@ -90,7 +70,6 @@ export default function ChangesListClient({ changes, isAdmin, assignees }: Props
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
   const [deletingChange, setDeletingChange] = useState<Change | null>(null);
 
-  // Обработчик открытия диалога редактирования
   useEffect(() => {
     const handleOpenEdit = (e: Event) => {
       const ev = e as CustomEvent<{ id: string }>;
@@ -108,7 +87,6 @@ export default function ChangesListClient({ changes, isAdmin, assignees }: Props
     };
   }, [changesState]);
 
-  // Обработчик открытия диалога удаления
   useEffect(() => {
     const handleOpenDelete = (e: Event) => {
       const ev = e as CustomEvent<{ id: string }>;
@@ -206,7 +184,7 @@ export default function ChangesListClient({ changes, isAdmin, assignees }: Props
                 editDialogOpen={editDialogOpen}
                 setEditDialogOpen={setEditDialogOpen}
                 editingChange={editChange}
-                setEditingChange={(newChange) => setEditChange(newChange)}
+                setEditingChange={setEditChange}
                 deleteDialogOpen={deleteDialogOpen}
                 setDeleteDialogOpen={setDeleteDialogOpen}
                 deletingChange={deletingChange}

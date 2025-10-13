@@ -21,7 +21,6 @@ export default function LoginForm({ initialError }: { initialError?: string }) {
     setLoading(true)
     const formData = new FormData(event.currentTarget)
     if (authType === 'local') {
-      // @ts-ignore
       const res = await loginAction(formData)
       if (res?.error) setError(res.error)
       else if (res?.success) router.push("/")
@@ -45,8 +44,8 @@ export default function LoginForm({ initialError }: { initialError?: string }) {
         } else {
           setError(data.error || "Ошибка LDAP авторизации")
         }
-      } catch (e: any) {
-        setError(e?.message || "Ошибка LDAP авторизации")
+      } catch (e: unknown) {
+        setError((e as Error)?.message || "Ошибка LDAP авторизации")
       }
     }
     setLoading(false)

@@ -22,6 +22,24 @@ import { UserProfileCard } from "@/components/user-profile-card"
 import { UserActivityCard } from "@/components/user-activity-card"
 import { useCurrentUser } from "@/hooks/use-user-context"
 
+interface UserView {
+  id: string
+  email: string
+  firstName: string
+  lastName: string
+  middleName?: string | null
+  role: string
+  status: string
+  permissions?: string[]
+  manager?: string
+  assignedIncidents?: AssignedItem[]
+  assignedRequests?: AssignedItem[]
+  lastLogin?: string | Date | null
+  lastActivity?: string | Date | null
+  passwordLastChanged?: string | Date | null
+}
+
+
 interface ActivityLogItem {
   id: string
   action: string
