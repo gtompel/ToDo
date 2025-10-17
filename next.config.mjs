@@ -7,6 +7,7 @@ const nextConfig = {
     ignoreBuildErrors: false,
   },
   images: {
+    domains:['todo.oit.int'],
     unoptimized: true,
   },
   allowedDevOrigins: [

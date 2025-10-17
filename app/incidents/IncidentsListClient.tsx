@@ -1,114 +1,179 @@
-"use client"
+"use client";
 
-import { useState, useMemo } from "react"
-import { ChevronDown, AlertTriangle, Plus, LayoutGrid, List as ListIcon, Pencil, Info } from "lucide-react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
-import { Card, CardContent } from "@/components/ui/card"
-import IncidentsAdminActions from "./IncidentsAdminActions"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import Image from "next/image"
+import { useState, useMemo } from "react";
+import {
+  ChevronDown,
+  AlertTriangle,
+  Plus,
+  LayoutGrid,
+  List as ListIcon,
+  Pencil,
+  Info,
+} from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Card, CardContent } from "@/components/ui/card";
+import IncidentsAdminActions from "./IncidentsAdminActions";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import Image from "next/image";
 
 // =============== ТИПЫ ===============
 // Assignee должен быть совместим с User из API
 interface Assignee {
-  id: string
-  firstName: string | null   // ← разрешаем null, как в User
-  lastName: string | null    // ← разрешаем null, как в User
-  email: string
+  id: string;
+  firstName: string | null; // ← разрешаем null, как в User
+  lastName: string | null; // ← разрешаем null, как в User
+  email: string;
 }
 
 // User теперь просто псевдоним для Assignee (или наоборот)
-type User = Assignee
+type User = Assignee;
 
 interface Incident {
-  id: string
-  title: string
-  description: string | null
-  status: string
-  priority: string
-  category: string | null
-  createdAt: string
-  createdBy: User
-  assignedTo: User | null
-  attachments: string[]
-  preActions: string | null
-  expectedResult: string | null
+  id: string;
+  title: string;
+  description: string | null;
+  status: string;
+  priority: string;
+  category: string | null;
+  createdAt: string;
+  createdBy: User;
+  assignedTo: User | null;
+  attachments: string[];
+  preActions: string | null;
+  expectedResult: string | null;
 }
 
 interface QuickEditData {
-  id: string
-  title: string
-  description: string
-  category: string
-  attachments: string[]
-  keptAttachments: string[]
-  preActions: string
-  expectedResult: string
-  newFiles?: File[]
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  attachments: string[];
+  keptAttachments: string[];
+  preActions: string;
+  expectedResult: string;
+  newFiles?: File[];
 }
 
 interface FilterPanelProps {
-  categories: string[]
-  filter: { category: string; lastName: string }
-  setFilter: (filter: { category: string; lastName: string }) => void
+  categories: string[];
+  filter: { category: string; lastName: string };
+  setFilter: (filter: { category: string; lastName: string }) => void;
 }
 
 // =============== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===============
 function isImage(url: string): boolean {
-  return /\.(png|jpe?g|gif|webp|svg)$/i.test(url)
+  return /\.(png|jpe?g|gif|webp|svg)$/i.test(url);
 }
 
 function getStatusBadge(status: string) {
   switch (status) {
     case "OPEN":
-      return <span className="px-2 py-1 rounded bg-red-500 text-white text-xs font-bold">Открыт</span>
+      return (
+        <span className="px-2 py-1 rounded bg-red-500 text-white text-xs font-bold">
+          Открыт
+        </span>
+      );
     case "IN_PROGRESS":
-      return <span className="px-2 py-1 rounded bg-yellow-500 text-white text-xs font-bold">В работе</span>
+      return (
+        <span className="px-2 py-1 rounded bg-yellow-500 text-white text-xs font-bold">
+          В работе
+        </span>
+      );
     case "RESOLVED":
-      return <span className="px-2 py-1 rounded bg-green-500 text-white text-xs font-bold">Решен</span>
+      return (
+        <span className="px-2 py-1 rounded bg-green-500 text-white text-xs font-bold">
+          Решен
+        </span>
+      );
     case "CLOSED":
-      return <span className="px-2 py-1 rounded bg-gray-400 text-white text-xs font-bold">Закрыт</span>
+      return (
+        <span className="px-2 py-1 rounded bg-gray-400 text-white text-xs font-bold">
+          Закрыт
+        </span>
+      );
     default:
-      return <span className="px-2 py-1 rounded bg-muted text-foreground text-xs">{status}</span>
+      return (
+        <span className="px-2 py-1 rounded bg-muted text-foreground text-xs">
+          {status}
+        </span>
+      );
   }
 }
 
 function getPriorityBadge(priority: string) {
   switch (priority) {
     case "HIGH":
-      return <span className="px-2 py-1 rounded bg-orange-500 text-white text-xs font-bold">Высокий</span>
+      return (
+        <span className="px-2 py-1 rounded bg-orange-500 text-white text-xs font-bold">
+          Высокий
+        </span>
+      );
     case "MEDIUM":
-      return <span className="px-2 py-1 rounded bg-yellow-300 text-yellow-900 text-xs font-bold">Средний</span>
+      return (
+        <span className="px-2 py-1 rounded bg-yellow-300 text-yellow-900 text-xs font-bold">
+          Средний
+        </span>
+      );
     case "LOW":
-      return <span className="px-2 py-1 rounded bg-green-100 text-green-800 text-xs font-bold">Низкий</span>
+      return (
+        <span className="px-2 py-1 rounded bg-green-100 text-green-800 text-xs font-bold">
+          Низкий
+        </span>
+      );
     case "CRITICAL":
-      return <span className="px-2 py-1 rounded bg-red-600 text-white text-xs font-bold">Критический</span>
+      return (
+        <span className="px-2 py-1 rounded bg-red-600 text-white text-xs font-bold">
+          Критический
+        </span>
+      );
     default:
-      return <span className="px-2 py-1 rounded bg-muted text-foreground text-xs">{priority}</span>
+      return (
+        <span className="px-2 py-1 rounded bg-muted text-foreground text-xs">
+          {priority}
+        </span>
+      );
   }
 }
 
 function getCardClassByStatus(status: string) {
   switch (status) {
     case "OPEN":
-      return "border-l-4 border-red-600 bg-red-50 dark:bg-red-950/20"
+      return "border-l-4 border-red-600 bg-red-50 dark:bg-red-950/20";
     case "IN_PROGRESS":
-      return "border-l-4 border-yellow-400 bg-yellow-50 dark:bg-yellow-950/20"
+      return "border-l-4 border-yellow-400 bg-yellow-50 dark:bg-yellow-950/20";
     case "RESOLVED":
-      return "border-l-4 border-green-500 bg-green-50 dark:bg-green-950/20"
+      return "border-l-4 border-green-500 bg-green-50 dark:bg-green-950/20";
     case "CLOSED":
-      return "border-l-4 border-gray-400 bg-gray-50 dark:bg-gray-950/20"
+      return "border-l-4 border-gray-400 bg-gray-50 dark:bg-gray-950/20";
     default:
-      return "border-l-4 border-gray-200 bg-background"
+      return "border-l-4 border-gray-200 bg-background";
   }
 }
 
 // =============== КОМПОНЕНТ ФИЛЬТРА ===============
-function IncidentsFilterPanel({ categories, filter, setFilter }: FilterPanelProps) {
+function IncidentsFilterPanel({
+  categories,
+  filter,
+  setFilter,
+}: FilterPanelProps) {
   return (
     <div className="flex flex-wrap gap-4 mb-4 items-end">
       <div>
@@ -116,12 +181,14 @@ function IncidentsFilterPanel({ categories, filter, setFilter }: FilterPanelProp
         <select
           className="border rounded px-2 py-1"
           value={filter.category}
-          onChange={e => setFilter({ ...filter, category: e.target.value })}
-          onClick={e => e.stopPropagation()}
+          onChange={(e) => setFilter({ ...filter, category: e.target.value })}
+          onClick={(e) => e.stopPropagation()}
         >
           <option value="">Все</option>
-          {categories.map(c => (
-            <option key={c} value={c}>{c}</option>
+          {categories.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
           ))}
         </select>
       </div>
@@ -132,12 +199,12 @@ function IncidentsFilterPanel({ categories, filter, setFilter }: FilterPanelProp
           type="text"
           placeholder="Фамилия..."
           value={filter.lastName}
-          onChange={e => setFilter({ ...filter, lastName: e.target.value })}
-          onClick={e => e.stopPropagation()}
+          onChange={(e) => setFilter({ ...filter, lastName: e.target.value })}
+          onClick={(e) => e.stopPropagation()}
         />
       </div>
     </div>
-  )
+  );
 }
 
 // =============== ОСНОВНОЙ КОМПОНЕНТ ===============
@@ -146,47 +213,58 @@ export default function IncidentsListClient({
   isAdmin,
   assignableUsers,
 }: {
-  incidents: Incident[]
-  isAdmin: boolean
-  assignableUsers: Assignee[] // ← теперь совместимый тип
+  incidents: Incident[];
+  isAdmin: boolean;
+  assignableUsers: Assignee[]; // ← теперь совместимый тип
 }) {
-  const [open, setOpen] = useState<string[]>([])
-  const [filter, setFilter] = useState({ category: "", lastName: "" })
-  const [view, setView] = useState<'blocks' | 'list'>('blocks')
-  const [incidentsState, setIncidentsState] = useState<Incident[]>(incidents)
-  const [preview, setPreview] = useState<{ src: string; name?: string } | null>(null)
-  const [quickEditOpen, setQuickEditOpen] = useState(false)
-  const [quickEdit, setQuickEdit] = useState<QuickEditData | null>(null)
-  const [infoOpen, setInfoOpen] = useState(false)
-  const [infoIncident, setInfoIncident] = useState<Incident | null>(null)
+  const [open, setOpen] = useState<string[]>([]);
+  const [filter, setFilter] = useState({ category: "", lastName: "" });
+  const [view, setView] = useState<"blocks" | "list">("blocks");
+  const [incidentsState, setIncidentsState] = useState<Incident[]>(incidents);
+  const [preview, setPreview] = useState<{ src: string; name?: string } | null>(
+    null
+  );
+  const [quickEditOpen, setQuickEditOpen] = useState(false);
+  const [quickEdit, setQuickEdit] = useState<QuickEditData | null>(null);
+  const [infoOpen, setInfoOpen] = useState(false);
+  const [infoIncident, setInfoIncident] = useState<Incident | null>(null);
 
   const categories = useMemo(() => {
-    const set = new Set<string>()
-    incidents.forEach(i => {
-      if (i.category) set.add(i.category)
-    })
-    return Array.from(set)
-  }, [incidents])
+    const set = new Set<string>();
+    incidents.forEach((i) => {
+      if (i.category) set.add(i.category);
+    });
+    return Array.from(set);
+  }, [incidents]);
 
   const filtered = useMemo(() => {
-    return incidentsState.filter(i => {
-      const lastName = (i.createdBy?.lastName || "") + " " + (i.assignedTo?.lastName || "")
+    return incidentsState.filter((i) => {
+      const lastName =
+        (i.createdBy?.lastName || "") + " " + (i.assignedTo?.lastName || "");
       return (
         (!filter.category || i.category === filter.category) &&
-        (!filter.lastName || lastName.toLowerCase().includes(filter.lastName.toLowerCase()))
-      )
-    })
-  }, [incidentsState, filter])
+        (!filter.lastName ||
+          lastName.toLowerCase().includes(filter.lastName.toLowerCase()))
+      );
+    });
+  }, [incidentsState, filter]);
 
-  const toggle = (id: string) => setOpen(open => open.includes(id) ? open.filter(i => i !== id) : [...open, id])
+  const toggle = (id: string) =>
+    setOpen((open) =>
+      open.includes(id) ? open.filter((i) => i !== id) : [...open, id]
+    );
 
   if (filtered.length === 0) {
     return (
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
           <AlertTriangle className="h-12 w-12 text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Нет инцидентов</h3>
-          <p className="text-gray-500 text-center mb-4">Инциденты еще не созданы. Создайте первый инцидент.</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            Нет инцидентов
+          </h3>
+          <p className="text-gray-500 text-center mb-4">
+            Инциденты еще не созданы. Создайте первый инцидент.
+          </p>
           <Button asChild>
             <Link href="/incidents/new">
               <Plus className="mr-2 h-4 w-4" />
@@ -195,33 +273,43 @@ export default function IncidentsListClient({
           </Button>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
     <>
       <div className="flex items-center gap-2 mb-4">
-        <IncidentsFilterPanel categories={categories} filter={filter} setFilter={setFilter} />
+        <IncidentsFilterPanel
+          categories={categories}
+          filter={filter}
+          setFilter={setFilter}
+        />
         <div className="ml-auto flex gap-2">
           <Button
             variant="outline"
             size="icon"
-            onClick={e => {
-              e.stopPropagation()
-              setView(view === 'blocks' ? 'list' : 'blocks')
+            onClick={(e) => {
+              e.stopPropagation();
+              setView(view === "blocks" ? "list" : "blocks");
             }}
-            aria-label={view === 'blocks' ? 'Показать списком' : 'Показать блоками'}
+            aria-label={
+              view === "blocks" ? "Показать списком" : "Показать блоками"
+            }
           >
-            {view === 'blocks' ? <ListIcon className="w-5 h-5" /> : <LayoutGrid className="w-5 h-5" />}
+            {view === "blocks" ? (
+              <ListIcon className="w-5 h-5" />
+            ) : (
+              <LayoutGrid className="w-5 h-5" />
+            )}
           </Button>
         </div>
       </div>
 
-      {view === 'list' ? (
+      {view === "list" ? (
         <div className="rounded-md border bg-background overflow-hidden">
-          {filtered.map(incident => {
-            const isOpen = open.includes(incident.id)
-            const cardColor = getCardClassByStatus(incident.status)
+          {filtered.map((incident) => {
+            const isOpen = open.includes(incident.id);
+            const cardColor = getCardClassByStatus(incident.status);
             return (
               <div
                 key={incident.id}
@@ -237,8 +325,12 @@ export default function IncidentsListClient({
                 >
                   {getStatusBadge(incident.status)}
                   {getPriorityBadge(incident.priority)}
-                  <span className="flex-1 font-medium truncate">{incident.title}</span>
-                  <span className="text-xs text-gray-400">{incident.id.slice(0, 8)}</span>
+                  <span className="flex-1 font-medium truncate">
+                    {incident.title}
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    {incident.id.slice(0, 8)}
+                  </span>
                   <span className="text-xs text-gray-500 ml-4 whitespace-nowrap">
                     {new Date(incident.createdAt).toLocaleDateString("ru-RU")}
                   </span>
@@ -248,19 +340,23 @@ export default function IncidentsListClient({
                       size="icon"
                       className="ml-2 h-7 w-7"
                       aria-label="Редактировать"
-                      onClick={e => {
-                        e.stopPropagation()
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setQuickEdit({
                           id: incident.id,
                           title: incident.title || "",
                           description: incident.description || "",
                           category: incident.category || "",
-                          attachments: Array.isArray(incident.attachments) ? [...incident.attachments] : [],
-                          keptAttachments: Array.isArray(incident.attachments) ? [...incident.attachments] : [],
+                          attachments: Array.isArray(incident.attachments)
+                            ? [...incident.attachments]
+                            : [],
+                          keptAttachments: Array.isArray(incident.attachments)
+                            ? [...incident.attachments]
+                            : [],
                           preActions: incident.preActions || "",
                           expectedResult: incident.expectedResult || "",
-                        })
-                        setQuickEditOpen(true)
+                        });
+                        setQuickEditOpen(true);
                       }}
                     >
                       <Pencil className="w-3.5 h-3.5" />
@@ -272,20 +368,24 @@ export default function IncidentsListClient({
                       size="icon"
                       className="ml-1 h-7 w-7"
                       aria-label="Информация"
-                      onClick={e => {
-                        e.stopPropagation()
-                        setInfoIncident(incident)
-                        setInfoOpen(true)
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setInfoIncident(incident);
+                        setInfoOpen(true);
                       }}
                     >
                       <Info className="w-3.5 h-3.5" />
                     </Button>
                   )}
-                  <ChevronDown className={isOpen ? 'rotate-180 transition' : 'transition'} />
+                  <ChevronDown
+                    className={isOpen ? "rotate-180 transition" : "transition"}
+                  />
                 </div>
                 <div
-                  className={`transition-all duration-300 overflow-hidden ${isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}
-                  style={{ background: 'rgba(243,244,246,0.5)' }}
+                  className={`transition-all duration-300 overflow-hidden ${
+                    isOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+                  }`}
+                  style={{ background: "rgba(243,244,246,0.5)" }}
                 >
                   {isOpen && (
                     <div className="px-4 py-2 text-xs animate-fade-in">
@@ -295,72 +395,94 @@ export default function IncidentsListClient({
                       <div className="flex items-center justify-between text-gray-600 mb-1">
                         <div>
                           <span className="font-medium">Создал:</span>{" "}
-                          {incident.createdBy?.firstName} {incident.createdBy?.lastName}
+                          {incident.createdBy?.firstName}{" "}
+                          {incident.createdBy?.lastName}
                         </div>
                         <div>
                           <span className="font-medium">Назначен:</span>{" "}
                           {(() => {
-                            const a = incident.assignedTo
-                            if (!a) return "Не назначен"
-                            const name = `${a.firstName || ""} ${a.lastName || ""}`.trim()
-                            return name || a.email || "Не назначен"
+                            const a = incident.assignedTo;
+                            if (!a) return "Не назначен";
+                            const name = `${a.firstName || ""} ${
+                              a.lastName || ""
+                            }`.trim();
+                            return name || a.email || "Не назначен";
                           })()}
                         </div>
                       </div>
                       {/* Вложения */}
-                      {Array.isArray(incident.attachments) && incident.attachments.length > 0 && (
-                        <div className="mt-2 space-y-1">
-                          <div className="text-xs font-medium text-gray-700">Вложения:</div>
-                          <div className="flex flex-wrap gap-2">
-                            {incident.attachments.map((att, idx) => (
-                              <button
-                                key={idx}
-                                type="button"
-                                className="text-xs underline text-blue-700 hover:text-blue-900"
-                                onClick={() => setPreview({ src: att, name: `Файл ${idx + 1}` })}
-                              >
-                                {isImage(att) ? (
-                                  <Image
-                                    src={att}
-                                    alt="attachment"
-                                    className="h-12 w-12 object-cover rounded border"
-                                  />
-                                ) : (
-                                  <span>Файл {idx + 1}</span>
-                                )}
-                              </button>
-                            ))}
+                      {Array.isArray(incident.attachments) &&
+                        incident.attachments.length > 0 && (
+                          <div className="mt-2 space-y-1">
+                            <div className="text-xs font-medium text-gray-700">
+                              Вложения:
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {incident.attachments.map((att, idx) => (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  className="text-xs underline text-blue-700 hover:text-blue-900"
+                                  onClick={() =>
+                                    setPreview({
+                                      src: att,
+                                      name: `Файл ${idx + 1}`,
+                                    })
+                                  }
+                                >
+                                  {isImage(att) ? (
+                                    <Image
+                                      src={att}
+                                      alt="attachment"
+                                      width={48}
+                                      height={48}
+                                      className="h-12 w-12 object-cover rounded border"
+                                    />
+                                  ) : (
+                                    <span>Файл {idx + 1}</span>
+                                  )}
+                                </button>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
 
                       {isAdmin && (
                         <IncidentsAdminActions
                           incident={incident}
                           assignees={assignableUsers}
                           onUpdated={(patch) => {
-                            setIncidentsState(list =>
-                              list.map(i =>
+                            setIncidentsState((list) =>
+                              list.map((i) =>
                                 i.id === incident.id
-                                  ? { ...i, ...patch, assignedTo: patch.assignedTo ?? i.assignedTo }
+                                  ? {
+                                      ...i,
+                                      ...patch,
+                                      assignedTo:
+                                        patch.assignedTo ?? i.assignedTo,
+                                    }
                                   : i
                               )
-                            )
+                            );
                           }}
-                          onDeleted={() => setIncidentsState(list => list.filter(i => i.id !== incident.id))}
+                          onDeleted={() =>
+                            setIncidentsState((list) =>
+                              list.filter((i) => i.id !== incident.id)
+                            )
+                          }
                         />
                       )}
                     </div>
                   )}
                 </div>
               </div>
-            )
+            );
           })}
         </div>
       ) : (
         <div className="w-full cards-masonry" style={{ fontSize: 0 }}>
-          {filtered.map(incident => {
-            const isOpen = open.includes(incident.id)
+          {filtered.map((incident) => {
+            const isOpen = open.includes(incident.id);
             return (
               <div
                 key={incident.id}
@@ -372,17 +494,25 @@ export default function IncidentsListClient({
                 tabIndex={0}
                 role="button"
                 aria-expanded={isOpen}
-                style={{ display: 'inline-block', verticalAlign: 'top', fontSize: '1rem' }}
+                style={{
+                  display: "inline-block",
+                  verticalAlign: "top",
+                  fontSize: "1rem",
+                }}
               >
                 <div className="flex flex-col items-start gap-1">
                   <div className="flex gap-1">
                     {getStatusBadge(incident.status)}
                     {getPriorityBadge(incident.priority)}
                   </div>
-                  <div className="font-medium truncate max-w-full text-sm">{incident.title}</div>
+                  <div className="font-medium truncate max-w-full text-sm">
+                    {incident.title}
+                  </div>
                   <div className="flex justify-between w-full text-xs text-gray-500">
                     <span>{incident.id.slice(0, 8)}</span>
-                    <span>{new Date(incident.createdAt).toLocaleDateString("ru-RU")}</span>
+                    <span>
+                      {new Date(incident.createdAt).toLocaleDateString("ru-RU")}
+                    </span>
                   </div>
                   {isAdmin && (
                     <Button
@@ -390,19 +520,23 @@ export default function IncidentsListClient({
                       size="icon"
                       className="absolute top-1 right-1 h-7 w-7"
                       aria-label="Редактировать"
-                      onClick={e => {
-                        e.stopPropagation()
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setQuickEdit({
                           id: incident.id,
                           title: incident.title || "",
                           description: incident.description || "",
                           category: incident.category || "",
-                          attachments: Array.isArray(incident.attachments) ? [...incident.attachments] : [],
-                          keptAttachments: Array.isArray(incident.attachments) ? [...incident.attachments] : [],
+                          attachments: Array.isArray(incident.attachments)
+                            ? [...incident.attachments]
+                            : [],
+                          keptAttachments: Array.isArray(incident.attachments)
+                            ? [...incident.attachments]
+                            : [],
                           preActions: incident.preActions || "",
                           expectedResult: incident.expectedResult || "",
-                        })
-                        setQuickEditOpen(true)
+                        });
+                        setQuickEditOpen(true);
                       }}
                     >
                       <Pencil className="w-3.5 h-3.5" />
@@ -414,10 +548,10 @@ export default function IncidentsListClient({
                       size="icon"
                       className="absolute top-1 right-9 h-7 w-7"
                       aria-label="Информация"
-                      onClick={e => {
-                        e.stopPropagation()
-                        setInfoIncident(incident)
-                        setInfoOpen(true)
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setInfoIncident(incident);
+                        setInfoOpen(true);
                       }}
                     >
                       <Info className="w-3.5 h-3.5" />
@@ -425,87 +559,118 @@ export default function IncidentsListClient({
                   )}
                 </div>
                 <div
-                  className={`transition-all duration-300 overflow-hidden ${isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}
-                  style={{ background: 'rgba(243,244,246,0.5)' }}
+                  className={`transition-all duration-300 overflow-hidden ${
+                    isOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+                  }`}
+                  style={{ background: "rgba(243,244,246,0.5)" }}
                 >
                   {isOpen && (
                     <div className="mt-2 p-2 rounded animate-fade-in w-full text-xs">
-                      <div className="mb-2 text-gray-700">{incident.description}</div>
+                      <div className="mb-2 text-gray-700">
+                        {incident.description}
+                      </div>
                       <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
                         <div>
                           <span className="font-medium">Создал:</span>{" "}
-                          {incident.createdBy?.firstName} {incident.createdBy?.lastName}
+                          {incident.createdBy?.firstName}{" "}
+                          {incident.createdBy?.lastName}
                         </div>
                         <div>
                           <span className="font-medium">Назначен:</span>{" "}
                           {(() => {
-                            const a = incident.assignedTo
-                            if (!a) return "Не назначен"
-                            const name = `${a.firstName || ""} ${a.lastName || ""}`.trim()
-                            return name || a.email || "Не назначен"
+                            const a = incident.assignedTo;
+                            if (!a) return "Не назначен";
+                            const name = `${a.firstName || ""} ${
+                              a.lastName || ""
+                            }`.trim();
+                            return name || a.email || "Не назначен";
                           })()}
                         </div>
                       </div>
                       {/* Вложения */}
-                      {Array.isArray(incident.attachments) && incident.attachments.length > 0 && (
-                        <div className="mt-2 space-y-1">
-                          <div className="text-xs font-medium text-gray-700">Вложения:</div>
-                          <div className="flex flex-wrap gap-2">
-                            {incident.attachments.map((att, idx) => (
-                              <button
-                                key={idx}
-                                type="button"
-                                className="text-xs underline text-blue-700 hover:text-blue-900"
-                                onClick={() => setPreview({ src: att, name: `Файл ${idx + 1}` })}
-                              >
-                                {isImage(att) ? (
-                                  <Image
-                                    src={att}
-                                    alt="attachment"
-                                    className="h-12 w-12 object-cover rounded border"
-                                  />
-                                ) : (
-                                  <span>Файл {idx + 1}</span>
-                                )}
-                              </button>
-                            ))}
+                      {Array.isArray(incident.attachments) &&
+                        incident.attachments.length > 0 && (
+                          <div className="mt-2 space-y-1">
+                            <div className="text-xs font-medium text-gray-700">
+                              Вложения:
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {incident.attachments.map((att, idx) => (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  className="text-xs underline text-blue-700 hover:text-blue-900"
+                                  onClick={() =>
+                                    setPreview({
+                                      src: att,
+                                      name: `Файл ${idx + 1}`,
+                                    })
+                                  }
+                                >
+                                  {isImage(att) ? (
+                                    <Image
+                                      src={att}
+                                      alt="attachment"
+                                      width={48}
+                                      height={48}
+                                      className="h-12 w-12 object-cover rounded border"
+                                    />
+                                  ) : (
+                                    <span>Файл {idx + 1}</span>
+                                  )}
+                                </button>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
 
                       {isAdmin && (
                         <IncidentsAdminActions
                           incident={incident}
                           assignees={assignableUsers}
                           onUpdated={(patch) => {
-                            setIncidentsState(list =>
-                              list.map(i =>
+                            setIncidentsState((list) =>
+                              list.map((i) =>
                                 i.id === incident.id
-                                  ? { ...i, ...patch, assignedTo: patch.assignedTo ?? i.assignedTo }
+                                  ? {
+                                      ...i,
+                                      ...patch,
+                                      assignedTo:
+                                        patch.assignedTo ?? i.assignedTo,
+                                    }
                                   : i
                               )
-                            )
+                            );
                           }}
-                          onDeleted={() => setIncidentsState(list => list.filter(i => i.id !== incident.id))}
+                          onDeleted={() =>
+                            setIncidentsState((list) =>
+                              list.filter((i) => i.id !== incident.id)
+                            )
+                          }
                         />
                       )}
                     </div>
                   )}
                 </div>
               </div>
-            )
+            );
           })}
         </div>
       )}
 
       {/* Preview dialog */}
-      <Dialog open={!!preview} onOpenChange={o => {
-        if (!o) setPreview(null)
-      }}>
+      <Dialog
+        open={!!preview}
+        onOpenChange={(o) => {
+          if (!o) setPreview(null);
+        }}
+      >
         <DialogContent className="max-w-4xl">
           <DialogHeader>
-            <DialogTitle>{preview?.name || 'Вложение'}</DialogTitle>
-            <DialogDescription className="sr-only">Предпросмотр вложения</DialogDescription>
+            <DialogTitle>{preview?.name || "Вложение"}</DialogTitle>
+            <DialogDescription className="sr-only">
+              Предпросмотр вложения
+            </DialogDescription>
           </DialogHeader>
           {preview && (
             <div className="flex items-center justify-center">
@@ -513,6 +678,8 @@ export default function IncidentsListClient({
                 <Image
                   src={preview.src}
                   alt="attachment preview"
+                  width={800}
+                  height={600}
                   className="max-h-[80vh] max-w-[90vw] object-contain rounded"
                 />
               ) : (
@@ -545,15 +712,19 @@ export default function IncidentsListClient({
             <div className="space-y-2">
               <label className="block text-xs mb-1">Заголовок</label>
               <Input
-                value={quickEdit?.title ?? ''}
-                onChange={e => setQuickEdit(q => q ? { ...q, title: e.target.value } : q)}
+                value={quickEdit?.title ?? ""}
+                onChange={(e) =>
+                  setQuickEdit((q) => (q ? { ...q, title: e.target.value } : q))
+                }
               />
             </div>
             <div className="space-y-2">
               <label className="block text-xs mb-1">Категория</label>
               <Select
-                value={quickEdit?.category ?? ''}
-                onValueChange={v => setQuickEdit(q => q ? { ...q, category: v } : q)}
+                value={quickEdit?.category ?? ""}
+                onValueChange={(v) =>
+                  setQuickEdit((q) => (q ? { ...q, category: v } : q))
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Выберите категорию" />
@@ -572,24 +743,38 @@ export default function IncidentsListClient({
               <label className="block text-xs mb-1">Описание</label>
               <Textarea
                 rows={3}
-                value={quickEdit?.description ?? ''}
-                onChange={e => setQuickEdit(q => q ? { ...q, description: e.target.value } : q)}
+                value={quickEdit?.description ?? ""}
+                onChange={(e) =>
+                  setQuickEdit((q) =>
+                    q ? { ...q, description: e.target.value } : q
+                  )
+                }
               />
             </div>
             <div className="space-y-2 md:col-span-2">
-              <label className="block text-xs mb-1">Действия, предпринятые до обращения</label>
+              <label className="block text-xs mb-1">
+                Действия, предпринятые до обращения
+              </label>
               <Textarea
                 rows={2}
-                value={quickEdit?.preActions ?? ''}
-                onChange={e => setQuickEdit(q => q ? { ...q, preActions: e.target.value } : q)}
+                value={quickEdit?.preActions ?? ""}
+                onChange={(e) =>
+                  setQuickEdit((q) =>
+                    q ? { ...q, preActions: e.target.value } : q
+                  )
+                }
               />
             </div>
             <div className="space-y-2 md:col-span-2">
               <label className="block text-xs mb-1">Ожидаемый результат</label>
               <Textarea
                 rows={2}
-                value={quickEdit?.expectedResult ?? ''}
-                onChange={e => setQuickEdit(q => q ? { ...q, expectedResult: e.target.value } : q)}
+                value={quickEdit?.expectedResult ?? ""}
+                onChange={(e) =>
+                  setQuickEdit((q) =>
+                    q ? { ...q, expectedResult: e.target.value } : q
+                  )
+                }
               />
             </div>
             <div className="space-y-2 md:col-span-2">
@@ -599,40 +784,50 @@ export default function IncidentsListClient({
               </div>
               <div className="flex flex-wrap gap-2 mb-2">
                 {(quickEdit?.keptAttachments ?? []).map((att, idx) => {
-                  const kept = (quickEdit?.keptAttachments ?? []).includes(att)
+                  const kept = (quickEdit?.keptAttachments ?? []).includes(att);
                   return (
-                    <label key={idx} className="flex items-center gap-1 border rounded px-2 py-1 text-xs">
+                    <label
+                      key={idx}
+                      className="flex items-center gap-1 border rounded px-2 py-1 text-xs"
+                    >
                       <input
                         type="checkbox"
                         checked={kept}
-                        onChange={e => {
-                          const checked = e.currentTarget.checked
-                          setQuickEdit(q => {
-                            if (!q) return null
-                            const keptList = new Set<string>(q.keptAttachments)
-                            if (checked) keptList.add(att)
-                            else keptList.delete(att)
-                            return { ...q, keptAttachments: Array.from(keptList) }
-                          })
+                        onChange={(e) => {
+                          const checked = e.currentTarget.checked;
+                          setQuickEdit((q) => {
+                            if (!q) return null;
+                            const keptList = new Set<string>(q.keptAttachments);
+                            if (checked) keptList.add(att);
+                            else keptList.delete(att);
+                            return {
+                              ...q,
+                              keptAttachments: Array.from(keptList),
+                            };
+                          });
                         }}
                       />
                       <button
                         type="button"
                         className="underline"
-                        onClick={() => setPreview({ src: att, name: att.split('/').pop() })}
+                        onClick={() =>
+                          setPreview({ src: att, name: att.split("/").pop() })
+                        }
                       >
-                        {att.split('/').pop()}
+                        {att.split("/").pop()}
                       </button>
                     </label>
-                  )
+                  );
                 })}
               </div>
               <input
                 type="file"
                 multiple
-                onChange={e => {
-                  const files = e.target.files ? Array.from(e.target.files) : []
-                  setQuickEdit(q => q ? { ...q, newFiles: files } : q)
+                onChange={(e) => {
+                  const files = e.target.files
+                    ? Array.from(e.target.files)
+                    : [];
+                  setQuickEdit((q) => (q ? { ...q, newFiles: files } : q));
                 }}
               />
             </div>
@@ -643,23 +838,31 @@ export default function IncidentsListClient({
             </Button>
             <Button
               onClick={async () => {
-                if (!quickEdit) return
+                if (!quickEdit) return;
                 try {
-                  const form = new FormData()
-                  form.append('id', quickEdit.id)
-                  form.append('title', quickEdit.title)
-                  form.append('description', quickEdit.description)
-                  form.append('category', quickEdit.category)
-                  form.append('preActions', quickEdit.preActions)
-                  form.append('expectedResult', quickEdit.expectedResult)
-                  quickEdit.keptAttachments.forEach(p => form.append('keepAttachments', p))
-                  quickEdit.newFiles?.forEach(f => form.append('attachments', f))
+                  const form = new FormData();
+                  form.append("id", quickEdit.id);
+                  form.append("title", quickEdit.title);
+                  form.append("description", quickEdit.description);
+                  form.append("category", quickEdit.category);
+                  form.append("preActions", quickEdit.preActions);
+                  form.append("expectedResult", quickEdit.expectedResult);
+                  quickEdit.keptAttachments.forEach((p) =>
+                    form.append("keepAttachments", p)
+                  );
+                  quickEdit.newFiles?.forEach((f) =>
+                    form.append("attachments", f)
+                  );
 
-                  const res = await fetch('/api/incidents/update', { method: 'POST', body: form })
-                  const data = await res.json()
-                  if (!res.ok || data.error) throw new Error(data.error || 'Ошибка обновления')
-                  setIncidentsState(list =>
-                    list.map(i =>
+                  const res = await fetch("/api/incidents/update", {
+                    method: "POST",
+                    body: form,
+                  });
+                  const data = await res.json();
+                  if (!res.ok || data.error)
+                    throw new Error(data.error || "Ошибка обновления");
+                  setIncidentsState((list) =>
+                    list.map((i) =>
                       i.id === quickEdit.id
                         ? {
                             ...i,
@@ -672,10 +875,10 @@ export default function IncidentsListClient({
                           }
                         : i
                     )
-                  )
-                  setQuickEditOpen(false)
+                  );
+                  setQuickEditOpen(false);
                 } catch (e) {
-                  console.error(e)
+                  console.error(e);
                 }
               }}
             >
@@ -710,11 +913,13 @@ export default function IncidentsListClient({
               </div>
               <div className="md:col-span-2">
                 <div className="text-xs text-gray-500">Описание</div>
-                <div className="whitespace-pre-wrap break-words">{infoIncident.description}</div>
+                <div className="whitespace-pre-wrap break-words">
+                  {infoIncident.description}
+                </div>
               </div>
               <div>
                 <div className="text-xs text-gray-500">Категория</div>
-                <div>{infoIncident.category || '-'}</div>
+                <div>{infoIncident.category || "-"}</div>
               </div>
               <div>
                 <div className="text-xs text-gray-500">Приоритет</div>
@@ -723,26 +928,34 @@ export default function IncidentsListClient({
               <div>
                 <div className="text-xs text-gray-500">Создал</div>
                 <div>
-                  {`${infoIncident.createdBy?.firstName || ''} ${infoIncident.createdBy?.lastName || ''}`.trim() ||
-                    infoIncident.createdBy?.email}
+                  {`${infoIncident.createdBy?.firstName || ""} ${
+                    infoIncident.createdBy?.lastName || ""
+                  }`.trim() || infoIncident.createdBy?.email}
                 </div>
               </div>
               <div>
                 <div className="text-xs text-gray-500">Назначен</div>
                 <div>
                   {infoIncident.assignedTo
-                    ? `${infoIncident.assignedTo.firstName || ''} ${infoIncident.assignedTo.lastName || ''}`.trim() ||
-                      infoIncident.assignedTo.email
-                    : 'Не назначен'}
+                    ? `${infoIncident.assignedTo.firstName || ""} ${
+                        infoIncident.assignedTo.lastName || ""
+                      }`.trim() || infoIncident.assignedTo.email
+                    : "Не назначен"}
                 </div>
               </div>
               <div className="md:col-span-2">
-                <div className="text-xs text-gray-500">Предпринятые действия</div>
-                <div className="whitespace-pre-wrap">{infoIncident.preActions || '-'}</div>
+                <div className="text-xs text-gray-500">
+                  Предпринятые действия
+                </div>
+                <div className="whitespace-pre-wrap">
+                  {infoIncident.preActions || "-"}
+                </div>
               </div>
               <div className="md:col-span-2">
                 <div className="text-xs text-gray-500">Ожидаемый результат</div>
-                <div className="whitespace-pre-wrap">{infoIncident.expectedResult || '-'}</div>
+                <div className="whitespace-pre-wrap">
+                  {infoIncident.expectedResult || "-"}
+                </div>
               </div>
               <div className="md:col-span-2">
                 <div className="text-xs text-gray-500">Вложения</div>
@@ -755,9 +968,11 @@ export default function IncidentsListClient({
                         key={i}
                         type="button"
                         className="underline text-blue-700 text-xs hover:text-blue-900"
-                        onClick={() => setPreview({ src: a, name: a.split('/').pop() })}
+                        onClick={() =>
+                          setPreview({ src: a, name: a.split("/").pop() })
+                        }
                       >
-                        {a.split('/').pop()}
+                        {a.split("/").pop()}
                       </button>
                     ))
                   )}
@@ -768,5 +983,5 @@ export default function IncidentsListClient({
         </DialogContent>
       </Dialog>
     </>
-  )
+  );
 }

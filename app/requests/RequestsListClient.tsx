@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import Image from "next/image";
 
 // ✅ Обновлённый тип: добавлено department
 type UserLite = {
@@ -529,11 +530,15 @@ export default function RequestsListClient({
                         }
                       >
                         {isImage(att) ? (
-                          <img
-                            src={att}
-                            alt="attachment"
-                            className="h-12 w-12 object-cover rounded border"
-                          />
+                          <div className="relative h-12 w-12 rounded border overflow-hidden">
+                            <Image
+                              src={att}
+                              alt="attachment"
+                              fill
+                              className="object-cover"
+                              sizes="48px"
+                            />
+                          </div>
                         ) : (
                           <span>Файл {idx + 1}</span>
                         )}
@@ -684,7 +689,7 @@ export default function RequestsListClient({
                 open={!!preview}
                 onOpenChange={(o) => !o && setPreview(null)}
               >
-                <DialogContent className="max-w-4xl">
+                <DialogContent className="max-w-4xl max-h-[90vh]">
                   <DialogHeader>
                     <DialogTitle>{preview?.name || "Вложение"}</DialogTitle>
                     <DialogDescription className="sr-only">
@@ -692,12 +697,13 @@ export default function RequestsListClient({
                     </DialogDescription>
                   </DialogHeader>
                   {preview && (
-                    <div className="flex items-center justify-center">
+                    <div className="flex items-center justify-center h-[70vh] w-full">
                       {isImage(preview.src) ? (
-                        <img
+                        <Image
                           src={preview.src}
                           alt="attachment preview"
-                          className="max-h-[80vh] max-w-[90vw] object-contain rounded"
+                          fill
+                          className="object-contain"
                         />
                       ) : (
                         <div className="text-sm">
