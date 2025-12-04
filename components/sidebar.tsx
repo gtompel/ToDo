@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Home, AlertTriangle, HelpCircle, GitBranch, Users, FileText, BarChart3, Settings, Bell, Layers, Database, ChevronLeft, ChevronRight, Monitor, ChevronDown, BotIcon } from "lucide-react"
+import { Home, AlertTriangle, HelpCircle, GitBranch, Users, FileText, BarChart3, Settings, Bell, Layers, Database, ChevronLeft, ChevronRight, Monitor, ChevronDown, BotIcon, Server, Package } from "lucide-react"
 import { useState } from "react"
 import { useCurrentUser } from "@/hooks/use-user-context"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -15,6 +15,8 @@ const navigationGroups = [
     title: "Основное",
     items: [
       { name: "Главная", href: "/", icon: Home },
+      { name: "Сервисы", href: "/services", icon: Server },
+      { name: "Услуги", href: "/service-items", icon: Package },
       { name: "ИТ-ресурсы", href: "/it-resources", icon: Database },
       { name: "Рабочие станции", href: "/workstations", icon: Monitor },
     ]

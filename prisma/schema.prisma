@@ -7,41 +7,49 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Модель пользователя. Хранит учётные данные, профиль и связи на многие сущности
 model User {
-  id                  String         @id @default(cuid())
-  email               String         @unique
-  password            String
-  firstName           String
-  lastName            String
-  middleName          String?
-  phone               String?
-  position            String?
-  department          String?
-  role                Role           @default(USER)
-  status              String         @default("active")
-  isActive            Boolean        @default(true)
-  lastLogin           DateTime?
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
-  lastActivity        DateTime?
-  passwordLastChanged DateTime?
-  username            String?        @unique
-  articles            Article[]      @relation("UserArticles")
-  notifications       Notification[]
-  workstations        Workstation[]
-  assignedChanges     Change[]       @relation("AssignedTo")
-  changes             Change[]       @relation("CreatedBy")
-  assignedIncidents   Incident[]     @relation("AssignedTo")
-  createdIncidents    Incident[]     @relation("CreatedBy")
-  assignedRequests    Request[]      @relation("AssignedTo")
-  requests            Request[]      @relation("CreatedBy")
-  sessions            Session[]
-  comments            Comment[]
-  activityLogs        ActivityLog[]
+  id                  String         @id @default(cuid()) // Уникальный идентификатор пользователя
+  email               String         @unique               // Почта (уникальная)
+  password            String                                   // Хеш пароля
+  firstName           String                                   // Имя
+  lastName            String                                   // Фамилия
+  middleName          String?                                  // Отчество (необязательное)
+  phone               String?                                  // Телефон
+  position            String?                                  // Должность
+  department          String?                                  // Отдел
+  role                Role           @default(USER)         // Роль (enum)
+  status              String         @default("active")   // Строковый статус (например, 'active', 'inactive')
+  isActive            Boolean        @default(true)         // Флаг активности аккаунта
+  lastLogin           DateTime?                                 // Время последнего входа
+  createdAt           DateTime       @default(now())        // Дата создания записи
+  updatedAt           DateTime       @updatedAt             // Дата последнего обновления
+  lastActivity        DateTime?                                 // Дата последней активности (события)
+  passwordLastChanged DateTime?                                 // Время последней смены пароля
+  username            String?        @unique                // Логин/никнейм (опционально уникален)
 
-  @@map("users")
+  // Отношения: коллекции связанных сущностей
+  articles            Article[]      @relation("UserArticles") // Статьи, созданные пользователем
+  notifications       Notification[]                         // Уведомления для пользователя
+  workstations        Workstation[]                            // Рабочие станции, привязанные к пользователю
+  assignedChanges     Change[]       @relation("AssignedTo")   // Изменения, назначенные пользователю
+  changes             Change[]       @relation("CreatedBy")    // Изменения, созданные пользователем
+  assignedIncidents   Incident[]     @relation("AssignedTo")   // Инциденты, назначенные пользователю
+  createdIncidents    Incident[]     @relation("CreatedBy")    // Инциденты, созданные пользователем
+  assignedRequests    Request[]      @relation("AssignedTo")   // Запросы, назначенные пользователю
+  requests            Request[]      @relation("CreatedBy")    // Запросы, созданные пользователем
+  sessions            Session[]                                 // Активные сессии
+  comments            Comment[]                                 // Комментарии пользователя
+  activityLogs        ActivityLog[]                             // Лог активности
+
+  @@map("users") // Отображение в таблицу БД users
+
+  // Обратные связи для Service (ответственные и резервные)
+  responsibleServices Service[] @relation("ServiceResponsible")
+  backupServices      Service[] @relation("ServiceBackup")
 }
 
+// Сессии для хранения токенов/времени жизни сессии
 model Session {
   id        String   @id @default(cuid())
   token     String   @unique
@@ -55,21 +63,24 @@ model Session {
   @@index([expiresAt])
 }
 
+// Инциденты (инцидент-менеджмент)
 model Incident {
   id             String         @id @default(cuid())
-  title          String
-  description    String
-  priority       Priority       @default(MEDIUM)
-  status         IncidentStatus @default(OPEN)
-  category       String?
-  assignedToId   String?
-  createdById    String?
+  title          String                                   // Короткое название инцидента
+  description    String                                   // Подробное описание
+  priority       Priority       @default(MEDIUM)           // Приоритет (enum)
+  status         IncidentStatus @default(OPEN)             // Статус инцидента (enum)
+  category       String?                                  // Категория инцидента (опционально)
+  assignedToId   String?                                  // FK на назначенного исполнителя
+  createdById    String?                                  // FK на создателя инцидента
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
-  resolvedAt     DateTime?
-  attachments    String[]
-  expectedResult String?
-  preActions     String?
+  resolvedAt     DateTime?                                 // Время решения/закрытия
+  attachments    String[]                                 // Список путей/URL вложений
+  expectedResult String?                                  // Ожидаемый результат (для SLA)
+  preActions     String?                                  // Действия, предпринятые до решения
+
+  // Отношения на пользователя: назначен/создан
   assignedTo     User?          @relation("AssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
   createdBy      User?          @relation("CreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
@@ -78,6 +89,7 @@ model Incident {
   @@index([createdAt])
 }
 
+// Запросы (Service requests)
 model Request {
   id           String        @id @default(cuid())
   title        String
@@ -90,7 +102,8 @@ model Request {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   resolvedAt   DateTime?
-  acknowledgmentFile String?
+  acknowledgmentFile String?   // Файл подтверждения выполнения
+
   assignedTo   User?         @relation("AssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
   createdBy    User?         @relation("CreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
@@ -99,6 +112,7 @@ model Request {
   @@index([createdAt])
 }
 
+// Изменения/чейндж-менеджмент
 model Change {
   id                    String       @id @default(cuid())
   title                 String
@@ -112,8 +126,8 @@ model Change {
   createdAt             DateTime     @default(now())
   updatedAt             DateTime     @updatedAt
   implementedAt         DateTime?
-  affectedSystems       String[]
-  approvers             String[]
+  affectedSystems       String[]     // Перечень затронутых систем
+  approvers             String[]     // Список одобрителей (можно хранить id или e-mail)
   backoutPlan           String?
   businessJustification String?
   impact                String?
@@ -121,6 +135,7 @@ model Change {
   risk                  String?
   testPlan              String?
   urgency               String?
+
   assignedTo            User?        @relation("AssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
   createdBy             User?        @relation("CreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
@@ -129,26 +144,30 @@ model Change {
   @@index([createdAt])
 }
 
+// Статьи/документация
 model Article {
   id          String   @id @default(cuid())
   title       String
   description String?
-  content     String
+  content     String   // Основное содержимое (markdown/html)
   category    String?
-  tags        String[]
+  tags        String[] // Массив тегов
   isPublished Boolean  @default(false)
   status      String?
-  helpful     Int      @default(0)
-  notHelpful  Int      @default(0)
+  helpful     Int      @default(0) // Количество положительных отзывов
+  notHelpful  Int      @default(0) // Количество отрицательных отзывов
   createdById String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   authorId    String?
+
+  // Связь автора (author) с пользователем, использует relation имя UserArticles
   author      User?    @relation("UserArticles", fields: [authorId], references: [id], onDelete: SetNull)
   comments    Comment[]
   views       Int      @default(0)
 }
 
+// Уведомления
 model Notification {
   id        String   @id @default(uuid())
   userId    String?
@@ -161,34 +180,37 @@ model Notification {
   @@index([userId])
 }
 
+// Шаблоны (динамические формы/шаблоны метаданных)
 model Template {
   id          String   @id @default(cuid())
-  type        String
+  type        String   // Тип шаблона
   name        String
   description String?
-  fields      Json
+  fields      Json     // JSON-структура полей шаблона
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
 
+// IT-ресурсы (оборудование, сервисы, ключи и т.п.)
 model ITResource {
   id          String   @id @default(cuid())
   name        String
   description String
-  owner       String
-  source      String
-  roles       String[]
+  owner       String   // Владелец ресурса (e-mail или подразделение)
+  source      String   // Откуда взят ресурс
+  roles       String[] // Роли/доступы к ресурсу
   note        String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
 
+// Рабочая станция/устройство
 model Workstation {
   id          String   @id @default(cuid())
   name        String
   description String
-  userId      String?
+  userId      String?                                  // Владелец/пользователь станции
   ip          String?
   status      String   @default("active")
   createdAt   DateTime @default(now())
@@ -199,6 +221,25 @@ model Workstation {
   user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
+// Сервисы/услуги внутри ИТ (с ответственным и резервной командой)
+model Service {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  description   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Один ответственный (required)
+  responsibleId String
+  responsible   User     @relation("ServiceResponsible", fields: [responsibleId], references: [id], onDelete: Restrict)
+
+  // Несколько резервных сотрудников (через обратное отношение backupServices в User)
+  backupStaff   User[]   @relation("ServiceBackup")
+
+  @@map("services")
+}
+
+// Системные настройки в формате key-value
 model SystemSettings {
   id        String   @id @default(cuid())
   key       String   @unique
@@ -206,6 +247,24 @@ model SystemSettings {
   updatedAt DateTime @updatedAt
 }
 
+// Услуги ИТ-инфраструктуры
+model ServiceItem {
+  id                  String   @id @default(cuid())
+  code                String   @unique // Код услуги
+  owner               String   // Владелец
+  systemName          String   // Наименование системы
+  supportCode         String?  // Код сопровождения
+  supportName         String?  // Наименование сопровождения
+  card                String?  // Карточка
+  passport            String?  // Паспорт
+  note                String?  // Примечание
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("service_items")
+}
+
+// Комментарии к статьям
 model Comment {
   id        String   @id @default(cuid())
   content   String
@@ -217,10 +276,11 @@ model Comment {
   user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
+// Лог действий/аудит
 model ActivityLog {
   id        String   @id @default(cuid())
   userId    String?
-  action    String
+  action    String   // Описание действия
   status    String
   ip        String?
   createdAt DateTime @default(now())
@@ -229,6 +289,7 @@ model ActivityLog {
   @@index([userId])
 }
 
+// Роли пользователей
 enum Role {
   USER
   TECHNICIAN
@@ -236,6 +297,7 @@ enum Role {
   ADMIN
 }
 
+// Приоритеты задач/инцидентов
 enum Priority {
   LOW
   MEDIUM
@@ -243,6 +305,7 @@ enum Priority {
   CRITICAL
 }
 
+// Статусы инцидентов
 enum IncidentStatus {
   OPEN
   IN_PROGRESS
@@ -250,6 +313,7 @@ enum IncidentStatus {
   CLOSED
 }
 
+// Статусы запросов
 enum RequestStatus {
   OPEN
   IN_PROGRESS
@@ -257,6 +321,7 @@ enum RequestStatus {
   CLOSED
 }
 
+// Статусы для изменений (change management)
 enum ChangeStatus {
   DRAFT
   PENDING_APPROVAL
