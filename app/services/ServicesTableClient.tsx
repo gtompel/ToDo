@@ -22,9 +22,9 @@ import {
   Tooltip, 
   TooltipContent, 
   TooltipProvider, 
-  TooltipTrigger 
+  TooltipTrigger
 } from "@/components/ui/tooltip";
-import { Plus, RefreshCw, Edit, Trash2, Users } from "lucide-react";
+import { Plus, RefreshCw, Edit, Trash2, Users, Info } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useCurrentUser } from "@/hooks/use-user-context";
@@ -54,6 +54,7 @@ export default function ServicesTableClient({ services: initialServices }: { ser
   const [services, setServices] = useState<Service[]>(initialServices);
   const [showCreate, setShowCreate] = useState(false);
   const [editService, setEditService] = useState<Service | null>(null);
+  const [viewService, setViewService] = useState<Service | null>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { confirm, dialog } = useConfirm();
@@ -105,10 +106,46 @@ export default function ServicesTableClient({ services: initialServices }: { ser
     }
   };
 
-  return (
-    <TooltipProvider>
-      {dialog}
-      
+
+    return (
+      <TooltipProvider>
+        {dialog}
+        
+        {/* Модалка просмотра подробной информации */}
+        <Dialog open={!!viewService} onOpenChange={v => { if (!v) setViewService(null) }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Информация о сервисе</DialogTitle>
+              <DialogDescription />
+            </DialogHeader>
+            {viewService && (
+              <div className="space-y-2 text-sm">
+                <div><b>Название:</b> {viewService.name}</div>
+                <div><b>Описание:</b> {viewService.description || '-'}</div>
+                {viewService.responsible && (
+                  <div>
+                    <b>Ответственный:</b> {viewService.responsible.name} ({viewService.responsible.email})
+                    {viewService.responsible.position && <span>, {viewService.responsible.position}</span>}
+                  </div>
+                )}
+                {viewService.backupStaff.length > 0 && (
+                  <div>
+                    <b>Резервный персонал:</b>
+                    <ul className="list-disc list-inside ml-2">
+                      {viewService.backupStaff.map(staff => (
+                        <li key={staff.id}>{staff.name} ({staff.email})</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <div className="text-xs text-muted-foreground pt-2">
+                  <div><b>Создано:</b> {viewService.createdAt ? new Date(viewService.createdAt).toLocaleString('ru-RU') : '-'}</div>
+                  <div><b>Обновлено:</b> {viewService.updatedAt ? new Date(viewService.updatedAt).toLocaleString('ru-RU') : '-'}</div>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       {/* Модалка создания */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent className="max-w-md">
@@ -249,6 +286,18 @@ export default function ServicesTableClient({ services: initialServices }: { ser
                         <TooltipContent>Удалить</TooltipContent>
                       </Tooltip>
                     )}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setViewService(service)}
+                        >
+                          <Info className="w-4 h-4 text-blue-600" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Подробнее</TooltipContent>
+                    </Tooltip>
                   </div>
                 </TableCell>
               </TableRow>

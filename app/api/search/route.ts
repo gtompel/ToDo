@@ -67,6 +67,43 @@ export async function GET(req: Request) {
     take: 5,
   })
 
+  // Поиск по сервисам
+  const services = await prisma.service.findMany({
+    where: {
+      OR: [
+        { name: { contains: q, mode: "insensitive" } },
+        { description: { contains: q, mode: "insensitive" } },
+      ]
+    },
+    take: 5,
+    include: {
+      responsible: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+        }
+      }
+    }
+  })
+
+  // Поиск по услугам
+  const serviceItems = await prisma.serviceItem.findMany({
+    where: {
+      OR: [
+        { code: { contains: q, mode: "insensitive" } },
+        { owner: { contains: q, mode: "insensitive" } },
+        { systemName: { contains: q, mode: "insensitive" } },
+        { supportCode: { contains: q, mode: "insensitive" } },
+        { supportName: { contains: q, mode: "insensitive" } },
+        { card: { contains: q, mode: "insensitive" } },
+        { passport: { contains: q, mode: "insensitive" } },
+        { note: { contains: q, mode: "insensitive" } },
+      ]
+    },
+    take: 5
+  })
+
   const results = [
     ...itResources.map((r: any) => ({
       type: "ИТ-ресурс",
@@ -103,7 +140,21 @@ export async function GET(req: Request) {
       description: a.content?.slice(0, 120) || "",
       href: `/knowledge-base/${a.id}`
     })),
+    ...services.map((s: any) => ({
+      type: "Сервис",
+      id: s.id,
+      title: s.name,
+      description: s.description,
+      href: `/services/${s.id}`
+    })),
+    ...serviceItems.map((si: any) => ({
+      type: "Услуга",
+      id: si.id,
+      title: si.systemName || si.code,
+      description: si.card || si.passport || si.note,
+      href: `/service-items/${si.id}`
+    })),
   ]
 
   return NextResponse.json({ results })
-} 
+}
