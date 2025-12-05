@@ -44,8 +44,8 @@ type ServiceItem = {
   updatedAt: string;
 };
 
-export default function ServiceItemsTableClient({ serviceItems: initialServiceItems }: { serviceItems: ServiceItem[] }) {
-  const [serviceItems, setServiceItems] = useState<ServiceItem[]>(initialServiceItems);
+export default function ServiceItemsTableClient({ serviceItems: initialServiceItems }: { serviceItems?: ServiceItem[] }) {
+  const [serviceItems, setServiceItems] = useState<ServiceItem[]>(initialServiceItems || []);
   const [showCreate, setShowCreate] = useState(false);
   const [editServiceItem, setEditServiceItem] = useState<ServiceItem | null>(null);
   const [loading, setLoading] = useState(false);
@@ -177,7 +177,7 @@ export default function ServiceItemsTableClient({ serviceItems: initialServiceIt
       </div>
 
       <div className="mb-4 flex items-center gap-2">
-        <span>Всего услуг: <b>{serviceItems.length}</b></span>
+        <span>Всего услуг: <b>{serviceItems?.length || 0}</b></span>
       </div>
 
       <Card>
@@ -197,7 +197,7 @@ export default function ServiceItemsTableClient({ serviceItems: initialServiceIt
             </TableRow>
           </TableHeader>
           <TableBody>
-            {serviceItems.map((serviceItem, index) => (
+            {serviceItems && serviceItems.map((serviceItem, index) => (
               <TableRow key={serviceItem.id}>
                 <TableCell>{index + 1}</TableCell>
                 <TableCell className="font-medium">{serviceItem.code}</TableCell>
@@ -242,7 +242,7 @@ export default function ServiceItemsTableClient({ serviceItems: initialServiceIt
                 </TableCell>
               </TableRow>
             ))}
-            {serviceItems.length === 0 && (
+            {serviceItems && serviceItems.length === 0 && (
               <TableRow>
                 <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                   Нет данных об услугах

@@ -88,6 +88,18 @@
 - Drag & Drop редактор полей
 - Различные типы полей (text, select, checkbox, etc.)
 
+#### 📦 **Услуги ИТ-инфраструктуры (Service Items)**
+
+- Каталог услуг ИТ-инфраструктуры
+- Управление кодами услуг, владельцами и системами
+- Поддержка дополнительной информации (карточки, паспорта, примечания)
+
+#### 🛠 **Сервисы (Services)**
+
+- Управление внутренними ИТ-сервисами
+- Назначение ответственных и резервных сотрудников
+- Поддержка описаний сервисов
+
 ---
 
 ## 1. Структура проекта и папок
@@ -273,6 +285,32 @@
   "implementationPlan": "Шаги реализации...",
   "backoutPlan": "План отката...",
   "affectedSystems": ["server1", "server2"]
+}
+```
+
+#### Услуги ИТ-инфраструктуры (Service Items) (POST /api/service-items)
+
+```json
+{
+  "code": "NET-001",
+  "owner": "IT Department",
+  "systemName": "Corporate Network",
+  "supportCode": "SUP-001",
+  "supportName": "Network Support Team",
+  "card": "Network infrastructure card",
+  "passport": "Network infrastructure passport",
+  "note": "Corporate network infrastructure"
+}
+```
+
+#### Сервисы (Services) (POST /api/services)
+
+```json
+{
+  "name": "Email Service",
+  "description": "Corporate email service",
+  "responsibleId": "user-id",
+  "backupStaffIds": ["user-id-1", "user-id-2"]
 }
 ```
 
